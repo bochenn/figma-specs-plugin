@@ -1,30 +1,8 @@
 import type { ElementoAnatomy } from "../modelo/tipos.ts";
 import { posicionMarcador, TAM_MARCADOR } from "../utils/marcadores.ts";
+import { frameVertical, texto } from "./frames.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
-
-// Crea un frame con Auto Layout vertical configurado.
-function frameVertical(nombre: string, gap: number, padding = 0): FrameNode {
-  const f = figma.createFrame();
-  f.name = nombre;
-  f.layoutMode = "VERTICAL";
-  f.itemSpacing = gap;
-  f.paddingTop = f.paddingBottom = f.paddingLeft = f.paddingRight = padding;
-  f.primaryAxisSizingMode = "AUTO";
-  f.counterAxisSizingMode = "AUTO";
-  f.fills = [];
-  return f;
-}
-
-// Crea un texto. fontSize en px; carga la fuente antes de escribir.
-async function texto(contenido: string, fontSize: number): Promise<TextNode> {
-  const t = figma.createText();
-  await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-  t.fontName = { family: "Inter", style: "Regular" };
-  t.characters = contenido;
-  t.fontSize = fontSize;
-  return t;
-}
 
 // Construye la entrada de un elemento en la lista de contenido.
 async function entradaLista(indice: number, el: ElementoAnatomy): Promise<FrameNode> {
