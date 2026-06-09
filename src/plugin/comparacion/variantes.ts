@@ -39,3 +39,21 @@ export function emparejar(a: NodoLike[], b: NodoLike[]): ParElementos[] {
 
   return pares;
 }
+
+// Devuelve solo los atributos cuyo valor difiere entre default y opción,
+// con ambos valores para poder mostrar el antes/después.
+export function diffAtributos(attrsDefault: Atributo[], attrsOpcion: Atributo[]): AtributoCambiado[] {
+  const claves = new Set<string>();
+  for (const a of attrsDefault) claves.add(a.clave);
+  for (const a of attrsOpcion) claves.add(a.clave);
+
+  const cambios: AtributoCambiado[] = [];
+  for (const clave of claves) {
+    const valorDefault = attrsDefault.find((a) => a.clave === clave)?.valor;
+    const valorOpcion = attrsOpcion.find((a) => a.clave === clave)?.valor;
+    if (valorDefault !== valorOpcion) {
+      cambios.push({ clave, valorDefault, valorOpcion });
+    }
+  }
+  return cambios;
+}
