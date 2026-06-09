@@ -26,6 +26,22 @@ test("variantes idénticas → sin cambios", () => {
   assert.deepEqual(compararVariante(arbol, arbol), []);
 });
 
+test("cambio en el atributo de la raíz misma → raíz modificada", () => {
+  const def: NodoLike = {
+    id: "r", name: "Button", type: "COMPONENT",
+    fills: [{ type: "SOLID", color: { r: 0.26, g: 0.5, b: 0.9 } }],
+  };
+  const opc: NodoLike = {
+    id: "r", name: "Button", type: "COMPONENT",
+    fills: [{ type: "SOLID", color: { r: 0.4, g: 0.4, b: 0.5 } }],
+  };
+  const cambios = compararVariante(def, opc);
+  assert.equal(cambios.length, 1);
+  assert.equal(cambios[0].elementoNombre, "Button");
+  assert.equal(cambios[0].estado, "modificado");
+  assert.equal(cambios[0].atributos[0].clave, "background-color");
+});
+
 test("elemento solo en la opcion → agregado", () => {
   const def: NodoLike = { id: "r", name: "Root", type: "FRAME", children: [] };
   const opc: NodoLike = { id: "r", name: "Root", type: "FRAME", children: [{ id: "n", name: "Badge", type: "TEXT" }] };

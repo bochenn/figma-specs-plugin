@@ -60,8 +60,16 @@ export function diffAtributos(attrsDefault: Atributo[], attrsOpcion: Atributo[])
 
 // Compara dos variantes (default vs opción) y devuelve los elementos que cambian.
 export function compararVariante(defaultRaiz: NodoLike, opcionRaiz: NodoLike): ElementoCambiado[] {
-  const pares = emparejar(recorrer(defaultRaiz), recorrer(opcionRaiz));
   const cambios: ElementoCambiado[] = [];
+
+  // La raíz de la variante en sí también puede cambiar (ej. el color de fondo
+  // del componente), no solo sus hijos.
+  const diffRaiz = diffAtributos(leerAtributos(defaultRaiz), leerAtributos(opcionRaiz));
+  if (diffRaiz.length > 0) {
+    cambios.push({ elementoNombre: defaultRaiz.name, estado: "modificado", atributos: diffRaiz });
+  }
+
+  const pares = emparejar(recorrer(defaultRaiz), recorrer(opcionRaiz));
 
   for (const par of pares) {
     if (par.default && par.opcion) {
