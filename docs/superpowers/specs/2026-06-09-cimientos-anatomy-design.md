@@ -1,15 +1,15 @@
 # Diseño — Cimientos + Anatomy (Rebanada 0 + 1)
 
 **Fecha:** 2026-06-09
-**Proyecto:** Specs Plugin para Figma (clon fiel 1:1 de EightShapes Specs)
+**Proyecto:** Specs Plugin para Figma — plugin de documentación de specs para handoff
 **Alcance de este spec:** Infraestructura compartida del plugin + primera feature real (Anatomy), de punta a punta.
 
 ---
 
 ## Contexto y estrategia
 
-El objetivo a largo plazo es replicar EightShapes Specs lo más fiel posible (clon 1:1, 18 features
-en 3 niveles: gratis / Pro / Pro Formatting). Eso es demasiado para un solo spec, así que el
+El objetivo a largo plazo es implementar el plugin completo descrito en el PRD lo más fiel posible
+(18 features en 3 niveles: gratis / Pro / Pro Formatting). Eso es demasiado para un solo spec, así que el
 proyecto se **descompone en rebanadas**, cada una con su propio ciclo *spec → plan → implementación*.
 
 **Orden de rebanadas:**
@@ -20,12 +20,12 @@ proyecto se **descompone en rebanadas**, cada una con su propio ciclo *spec → 
   → (Pro) → (Pro Formatting).
 
 Regla: **terminar y validar cada rebanada de punta a punta** (corre en Figma, genera output, se compara
-contra el original) antes de pasar a la siguiente.
+contra las referencias del PRD) antes de pasar a la siguiente.
 
 **Decisiones tomadas en el brainstorming:**
-- Objetivo: clon fiel 1:1 a largo plazo.
+- Objetivo: implementación fiel del PRD a largo plazo.
 - Entorno listo: Figma Desktop + Node.js + sabe cargar plugins en dev.
-- Referencia de fidelidad: se instala el plugin original "EightShapes Specs" para generar outputs de referencia.
+- Referencia de fidelidad: las `prd-images` y la especificación del PRD.
 - Setup técnico: **Opción A** — setup mínimo con esbuild + UI en HTML/TS plano (sin framework).
   Razón: simple, legible, sin magia, encaja con las preferencias de soluciones nativas y sin dependencias innecesarias.
 - Íconos de tipo de capa: **etiqueta de texto ahora**, íconos vectoriales como pulido posterior.
@@ -182,7 +182,7 @@ Specifications                         (frame, Auto Layout vertical)
 Íconos vectoriales = pulido posterior.
 
 **Decisión de diseño:** todo con **Auto Layout** (no coordenadas x/y manuales), salvo los marcadores,
-que sí se posicionan a mano sobre el artwork. Fiel al original, que es 100% Auto Layout.
+que sí se posicionan a mano sobre el artwork. El output del PRD es 100% Auto Layout.
 
 ---
 
@@ -229,8 +229,8 @@ El código que usa `figma.*` no corre fuera de Figma. La separación *extracció
    `children`, etc.), así los módulos puros no dependen de los tipos globales de Figma.
 
 2. **Verificación manual en Figma (test de aceptación real):** cargar el plugin en Figma Desktop,
-   correrlo sobre un componente de prueba y **comparar contra el plugin original**. Fuente de verdad
-   de la fidelidad 1:1.
+   correrlo sobre un componente de prueba y **comparar contra las referencias del PRD** (`prd-images`).
+   Fuente de verdad de la fidelidad.
 
 3. **Componente de prueba fijo:** un componente de referencia (ej. Alert o Button con texto + ícono +
    shapes) para detectar regresiones a ojo.
