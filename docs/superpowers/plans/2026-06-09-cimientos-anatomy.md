@@ -53,10 +53,11 @@
   "scripts": {
     "build": "node esbuild.config.mjs",
     "watch": "node esbuild.config.mjs --watch",
-    "test": "node esbuild.config.mjs --test && node --test dist-test/"
+    "test": "node esbuild.config.mjs --test && node --test dist-test/*.test.js"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.100.0",
+    "@types/node": "^25.9.0",
     "esbuild": "^0.24.0",
     "typescript": "^5.6.0"
   }
@@ -85,11 +86,13 @@
     "target": "ES2017",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "strict": true,
     "noUnusedLocals": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "typeRoots": ["./node_modules/@figma"]
+    "typeRoots": ["./node_modules/@figma", "./node_modules/@types"]
   },
   "include": ["src", "tests"]
 }
