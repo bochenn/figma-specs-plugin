@@ -1,9 +1,12 @@
-const boton = document.getElementById("generar") as HTMLButtonElement;
 const estado = document.getElementById("estado") as HTMLParagraphElement;
 
-boton.onclick = () => {
-  parent.postMessage({ pluginMessage: { tipo: "generar" } }, "*");
-};
+function generar(seccion: "anatomy" | "properties" | "layout"): void {
+  parent.postMessage({ pluginMessage: { tipo: "generar", seccion } }, "*");
+}
+
+(document.getElementById("anatomy") as HTMLButtonElement).onclick = () => generar("anatomy");
+(document.getElementById("properties") as HTMLButtonElement).onclick = () => generar("properties");
+(document.getElementById("layout") as HTMLButtonElement).onclick = () => generar("layout");
 
 window.onmessage = (event: MessageEvent) => {
   const msg = event.data.pluginMessage;
