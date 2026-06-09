@@ -103,6 +103,7 @@ export async function generarAnatomy(
   const artwork = figma.createFrame();
   artwork.name = "Artwork";
   artwork.layoutMode = "NONE";
+  artwork.clipsContent = false; // los marcadores van fuera del borde izquierdo
   artwork.fills = [{ type: "SOLID", color: GRIS(0.96) }];
   display.appendChild(artwork);
 
