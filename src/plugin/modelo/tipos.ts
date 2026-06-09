@@ -12,6 +12,17 @@ export interface NodoLike {
   fills?: ReadonlyArray<{ type: string; color?: { r: number; g: number; b: number } }>;
   // solo en instancias:
   mainComponentName?: string;
+  // layout (solo en nodos con Auto Layout):
+  layoutMode?: "NONE" | "HORIZONTAL" | "VERTICAL";
+  primaryAxisAlignItems?: string;     // "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN"
+  counterAxisAlignItems?: string;     // "MIN" | "CENTER" | "MAX" | "BASELINE"
+  paddingLeft?: number;
+  paddingTop?: number;
+  paddingRight?: number;
+  paddingBottom?: number;
+  itemSpacing?: number;
+  layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
+  layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
 }
 
 export interface Atributo {
@@ -30,7 +41,9 @@ export interface ElementoAnatomy {
 }
 
 // Mensajes UI ↔ plugin.
-export type MensajeUI = { tipo: "generar" };
+export type Seccion = "anatomy" | "properties" | "layout";
+
+export type MensajeUI = { tipo: "generar"; seccion: Seccion };
 
 export type MensajePlugin =
   | { tipo: "resultado"; ok: true }
@@ -81,4 +94,18 @@ export interface SetNorm {
   propiedades: Record<string, string[]>;  // de variantGroupProperties: prop → opciones
   variantes: VarianteNorm[];
   defaultProps: Record<string, string>;   // variantProperties del default
+}
+
+// --- Layout and Spacing ---
+
+export interface LayoutSpec {
+  elementoNombre: string;
+  tipo: string;                  // FRAME, COMPONENT, etc.
+  direccion: "HORIZONTAL" | "VERTICAL";
+  alineacionPrimaria: string;    // "Start" | "Center" | "End" | "Space between"
+  alineacionContraria: string;
+  resizingHorizontal: string;    // "Fill" | "Hug" | "Fixed"
+  resizingVertical: string;
+  padding: { left: number; top: number; right: number; bottom: number };
+  itemSpacing: number;
 }
