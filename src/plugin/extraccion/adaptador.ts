@@ -17,6 +17,18 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
     const main = (nodo as InstanceNode).mainComponent;
     if (main) base.mainComponentName = main.name;
   }
+  if ("layoutMode" in nodo && (nodo.layoutMode === "HORIZONTAL" || nodo.layoutMode === "VERTICAL")) {
+    base.layoutMode = nodo.layoutMode;
+    base.primaryAxisAlignItems = nodo.primaryAxisAlignItems;
+    base.counterAxisAlignItems = nodo.counterAxisAlignItems;
+    base.paddingLeft = nodo.paddingLeft;
+    base.paddingTop = nodo.paddingTop;
+    base.paddingRight = nodo.paddingRight;
+    base.paddingBottom = nodo.paddingBottom;
+    base.itemSpacing = nodo.itemSpacing;
+    if ("layoutSizingHorizontal" in nodo) base.layoutSizingHorizontal = nodo.layoutSizingHorizontal;
+    if ("layoutSizingVertical" in nodo) base.layoutSizingVertical = nodo.layoutSizingVertical;
+  }
   if ("children" in nodo) {
     base.children = nodo.children.map((c) => aNodoLike(c));
   }

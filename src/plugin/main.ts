@@ -5,10 +5,12 @@ import { generarAnatomy } from "./generadores/anatomy.ts";
 import { resolverComponentSet } from "./extraccion/resolver.ts";
 import { extraerProperties } from "./extraccion/properties.ts";
 import { generarProperties } from "./generadores/properties.ts";
+import { extraerLayout } from "./extraccion/layout.ts";
+import { generarLayout } from "./generadores/layout.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 200 });
+figma.showUI(__html__, { width: 280, height: 220 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
@@ -28,6 +30,41 @@ function normalizarSet(componentSet: ComponentSetNode): SetNorm {
   return { propiedades, variantes, defaultProps };
 }
 
+async function generarSeccionAnatomy(nodo: SceneNode): Promise<void> {
+  if (!TIPOS_VALIDOS.includes(nodo.type)) {
+    responder({ tipo: "resultado", ok: false, error: "Anatomy necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
+    return;
+  }
+  const elementos = extraerAnatomy(aNodoLike(nodo));
+  const frame = await generarAnatomy(nodo, elementos);
+  figma.viewport.scrollAndZoomIntoView([frame]);
+  responder({ tipo: "resultado", ok: true });
+}
+
+async function generarSeccionProperties(nodo: SceneNode): Promise<void> {
+  const componentSet = resolverComponentSet(nodo);
+  if (!componentSet) {
+    responder({ tipo: "resultado", ok: false, error: "Properties necesita un componente con variantes." });
+    return;
+  }
+  const setNorm = normalizarSet(componentSet);
+  const specs = extraerProperties(setNorm);
+  const frame = await generarProperties(componentSet, specs, setNorm.defaultProps);
+  figma.viewport.scrollAndZoomIntoView([frame]);
+  responder({ tipo: "resultado", ok: true });
+}
+
+async function generarSeccionLayout(nodo: SceneNode): Promise<void> {
+  if (!TIPOS_VALIDOS.includes(nodo.type)) {
+    responder({ tipo: "resultado", ok: false, error: "Layout and Spacing necesita un FRAME, COMPONENT o INSTANCE." });
+    return;
+  }
+  const specs = extraerLayout(aNodoLike(nodo));
+  const frame = await generarLayout(nodo.name, specs);
+  figma.viewport.scrollAndZoomIntoView([frame]);
+  responder({ tipo: "resultado", ok: true });
+}
+
 figma.ui.onmessage = async (msg: MensajeUI) => {
   if (msg.tipo !== "generar") return;
 
@@ -38,28 +75,10 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   }
 
   const nodo = seleccion[0];
-
   try {
-    const componentSet = resolverComponentSet(nodo);
-    if (componentSet) {
-      // Camino Properties.
-      const setNorm = normalizarSet(componentSet);
-      const specs = extraerProperties(setNorm);
-      const frame = await generarProperties(componentSet, specs, setNorm.defaultProps);
-      figma.viewport.scrollAndZoomIntoView([frame]);
-      responder({ tipo: "resultado", ok: true });
-      return;
-    }
-
-    // Camino Anatomy (flujo existente).
-    if (!TIPOS_VALIDOS.includes(nodo.type)) {
-      responder({ tipo: "resultado", ok: false, error: "Seleccioná un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
-      return;
-    }
-    const elementos = extraerAnatomy(aNodoLike(nodo));
-    const specifications = await generarAnatomy(nodo, elementos);
-    figma.viewport.scrollAndZoomIntoView([specifications]);
-    responder({ tipo: "resultado", ok: true });
+    if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo);
+    else if (msg.seccion === "properties") await generarSeccionProperties(nodo);
+    else await generarSeccionLayout(nodo);
   } catch (e) {
     responder({ tipo: "resultado", ok: false, error: String(e) });
   }
