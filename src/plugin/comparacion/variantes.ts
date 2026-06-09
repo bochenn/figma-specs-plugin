@@ -57,3 +57,24 @@ export function diffAtributos(attrsDefault: Atributo[], attrsOpcion: Atributo[])
   }
   return cambios;
 }
+
+// Compara dos variantes (default vs opción) y devuelve los elementos que cambian.
+export function compararVariante(defaultRaiz: NodoLike, opcionRaiz: NodoLike): ElementoCambiado[] {
+  const pares = emparejar(recorrer(defaultRaiz), recorrer(opcionRaiz));
+  const cambios: ElementoCambiado[] = [];
+
+  for (const par of pares) {
+    if (par.default && par.opcion) {
+      const diff = diffAtributos(leerAtributos(par.default), leerAtributos(par.opcion));
+      if (diff.length > 0) {
+        cambios.push({ elementoNombre: par.default.name, estado: "modificado", atributos: diff });
+      }
+    } else if (par.default) {
+      cambios.push({ elementoNombre: par.default.name, estado: "removido", atributos: [] });
+    } else if (par.opcion) {
+      cambios.push({ elementoNombre: par.opcion.name, estado: "agregado", atributos: [] });
+    }
+  }
+
+  return cambios;
+}
