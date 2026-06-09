@@ -35,3 +35,50 @@ export type MensajeUI = { tipo: "generar" };
 export type MensajePlugin =
   | { tipo: "resultado"; ok: true }
   | { tipo: "resultado"; ok: false; error: string };
+
+// --- Properties (Variant) ---
+
+// Un atributo que cambia entre el default y una opción. Lleva ambos valores
+// para poder mostrar "valorOpcion (default: valorDefault)".
+export interface AtributoCambiado {
+  clave: string;          // "background-color", "width", "opacity"
+  valorDefault?: string;  // ausente si el atributo no existía en el default
+  valorOpcion?: string;   // ausente si el atributo desaparece en la opción
+}
+
+export interface ElementoCambiado {
+  elementoNombre: string;
+  estado: "modificado" | "agregado" | "removido";
+  atributos: AtributoCambiado[]; // vacío si estado es "agregado"/"removido"
+}
+
+export interface OpcionSpec {
+  nombre: string;                // "Small"
+  cambios: ElementoCambiado[];
+}
+
+export interface PropiedadSpec {
+  nombre: string;                // "Size"
+  tipo: "VARIANT";
+  default: string;               // valor de esta prop en el default, ej "Medium"
+  opciones: OpcionSpec[];
+}
+
+// Par de elementos emparejados entre default y opción.
+export interface ParElementos {
+  default?: NodoLike;
+  opcion?: NodoLike;
+}
+
+// Una variante normalizada: su mapa de props + su árbol como NodoLike.
+export interface VarianteNorm {
+  variantProperties: Record<string, string>;
+  raiz: NodoLike;
+}
+
+// El Component Set normalizado para la extracción pura.
+export interface SetNorm {
+  propiedades: Record<string, string[]>;  // de variantGroupProperties: prop → opciones
+  variantes: VarianteNorm[];
+  defaultProps: Record<string, string>;   // variantProperties del default
+}
