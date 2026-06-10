@@ -8,6 +8,7 @@ const MODOS = [{ modeId: "L", nombre: "Light" }, { modeId: "D", nombre: "Dark" }
 function entrada(coleccion: string, appliedAs: string, variableNombre: string): EntradaModo {
   return {
     coleccionNombre: coleccion,
+    coleccionId: `${coleccion}-id`,
     modos: MODOS,
     capa: "Alert",
     appliedAs,
@@ -23,6 +24,7 @@ test("dos entradas de la misma collection → una ColeccionModes con dos atribut
   ]);
   assert.equal(cols.length, 1);
   assert.equal(cols[0].coleccionNombre, "Color");
+  assert.equal(cols[0].coleccionId, "Color-id");
   assert.deepEqual(cols[0].modos, MODOS);
   assert.equal(cols[0].atributos.length, 2);
   assert.equal(cols[0].atributos[0].variableNombre, "Bg");

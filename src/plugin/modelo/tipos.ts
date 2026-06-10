@@ -167,6 +167,7 @@ export interface ValorModo {
 
 export interface EntradaModo {
   coleccionNombre: string;
+  coleccionId?: string;
   modos: { modeId: string; nombre: string }[];
   capa: string;
   appliedAs: string;
@@ -183,6 +184,7 @@ export interface AtributoModo {
 
 export interface ColeccionModes {
   coleccionNombre: string;
+  coleccionId?: string;
   modos: { modeId: string; nombre: string }[];
   atributos: AtributoModo[];
 }
