@@ -12,10 +12,13 @@ import { generarData } from "./generadores/data.ts";
 import { recolectarEstilos } from "./inventario/recolectar.ts";
 import { agruparInventario } from "./inventario/agrupar.ts";
 import { generarStyling } from "./generadores/styling.ts";
+import { recolectarModes } from "./variables/recolectar-modes.ts";
+import { agruparModes } from "./variables/modes.ts";
+import { generarModes } from "./generadores/modes.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 260 });
+figma.showUI(__html__, { width: 280, height: 280 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
@@ -100,6 +103,16 @@ async function generarSeccionStyling(nodo: SceneNode): Promise<void> {
   finalizar(frame, nodo);
 }
 
+async function generarSeccionModes(nodo: SceneNode): Promise<void> {
+  if (!TIPOS_VALIDOS.includes(nodo.type)) {
+    responder({ tipo: "resultado", ok: false, error: "Modes necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
+    return;
+  }
+  const colecciones = agruparModes(recolectarModes(nodo));
+  const frame = await generarModes(nodo.name, colecciones);
+  finalizar(frame, nodo);
+}
+
 figma.ui.onmessage = async (msg: MensajeUI) => {
   if (msg.tipo !== "generar") return;
 
@@ -115,7 +128,8 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     else if (msg.seccion === "properties") await generarSeccionProperties(nodo);
     else if (msg.seccion === "layout") await generarSeccionLayout(nodo);
     else if (msg.seccion === "data") await generarSeccionData(nodo);
-    else await generarSeccionStyling(nodo);
+    else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
+    else await generarSeccionModes(nodo);
   } catch (e) {
     responder({ tipo: "resultado", ok: false, error: String(e) });
   }
