@@ -7,10 +7,14 @@ import { extraerProperties } from "./extraccion/properties.ts";
 import { generarProperties } from "./generadores/properties.ts";
 import { extraerLayout } from "./extraccion/layout.ts";
 import { generarLayout } from "./generadores/layout.ts";
+import { anatomyADataJSON, propiedadesADataJSON, armarDataJSON } from "./extraccion/data.ts";
+import { generarData } from "./generadores/data.ts";
+import { extraerStyling } from "./extraccion/styling.ts";
+import { generarStyling } from "./generadores/styling.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 220 });
+figma.showUI(__html__, { width: 280, height: 290 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
@@ -65,6 +69,39 @@ async function generarSeccionLayout(nodo: SceneNode): Promise<void> {
   responder({ tipo: "resultado", ok: true });
 }
 
+async function generarSeccionData(nodo: SceneNode): Promise<void> {
+  if (!TIPOS_VALIDOS.includes(nodo.type)) {
+    responder({ tipo: "resultado", ok: false, error: "Data necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
+    return;
+  }
+  const elementos = extraerAnatomy(aNodoLike(nodo));
+  const anatomyData = anatomyADataJSON(elementos);
+
+  let propiedadesData = null;
+  const componentSet = resolverComponentSet(nodo);
+  if (componentSet) {
+    const setNorm = normalizarSet(componentSet);
+    const specs = extraerProperties(setNorm);
+    propiedadesData = propiedadesADataJSON(specs);
+  }
+
+  const jsonString = armarDataJSON(anatomyData, propiedadesData);
+  const frame = await generarData(nodo.name, jsonString);
+  figma.viewport.scrollAndZoomIntoView([frame]);
+  responder({ tipo: "resultado", ok: true });
+}
+
+async function generarSeccionStyling(nodo: SceneNode): Promise<void> {
+  if (!TIPOS_VALIDOS.includes(nodo.type)) {
+    responder({ tipo: "resultado", ok: false, error: "Styling Inventory necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
+    return;
+  }
+  const spec = extraerStyling(nodo);
+  const frame = await generarStyling(nodo.name, spec);
+  figma.viewport.scrollAndZoomIntoView([frame]);
+  responder({ tipo: "resultado", ok: true });
+}
+
 figma.ui.onmessage = async (msg: MensajeUI) => {
   if (msg.tipo !== "generar") return;
 
@@ -78,7 +115,9 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   try {
     if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo);
     else if (msg.seccion === "properties") await generarSeccionProperties(nodo);
-    else await generarSeccionLayout(nodo);
+    else if (msg.seccion === "layout") await generarSeccionLayout(nodo);
+    else if (msg.seccion === "data") await generarSeccionData(nodo);
+    else await generarSeccionStyling(nodo);
   } catch (e) {
     responder({ tipo: "resultado", ok: false, error: String(e) });
   }

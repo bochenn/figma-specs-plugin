@@ -41,7 +41,7 @@ export interface ElementoAnatomy {
 }
 
 // Mensajes UI ↔ plugin.
-export type Seccion = "anatomy" | "properties" | "layout";
+export type Seccion = "anatomy" | "properties" | "layout" | "data" | "styling";
 
 export type MensajeUI = { tipo: "generar"; seccion: Seccion };
 
@@ -97,6 +97,61 @@ export interface SetNorm {
 }
 
 // --- Layout and Spacing ---
+
+// --- Data (Beta) ---
+
+export interface DataAtributo {
+  key: string;
+  value: string;
+  format: "HARDCODED" | "VARIABLE" | "STYLE";
+  rawValue?: string;
+}
+
+export interface DataElementoAnatomy {
+  name: string;
+  type: string;
+  instanceOf?: string;
+  attributes: DataAtributo[];
+}
+
+export interface DataElementoCambiado {
+  name: string;
+  state: "modified" | "added" | "removed";
+  attributes: { key: string; from?: string; to?: string }[];
+}
+
+export interface DataOpcion {
+  name: string;
+  elements: DataElementoCambiado[];
+}
+
+export interface DataPropiedad {
+  name: string;
+  type: "VARIANT";
+  default: string;
+  options: DataOpcion[];
+}
+
+export interface DataJSON {
+  anatomy?: DataElementoAnatomy[];
+  properties?: DataPropiedad[];
+}
+
+// --- Styling Inventory (Beta) ---
+
+export interface EntradaEstilo {
+  nombre: string;       // "M3/Schemes/Error"
+  aplicadoComo: string; // "Background color"
+  aplicadoA: string[];  // layer names
+}
+
+export interface StylingInventorySpec {
+  variables: EntradaEstilo[];
+  textStyles: EntradaEstilo[];
+  colorStyles: EntradaEstilo[];
+}
+
+// ---
 
 export interface LayoutSpec {
   elementoNombre: string;
