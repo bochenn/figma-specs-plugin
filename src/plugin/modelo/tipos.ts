@@ -67,6 +67,7 @@ export interface AtributoCambiado {
   clave: string;          // "background-color", "width", "opacity"
   valorDefault?: string;  // ausente si el atributo no existía en el default
   valorOpcion?: string;   // ausente si el atributo desaparece en la opción
+  swatchHex?: string;     // color del swatch (el de la opción; solo atributos de color)
 }
 
 export interface ElementoCambiado {
