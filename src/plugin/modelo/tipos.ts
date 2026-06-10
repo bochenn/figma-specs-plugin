@@ -45,7 +45,7 @@ export interface ElementoAnatomy {
 }
 
 // Mensajes UI ↔ plugin.
-export type Seccion = "anatomy" | "properties" | "layout" | "data" | "styling";
+export type Seccion = "anatomy" | "properties" | "layout" | "data" | "styling" | "modes";
 
 export type MensajeUI = { tipo: "generar"; seccion: Seccion };
 
@@ -147,4 +147,33 @@ export interface FilaInventario {
   nombre: string;
   appliedAs: string;
   appliedTo: string;    // capas formateadas
+}
+
+// --- Modes ---
+
+export interface ValorModo {
+  modeId: string;
+  valor: string;   // hex o "→ nombreAlias"
+}
+
+export interface EntradaModo {
+  coleccionNombre: string;
+  modos: { modeId: string; nombre: string }[];
+  capa: string;
+  appliedAs: string;
+  variableNombre: string;
+  valores: ValorModo[];
+}
+
+export interface AtributoModo {
+  capa: string;
+  appliedAs: string;
+  variableNombre: string;
+  valores: ValorModo[];
+}
+
+export interface ColeccionModes {
+  coleccionNombre: string;
+  modos: { modeId: string; nombre: string }[];
+  atributos: AtributoModo[];
 }
