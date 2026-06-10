@@ -142,17 +142,19 @@ export interface AnatomyJson {
 // --- Styling Inventory ---
 
 export interface EntradaEstilo {
-  tabla: "color" | "text";
-  nombre: string;       // nombre del estilo
+  tabla: "color" | "text" | "variable";
+  nombre: string;       // nombre del estilo o variable
   appliedAs: string;    // "Background color" | "Text color" | "Border color" | "Text style"
   capa: string;         // nombre de la capa
+  swatchHex?: string;   // color del chip (solo variables)
 }
 
 export interface FilaInventario {
-  tabla: "color" | "text";
+  tabla: "color" | "text" | "variable";
   nombre: string;
   appliedAs: string;
   appliedTo: string;    // capas formateadas
+  swatchHex?: string;   // color del chip (solo variables)
 }
 
 // --- Modes ---

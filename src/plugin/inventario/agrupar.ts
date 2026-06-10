@@ -21,7 +21,7 @@ export function formatearAplicadoA(capas: string[]): string {
 // es una fila, con las capas juntadas en "Applied to".
 export function agruparInventario(entradas: EntradaEstilo[]): FilaInventario[] {
   const orden: string[] = [];
-  const grupos = new Map<string, { tabla: "color" | "text"; nombre: string; appliedAs: string; capas: string[] }>();
+  const grupos = new Map<string, { tabla: "color" | "text" | "variable"; nombre: string; appliedAs: string; capas: string[] }>();
 
   for (const e of entradas) {
     const clave = `${e.tabla}|${e.nombre}|${e.appliedAs}`;
