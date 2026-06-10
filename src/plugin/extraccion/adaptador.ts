@@ -29,6 +29,18 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
     if ("layoutSizingHorizontal" in nodo) base.layoutSizingHorizontal = nodo.layoutSizingHorizontal;
     if ("layoutSizingVertical" in nodo) base.layoutSizingVertical = nodo.layoutSizingVertical;
   }
+  if ("fillStyleId" in nodo && typeof nodo.fillStyleId === "string" && nodo.fillStyleId !== "") {
+    const estilo = figma.getStyleById(nodo.fillStyleId);
+    if (estilo) base.fillStyleName = estilo.name;
+  }
+  if ("strokeStyleId" in nodo && typeof nodo.strokeStyleId === "string" && nodo.strokeStyleId !== "") {
+    const estilo = figma.getStyleById(nodo.strokeStyleId);
+    if (estilo) base.strokeStyleName = estilo.name;
+  }
+  if ("textStyleId" in nodo && typeof nodo.textStyleId === "string" && nodo.textStyleId !== "") {
+    const estilo = figma.getStyleById(nodo.textStyleId);
+    if (estilo) base.textStyleName = estilo.name;
+  }
   if ("children" in nodo) {
     base.children = nodo.children.map((c) => aNodoLike(c));
   }
