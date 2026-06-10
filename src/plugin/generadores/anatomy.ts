@@ -1,14 +1,9 @@
 import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { posicionMarcador, TAM_MARCADOR } from "../utils/marcadores.ts";
 import { frameVertical, frameHorizontal, texto } from "./frames.ts";
+import { hexARgb } from "../utils/color.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
-
-// Convierte "#RRGGBB" a RGB (canales 0..1).
-function hexARgb(hex: string): RGB {
-  const n = parseInt(hex.slice(1), 16);
-  return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255 };
-}
 
 // Dibuja un atributo: pill (swatch + texto) si es color; texto plano si no.
 async function filaAtributo(attr: Atributo): Promise<SceneNode> {
