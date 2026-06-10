@@ -1,8 +1,32 @@
-import type { ElementoAnatomy } from "../modelo/tipos.ts";
+import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { posicionMarcador, TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, texto } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto } from "./frames.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
+
+// Convierte "#RRGGBB" a RGB (canales 0..1).
+function hexARgb(hex: string): RGB {
+  const n = parseInt(hex.slice(1), 16);
+  return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255 };
+}
+
+// Dibuja un atributo: pill (swatch + texto) si es color; texto plano si no.
+async function filaAtributo(attr: Atributo): Promise<SceneNode> {
+  const linea = attr.rawValue ? `${attr.clave}: ${attr.valor} (${attr.rawValue})` : `${attr.clave}: ${attr.valor}`;
+  if (!attr.swatchHex) {
+    return await texto(linea, 12);
+  }
+  const fila = frameHorizontal("Atributo", 8);
+  fila.counterAxisAlignItems = "CENTER";
+  const swatch = figma.createRectangle();
+  swatch.resize(12, 12);
+  swatch.fills = [{ type: "SOLID", color: hexARgb(attr.swatchHex) }];
+  swatch.strokes = [{ type: "SOLID", color: GRIS(0.8) }];
+  swatch.strokeWeight = 1;
+  fila.appendChild(swatch);
+  fila.appendChild(await texto(linea, 12));
+  return fila;
+}
 
 // Construye la entrada de un elemento en la lista de contenido.
 async function entradaLista(indice: number, el: ElementoAnatomy): Promise<FrameNode> {
@@ -12,7 +36,7 @@ async function entradaLista(indice: number, el: ElementoAnatomy): Promise<FrameN
     fila.appendChild(await texto(`Depends on: ${el.dependeDe}`, 12));
   }
   for (const attr of el.atributos) {
-    fila.appendChild(await texto(`${attr.clave}: ${attr.valor}`, 12));
+    fila.appendChild(await filaAtributo(attr));
   }
   return fila;
 }
