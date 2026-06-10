@@ -23,6 +23,10 @@ export interface NodoLike {
   itemSpacing?: number;
   layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
+  // estilos resueltos (Styling Inventory):
+  fillStyleName?: string;
+  strokeStyleName?: string;
+  textStyleName?: string;
 }
 
 export interface Atributo {
@@ -41,7 +45,7 @@ export interface ElementoAnatomy {
 }
 
 // Mensajes UI ↔ plugin.
-export type Seccion = "anatomy" | "properties" | "layout" | "data";
+export type Seccion = "anatomy" | "properties" | "layout" | "data" | "styling";
 
 export type MensajeUI = { tipo: "generar"; seccion: Seccion };
 
@@ -127,4 +131,20 @@ export interface ElementoJson {
 
 export interface AnatomyJson {
   anatomy: ElementoJson[];
+}
+
+// --- Styling Inventory ---
+
+export interface EntradaEstilo {
+  tabla: "color" | "text";
+  nombre: string;       // nombre del estilo
+  appliedAs: string;    // "Background color" | "Text color" | "Border color" | "Text style"
+  capa: string;         // nombre de la capa
+}
+
+export interface FilaInventario {
+  tabla: "color" | "text";
+  nombre: string;
+  appliedAs: string;
+  appliedTo: string;    // capas formateadas
 }
