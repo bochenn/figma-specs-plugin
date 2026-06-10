@@ -1,6 +1,7 @@
-import type { PropiedadSpec, ElementoCambiado } from "../modelo/tipos.ts";
+import type { PropiedadSpec, ElementoCambiado, AtributoCambiado } from "../modelo/tipos.ts";
 import { mismasProps } from "../comparacion/variantes.ts";
 import { frameVertical, frameHorizontal, texto } from "./frames.ts";
+import { hexARgb } from "../utils/color.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
 
@@ -22,6 +23,21 @@ function lineaAtributo(c: { clave: string; valorDefault?: string; valorOpcion?: 
   return `${c.clave}: ${c.valorOpcion ?? "—"} (default: ${c.valorDefault ?? "—"})`;
 }
 
+// Dibuja un cambio de atributo: pill (swatch + texto) si es color; texto plano si no.
+async function filaAtributoCambiado(c: AtributoCambiado): Promise<SceneNode> {
+  if (!c.swatchHex) return await texto(lineaAtributo(c), 12);
+  const fila = frameHorizontal("Atributo", 8);
+  fila.counterAxisAlignItems = "CENTER";
+  const swatch = figma.createRectangle();
+  swatch.resize(12, 12);
+  swatch.fills = [{ type: "SOLID", color: hexARgb(c.swatchHex) }];
+  swatch.strokes = [{ type: "SOLID", color: { r: 0.8, g: 0.8, b: 0.8 } }];
+  swatch.strokeWeight = 1;
+  fila.appendChild(swatch);
+  fila.appendChild(await texto(lineaAtributo(c), 12));
+  return fila;
+}
+
 // Construye la lista de cambios de una opción.
 async function listaCambios(cambios: ElementoCambiado[]): Promise<FrameNode> {
   const lista = frameVertical("Cambios", 16);
@@ -34,7 +50,7 @@ async function listaCambios(cambios: ElementoCambiado[]): Promise<FrameNode> {
     const sufijo = cambio.estado === "modificado" ? "" : ` · ${cambio.estado}`;
     fila.appendChild(await texto(`${cambio.elementoNombre}${sufijo}`, 16));
     for (const attr of cambio.atributos) {
-      fila.appendChild(await texto(lineaAtributo(attr), 12));
+      fila.appendChild(await filaAtributoCambiado(attr));
     }
     lista.appendChild(fila);
   }

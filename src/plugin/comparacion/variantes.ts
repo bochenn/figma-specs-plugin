@@ -49,10 +49,13 @@ export function diffAtributos(attrsDefault: Atributo[], attrsOpcion: Atributo[])
 
   const cambios: AtributoCambiado[] = [];
   for (const clave of claves) {
-    const valorDefault = attrsDefault.find((a) => a.clave === clave)?.valor;
-    const valorOpcion = attrsOpcion.find((a) => a.clave === clave)?.valor;
-    if (valorDefault !== valorOpcion) {
-      cambios.push({ clave, valorDefault, valorOpcion });
+    const aDef = attrsDefault.find((a) => a.clave === clave);
+    const aOpc = attrsOpcion.find((a) => a.clave === clave);
+    if (aDef?.valor !== aOpc?.valor) {
+      const cambio: AtributoCambiado = { clave, valorDefault: aDef?.valor, valorOpcion: aOpc?.valor };
+      const swatch = aOpc?.swatchHex ?? aDef?.swatchHex;
+      if (swatch) cambio.swatchHex = swatch;
+      cambios.push(cambio);
     }
   }
   return cambios;

@@ -34,7 +34,7 @@ test("una propiedad con dos opciones: saltea el default y compara la otra", () =
   assert.equal(specs[0].opciones[0].nombre, "Negro");
   assert.equal(specs[0].opciones[0].cambios[0].elementoNombre, "Label");
   assert.deepEqual(specs[0].opciones[0].cambios[0].atributos, [
-    { clave: "background-color", valorDefault: "#808080", valorOpcion: "#000000" },
+    { clave: "background-color", valorDefault: "#808080", valorOpcion: "#000000", swatchHex: "#000000" },
   ]);
 });
 
