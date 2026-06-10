@@ -15,10 +15,12 @@ import { generarStyling } from "./generadores/styling.ts";
 import { recolectarModes } from "./variables/recolectar-modes.ts";
 import { agruparModes } from "./variables/modes.ts";
 import { generarModes } from "./generadores/modes.ts";
+import { extraerDosWay } from "./extraccion/properties.ts";
+import { generarDosWay } from "./generadores/properties.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 280 });
+figma.showUI(__html__, { width: 280, height: 300 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
@@ -113,6 +115,22 @@ async function generarSeccionModes(nodo: SceneNode): Promise<void> {
   finalizar(frame, nodo);
 }
 
+async function generarSeccionTwoWay(nodo: SceneNode): Promise<void> {
+  const componentSet = resolverComponentSet(nodo);
+  if (!componentSet) {
+    responder({ tipo: "resultado", ok: false, error: "Two-Way necesita un componente con variantes." });
+    return;
+  }
+  const setNorm = normalizarSet(componentSet);
+  const dosway = extraerDosWay(setNorm);
+  if (!dosway) {
+    responder({ tipo: "resultado", ok: false, error: "Two-Way necesita al menos dos propiedades de variante." });
+    return;
+  }
+  const frame = await generarDosWay(componentSet, dosway, setNorm.defaultProps);
+  finalizar(frame, nodo);
+}
+
 figma.ui.onmessage = async (msg: MensajeUI) => {
   if (msg.tipo !== "generar") return;
 
@@ -129,7 +147,8 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     else if (msg.seccion === "layout") await generarSeccionLayout(nodo);
     else if (msg.seccion === "data") await generarSeccionData(nodo);
     else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
-    else await generarSeccionModes(nodo);
+    else if (msg.seccion === "modes") await generarSeccionModes(nodo);
+    else await generarSeccionTwoWay(nodo);
   } catch (e) {
     responder({ tipo: "resultado", ok: false, error: String(e) });
   }
