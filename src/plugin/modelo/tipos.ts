@@ -10,6 +10,7 @@ export interface NodoLike {
   height?: number;
   opacity?: number;
   fills?: ReadonlyArray<{ type: string; color?: { r: number; g: number; b: number } }>;
+  strokes?: ReadonlyArray<{ type: string; color?: { r: number; g: number; b: number } }>;
   // solo en instancias:
   mainComponentName?: string;
   // layout (solo en nodos con Auto Layout):
@@ -27,12 +28,17 @@ export interface NodoLike {
   fillStyleName?: string;
   strokeStyleName?: string;
   textStyleName?: string;
+  // variables de color resueltas (Variable Formatting):
+  fillVariableName?: string;     // "Colección/Variable" del fill
+  strokeVariableName?: string;   // idem stroke
 }
 
 export interface Atributo {
-  clave: string; // "background-color", "width", "opacity"
-  valor: string; // valor legible: "#0E68D4", "240", "80%"
+  clave: string;        // "background-color", "border-color", "width", "opacity"
+  valor: string;        // hex, "Colección/Variable", o nombre del style
   formato: "HARDCODED" | "VARIABLE" | "STYLE";
+  rawValue?: string;    // hex resuelto (para variable/style)
+  swatchHex?: string;   // color del swatch (presente en atributos de color)
 }
 
 export interface ElementoAnatomy {
