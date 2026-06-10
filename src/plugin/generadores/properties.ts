@@ -1,4 +1,4 @@
-import type { PropiedadSpec, ElementoCambiado, AtributoCambiado } from "../modelo/tipos.ts";
+import type { PropiedadSpec, ElementoCambiado, AtributoCambiado, DosWaySpec } from "../modelo/tipos.ts";
 import { mismasProps } from "../comparacion/variantes.ts";
 import { frameVertical, frameHorizontal, texto } from "./frames.ts";
 import { hexARgb } from "../utils/color.ts";
@@ -169,6 +169,34 @@ export async function generarProperties(
     if (defs[clave].type === "BOOLEAN") {
       seccion.appendChild(await subseccionBoolean(componentSet, nombrePropiedad(clave), clave));
     }
+  }
+
+  figma.currentPage.appendChild(specifications);
+  return specifications;
+}
+
+// Genera el output de Two-Way: una combinación por bloque (artwork + cambios).
+export async function generarDosWay(
+  componentSet: ComponentSetNode,
+  dosway: DosWaySpec,
+  defaultProps: Record<string, string>,
+): Promise<FrameNode> {
+  const specifications = frameVertical("Specifications", 128, 64);
+  const spec = frameVertical(`${componentSet.name} Spec`, 48);
+  const seccion = frameVertical("Two-Way", 64);
+
+  specifications.appendChild(spec);
+  spec.appendChild(await texto(componentSet.name, 64));
+  spec.appendChild(seccion);
+  seccion.appendChild(await texto("Two-Way", 48));
+  seccion.appendChild(await texto(`${dosway.prop1} × ${dosway.prop2}`, 24));
+
+  for (const comb of dosway.combinaciones) {
+    const bloque = frameVertical(`${comb.valor1} + ${comb.valor2}`, 16);
+    bloque.appendChild(await texto(`${comb.valor1} + ${comb.valor2}`, 24));
+    const target = { ...defaultProps, [dosway.prop1]: comb.valor1, [dosway.prop2]: comb.valor2 };
+    bloque.appendChild(await displayOpcion(componentSet, target, comb.cambios));
+    seccion.appendChild(bloque);
   }
 
   figma.currentPage.appendChild(specifications);
