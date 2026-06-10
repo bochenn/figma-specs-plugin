@@ -45,6 +45,7 @@ function visitar(nodo: SceneNode, entradas: EntradaModo[]): void {
     const valores: ValorModo[] = modos.map((m) => ({ modeId: m.modeId, valor: valorColor(variable, m.modeId) }));
     entradas.push({
       coleccionNombre: collection.name,
+      coleccionId: collection.id,
       modos,
       capa: nodo.name,
       appliedAs,

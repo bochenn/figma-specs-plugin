@@ -15,7 +15,7 @@ export function agruparModes(entradas: EntradaModo[]): ColeccionModes[] {
     let g = grupos.get(e.coleccionNombre);
     if (!g) {
       orden.push(e.coleccionNombre);
-      g = { coleccionNombre: e.coleccionNombre, modos: e.modos, atributos: [] };
+      g = { coleccionNombre: e.coleccionNombre, coleccionId: e.coleccionId, modos: e.modos, atributos: [] };
       grupos.set(e.coleccionNombre, g);
     }
     g.atributos.push({
