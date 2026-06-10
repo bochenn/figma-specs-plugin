@@ -43,3 +43,34 @@ test("recorre descendientes y frena en instancias", () => {
   // A (raíz), B (Inner), C (Deep), D (instancia sí); E NO (dentro de instancia)
   assert.deepEqual(nombres, ["A", "B", "C", "D"]);
 });
+
+test("fill con variable → entrada variable con swatchHex (prioridad sobre style)", () => {
+  const raiz: NodoLike = {
+    id: "r", name: "Card", type: "FRAME",
+    fillVariableName: "Color/Action", fillStyleName: "Surface",
+    fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
+    children: [],
+  };
+  assert.deepEqual(recolectarEstilos(raiz), [
+    { tabla: "variable", nombre: "Color/Action", appliedAs: "Background color", capa: "Card", swatchHex: "#000000" },
+  ]);
+});
+
+test("stroke con variable → entrada variable / Border color", () => {
+  const raiz: NodoLike = {
+    id: "r", name: "Box", type: "FRAME",
+    strokeVariableName: "Color/Outline",
+    strokes: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
+    children: [],
+  };
+  assert.deepEqual(recolectarEstilos(raiz), [
+    { tabla: "variable", nombre: "Color/Outline", appliedAs: "Border color", capa: "Box", swatchHex: "#FFFFFF" },
+  ]);
+});
+
+test("variable sin fill sólido → sin swatchHex", () => {
+  const raiz: NodoLike = { id: "r", name: "Card", type: "FRAME", fillVariableName: "Color/Action", children: [] };
+  const entradas = recolectarEstilos(raiz);
+  assert.equal(entradas[0].tabla, "variable");
+  assert.equal(entradas[0].swatchHex, undefined);
+});

@@ -35,3 +35,15 @@ test("separa por tabla color/text", () => {
   assert.equal(filas.filter((f) => f.tabla === "color").length, 1);
   assert.equal(filas.filter((f) => f.tabla === "text").length, 1);
 });
+
+test("entradas variable con swatchHex → fila con swatchHex", () => {
+  const entradas: EntradaEstilo[] = [
+    { tabla: "variable", nombre: "Color/Action", appliedAs: "Background color", capa: "A", swatchHex: "#0E68D4" },
+    { tabla: "variable", nombre: "Color/Action", appliedAs: "Background color", capa: "B", swatchHex: "#0E68D4" },
+  ];
+  const filas = agruparInventario(entradas);
+  assert.equal(filas.length, 1);
+  assert.deepEqual(filas[0], {
+    tabla: "variable", nombre: "Color/Action", appliedAs: "Background color", appliedTo: "A, B", swatchHex: "#0E68D4",
+  });
+});
