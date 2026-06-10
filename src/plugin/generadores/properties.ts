@@ -2,8 +2,57 @@ import type { PropiedadSpec, ElementoCambiado, AtributoCambiado } from "../model
 import { mismasProps } from "../comparacion/variantes.ts";
 import { frameVertical, frameHorizontal, texto } from "./frames.ts";
 import { hexARgb } from "../utils/color.ts";
+import { nombrePropiedad } from "../utils/propiedades.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
+const AZUL_HL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
+
+// Recorre el variante default (offset acumulado) y, por cada nodo cuya
+// visibilidad referencia la booleana, dibuja un rect azul en el artwork y junta
+// su nombre. Frena en instancias.
+function resaltarBoolean(node: SceneNode, offX: number, offY: number, propKey: string, artwork: FrameNode, nombres: string[]): void {
+  const refs = (node as { componentPropertyReferences?: { visible?: string } | null }).componentPropertyReferences;
+  if (refs && refs.visible === propKey) {
+    const rect = figma.createRectangle();
+    rect.x = offX;
+    rect.y = offY;
+    rect.resize(Math.max(node.width, 0.01), Math.max(node.height, 0.01));
+    rect.fills = [{ type: "SOLID", color: AZUL_HL, opacity: 0.3 }];
+    artwork.appendChild(rect);
+    nombres.push(node.name);
+  }
+  if (node.type === "INSTANCE") return;
+  if ("children" in node) {
+    for (const c of node.children) resaltarBoolean(c, offX + c.x, offY + c.y, propKey, artwork, nombres);
+  }
+}
+
+// Subsección de una propiedad booleana: heading + artwork (clon con highlights) + capas afectadas.
+async function subseccionBoolean(componentSet: ComponentSetNode, nombre: string, propKey: string): Promise<FrameNode> {
+  const sub = frameVertical(nombre, 40);
+  sub.appendChild(await texto(nombre, 36));
+
+  const nombres: string[] = [];
+  const defaultVariant = componentSet.defaultVariant;
+  if (defaultVariant) {
+    const artwork = figma.createFrame();
+    artwork.name = "Artwork";
+    artwork.layoutMode = "NONE";
+    artwork.clipsContent = false;
+    artwork.fills = [{ type: "SOLID", color: GRIS(0.96) }];
+    const clon = defaultVariant.clone();
+    artwork.appendChild(clon);
+    clon.x = 0;
+    clon.y = 0;
+    artwork.resize(clon.width, clon.height);
+    // Detecta sobre el variante original (geometría idéntica al clon) y dibuja en el artwork.
+    resaltarBoolean(defaultVariant, 0, 0, propKey, artwork, nombres);
+    sub.appendChild(artwork);
+  }
+
+  sub.appendChild(await texto(`Affected layers: ${nombres.length ? nombres.join(", ") : "—"}`, 12));
+  return sub;
+}
 
 // Busca el componente-variante real del set que coincide con el target de props.
 function buscarComponente(
@@ -113,6 +162,13 @@ export async function generarProperties(
       subseccion.appendChild(bloque);
     }
     seccion.appendChild(subseccion);
+  }
+
+  const defs = componentSet.componentPropertyDefinitions;
+  for (const clave of Object.keys(defs)) {
+    if (defs[clave].type === "BOOLEAN") {
+      seccion.appendChild(await subseccionBoolean(componentSet, nombrePropiedad(clave), clave));
+    }
   }
 
   figma.currentPage.appendChild(specifications);
