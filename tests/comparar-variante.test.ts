@@ -17,7 +17,7 @@ test("un atributo distinto produce un elemento modificado", () => {
   assert.equal(cambios[0].elementoNombre, "Label");
   assert.equal(cambios[0].estado, "modificado");
   assert.deepEqual(cambios[0].atributos, [
-    { clave: "background-color", valorDefault: "#808080", valorOpcion: "#000000" },
+    { clave: "background-color", valorDefault: "#808080", valorOpcion: "#000000", swatchHex: "#000000" },
   ]);
 });
 

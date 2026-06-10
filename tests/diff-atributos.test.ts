@@ -28,3 +28,19 @@ test("atributo presente solo en la opcion → incluido sin valorDefault", () => 
   const cambios = diffAtributos([], [attr("opacity", "50%")]);
   assert.deepEqual(cambios, [{ clave: "opacity", valorDefault: undefined, valorOpcion: "50%" }]);
 });
+
+test("atributos de color con swatchHex distintos → cambio con swatchHex de la opción", () => {
+  const def: Atributo[] = [{ clave: "background-color", valor: "#808080", formato: "HARDCODED", swatchHex: "#808080" }];
+  const opc: Atributo[] = [{ clave: "background-color", valor: "#000000", formato: "HARDCODED", swatchHex: "#000000" }];
+  assert.deepEqual(diffAtributos(def, opc), [
+    { clave: "background-color", valorDefault: "#808080", valorOpcion: "#000000", swatchHex: "#000000" },
+  ]);
+});
+
+test("cambio no-color → sin swatchHex", () => {
+  const def: Atributo[] = [{ clave: "width", valor: "100", formato: "HARDCODED" }];
+  const opc: Atributo[] = [{ clave: "width", valor: "200", formato: "HARDCODED" }];
+  assert.deepEqual(diffAtributos(def, opc), [
+    { clave: "width", valorDefault: "100", valorOpcion: "200" },
+  ]);
+});
