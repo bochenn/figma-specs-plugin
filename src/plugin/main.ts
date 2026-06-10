@@ -109,7 +109,7 @@ async function generarSeccionModes(nodo: SceneNode): Promise<void> {
     return;
   }
   const colecciones = agruparModes(recolectarModes(nodo));
-  const frame = await generarModes(nodo.name, colecciones);
+  const frame = await generarModes(nodo, colecciones);
   finalizar(frame, nodo);
 }
 
