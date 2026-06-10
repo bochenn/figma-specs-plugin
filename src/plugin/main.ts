@@ -78,7 +78,7 @@ async function generarSeccionLayout(nodo: SceneNode): Promise<void> {
     return;
   }
   const specs = extraerLayout(aNodoLike(nodo));
-  const frame = await generarLayout(nodo.name, specs);
+  const frame = await generarLayout(nodo, specs);
   finalizar(frame, nodo);
 }
 
