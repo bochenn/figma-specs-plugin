@@ -41,7 +41,7 @@ export interface ElementoAnatomy {
 }
 
 // Mensajes UI ↔ plugin.
-export type Seccion = "anatomy" | "properties" | "layout";
+export type Seccion = "anatomy" | "properties" | "layout" | "data";
 
 export type MensajeUI = { tipo: "generar"; seccion: Seccion };
 
@@ -108,4 +108,23 @@ export interface LayoutSpec {
   resizingVertical: string;
   padding: { left: number; top: number; right: number; bottom: number };
   itemSpacing: number;
+}
+
+// --- Data (JSON export) ---
+
+export interface AtributoJson {
+  value: string;
+  format: string;   // "HARDCODED" | "VARIABLE" | "STYLE"
+  key: string;      // "background-color", etc.
+}
+
+export interface ElementoJson {
+  name: string;
+  type: string;
+  instanceOf?: string;        // solo en instancias
+  attributes: AtributoJson[];
+}
+
+export interface AnatomyJson {
+  anatomy: ElementoJson[];
 }

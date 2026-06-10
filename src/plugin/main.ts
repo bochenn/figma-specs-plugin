@@ -7,10 +7,12 @@ import { extraerProperties } from "./extraccion/properties.ts";
 import { generarProperties } from "./generadores/properties.ts";
 import { extraerLayout } from "./extraccion/layout.ts";
 import { generarLayout } from "./generadores/layout.ts";
+import { serializarAnatomy } from "./serializacion/anatomy-json.ts";
+import { generarData } from "./generadores/data.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 220 });
+figma.showUI(__html__, { width: 280, height: 240 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
@@ -65,6 +67,18 @@ async function generarSeccionLayout(nodo: SceneNode): Promise<void> {
   responder({ tipo: "resultado", ok: true });
 }
 
+async function generarSeccionData(nodo: SceneNode): Promise<void> {
+  if (!TIPOS_VALIDOS.includes(nodo.type)) {
+    responder({ tipo: "resultado", ok: false, error: "Data necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
+    return;
+  }
+  const elementos = extraerAnatomy(aNodoLike(nodo));
+  const json = serializarAnatomy(elementos);
+  const frame = await generarData(nodo.name, json);
+  figma.viewport.scrollAndZoomIntoView([frame]);
+  responder({ tipo: "resultado", ok: true });
+}
+
 figma.ui.onmessage = async (msg: MensajeUI) => {
   if (msg.tipo !== "generar") return;
 
@@ -78,7 +92,8 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   try {
     if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo);
     else if (msg.seccion === "properties") await generarSeccionProperties(nodo);
-    else await generarSeccionLayout(nodo);
+    else if (msg.seccion === "layout") await generarSeccionLayout(nodo);
+    else await generarSeccionData(nodo);
   } catch (e) {
     responder({ tipo: "resultado", ok: false, error: String(e) });
   }
