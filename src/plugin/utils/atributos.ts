@@ -9,6 +9,22 @@ function aHex(color: { r: number; g: number; b: number }): string {
   return "#" + canalHex(color.r) + canalHex(color.g) + canalHex(color.b);
 }
 
+// Aplica la prioridad variable > style > hardcoded para un atributo de color.
+// Devuelve undefined si no hay un color resuelto (hex).
+export function colorAtributo(
+  clave: string,
+  opts: { hex?: string; variableName?: string; styleName?: string },
+): Atributo | undefined {
+  if (!opts.hex) return undefined;
+  if (opts.variableName) {
+    return { clave, valor: opts.variableName, formato: "VARIABLE", rawValue: opts.hex, swatchHex: opts.hex };
+  }
+  if (opts.styleName) {
+    return { clave, valor: opts.styleName, formato: "STYLE", rawValue: opts.hex, swatchHex: opts.hex };
+  }
+  return { clave, valor: opts.hex, formato: "HARDCODED", swatchHex: opts.hex };
+}
+
 // Lee los atributos visuales presentes en un nodo.
 export function leerAtributos(nodo: NodoLike): Atributo[] {
   const atributos: Atributo[] = [];
