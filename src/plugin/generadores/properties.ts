@@ -1,6 +1,6 @@
 import type { PropiedadSpec, ElementoCambiado, AtributoCambiado, DosWaySpec } from "../modelo/tipos.ts";
 import { mismasProps } from "../comparacion/variantes.ts";
-import { frameVertical, frameHorizontal, texto } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas } from "./frames.ts";
 import { hexARgb } from "../utils/color.ts";
 import { nombrePropiedad } from "../utils/propiedades.ts";
 
@@ -137,6 +137,7 @@ export async function generarProperties(
   componentSet: ComponentSetNode,
   propiedades: PropiedadSpec[],
   defaultProps: Record<string, string>,
+  columnas: number,
 ): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${componentSet.name} Spec`, 48);
@@ -154,12 +155,18 @@ export async function generarProperties(
   for (const prop of propiedades) {
     const subseccion = frameVertical(prop.nombre, 40);
     subseccion.appendChild(await texto(prop.nombre, 36));
+    const bloques: FrameNode[] = [];
     for (const opcion of prop.opciones) {
       const bloque = frameVertical(opcion.nombre, 16);
       bloque.appendChild(await texto(opcion.nombre, 24));
       const target = { ...defaultProps, [prop.nombre]: opcion.nombre };
       bloque.appendChild(await displayOpcion(componentSet, target, opcion.cambios));
-      subseccion.appendChild(bloque);
+      bloques.push(bloque);
+    }
+    if (columnas > 1) {
+      subseccion.appendChild(enColumnas(bloques, columnas));
+    } else {
+      for (const b of bloques) subseccion.appendChild(b);
     }
     seccion.appendChild(subseccion);
   }

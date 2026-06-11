@@ -1,6 +1,7 @@
 import type { MensajeUI, MensajePlugin, SetNorm } from "./modelo/tipos.ts";
 import { aNodoLike } from "./extraccion/adaptador.ts";
 import { aplicarTema, temaActual } from "./utils/tema.ts";
+import { clampColumnas } from "./utils/columnas.ts";
 import { extraerAnatomy } from "./extraccion/anatomy.ts";
 import { generarAnatomy, generarAnatomyConNested } from "./generadores/anatomy.ts";
 import { resolverComponentSet } from "./extraccion/resolver.ts";
@@ -87,7 +88,7 @@ async function generarSeccionAnatomy(nodo: SceneNode, nested: boolean): Promise<
   finalizar(frame, nodo);
 }
 
-async function generarSeccionProperties(nodo: SceneNode): Promise<void> {
+async function generarSeccionProperties(nodo: SceneNode, columnas: number): Promise<void> {
   const componentSet = resolverComponentSet(nodo);
   if (!componentSet) {
     responder({ tipo: "resultado", ok: false, error: "Properties necesita un componente con variantes." });
@@ -95,16 +96,15 @@ async function generarSeccionProperties(nodo: SceneNode): Promise<void> {
   }
   const setNorm = normalizarSet(componentSet);
   const specs = extraerProperties(setNorm);
-  const frame = await generarProperties(componentSet, specs, setNorm.defaultProps);
+  const frame = await generarProperties(componentSet, specs, setNorm.defaultProps, columnas);
   finalizar(frame, nodo);
 }
 
-async function generarSeccionLayout(nodo: SceneNode, columnasRaw: number | undefined): Promise<void> {
+async function generarSeccionLayout(nodo: SceneNode, columnas: number): Promise<void> {
   if (!TIPOS_VALIDOS.includes(nodo.type)) {
     responder({ tipo: "resultado", ok: false, error: "Layout and Spacing necesita un FRAME, COMPONENT o INSTANCE." });
     return;
   }
-  const columnas = Math.min(Math.max(columnasRaw ?? 1, 1), 4);
   const specs = extraerLayout(aNodoLike(nodo));
   const frame = await generarLayout(nodo, specs, columnas);
   finalizar(frame, nodo);
@@ -131,13 +131,13 @@ async function generarSeccionStyling(nodo: SceneNode): Promise<void> {
   finalizar(frame, nodo);
 }
 
-async function generarSeccionModes(nodo: SceneNode): Promise<void> {
+async function generarSeccionModes(nodo: SceneNode, columnas: number): Promise<void> {
   if (!TIPOS_VALIDOS.includes(nodo.type)) {
     responder({ tipo: "resultado", ok: false, error: "Modes necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
     return;
   }
   const colecciones = agruparModes(recolectarModes(nodo));
-  const frame = await generarModes(nodo, colecciones);
+  const frame = await generarModes(nodo, colecciones, columnas);
   finalizar(frame, nodo);
 }
 
@@ -181,13 +181,14 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
 
   const nodo = seleccion[0];
   aplicarTema(msg.dark ?? false);
+  const columnas = clampColumnas(msg.columnas);
   try {
     if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false);
-    else if (msg.seccion === "properties") await generarSeccionProperties(nodo);
-    else if (msg.seccion === "layout") await generarSeccionLayout(nodo, msg.columnas);
+    else if (msg.seccion === "properties") await generarSeccionProperties(nodo, columnas);
+    else if (msg.seccion === "layout") await generarSeccionLayout(nodo, columnas);
     else if (msg.seccion === "data") await generarSeccionData(nodo);
     else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
-    else if (msg.seccion === "modes") await generarSeccionModes(nodo);
+    else if (msg.seccion === "modes") await generarSeccionModes(nodo, columnas);
     else if (msg.seccion === "twoway") await generarSeccionTwoWay(nodo);
     else await generarSeccionComplete(nodo);
   } catch (e) {

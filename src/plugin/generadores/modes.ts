@@ -1,5 +1,5 @@
 import type { ColeccionModes } from "../modelo/tipos.ts";
-import { frameVertical, texto } from "./frames.ts";
+import { frameVertical, texto, enColumnas } from "./frames.ts";
 
 const GRIS_CLARO: RGB = { r: 0.96, g: 0.96, b: 0.96 };
 
@@ -39,20 +39,26 @@ async function bloqueMode(
 }
 
 // Subsección de una collection: heading + un bloque por mode.
-async function subseccionColeccion(seleccionado: SceneNode, coleccion: ColeccionModes): Promise<FrameNode> {
+async function subseccionColeccion(seleccionado: SceneNode, coleccion: ColeccionModes, columnas: number): Promise<FrameNode> {
   const sub = frameVertical(coleccion.coleccionNombre, 40);
   sub.appendChild(await texto(coleccion.coleccionNombre, 36));
   const collection = coleccion.coleccionId
     ? figma.variables.getVariableCollectionById(coleccion.coleccionId)
     : null;
+  const bloques: FrameNode[] = [];
   for (const modo of coleccion.modos) {
-    sub.appendChild(await bloqueMode(seleccionado, collection, modo.modeId, modo.nombre, coleccion));
+    bloques.push(await bloqueMode(seleccionado, collection, modo.modeId, modo.nombre, coleccion));
+  }
+  if (columnas > 1) {
+    sub.appendChild(enColumnas(bloques, columnas));
+  } else {
+    for (const b of bloques) sub.appendChild(b);
   }
   return sub;
 }
 
 // Genera el output de Modes. Devuelve el frame Specifications.
-export async function generarModes(seleccionado: SceneNode, colecciones: ColeccionModes[]): Promise<FrameNode> {
+export async function generarModes(seleccionado: SceneNode, colecciones: ColeccionModes[], columnas: number): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
   const seccion = frameVertical("Modes", 64);
@@ -66,7 +72,7 @@ export async function generarModes(seleccionado: SceneNode, colecciones: Colecci
     seccion.appendChild(await texto("No se detectaron variables con múltiples modes.", 16));
   }
   for (const c of colecciones) {
-    seccion.appendChild(await subseccionColeccion(seleccionado, c));
+    seccion.appendChild(await subseccionColeccion(seleccionado, c, columnas));
   }
 
   figma.currentPage.appendChild(specifications);
