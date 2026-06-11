@@ -1,5 +1,6 @@
 import type { MensajeUI, MensajePlugin, SetNorm } from "./modelo/tipos.ts";
 import { aNodoLike } from "./extraccion/adaptador.ts";
+import { aplicarTema, temaActual } from "./utils/tema.ts";
 import { extraerAnatomy } from "./extraccion/anatomy.ts";
 import { generarAnatomy, generarAnatomyConNested } from "./generadores/anatomy.ts";
 import { resolverComponentSet } from "./extraccion/resolver.ts";
@@ -22,13 +23,13 @@ import { generarComplete } from "./generadores/complete.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 340 });
+figma.showUI(__html__, { width: 280, height: 360 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
 }
 
-// Ubica el output a la derecha del nodo seleccionado (para no superponerlo),
+// Ubica el output a la derecha del nodo seleccionado, aplica el fondo del tema,
 // hace foco y avisa éxito a la UI.
 function finalizar(frame: FrameNode, nodo: SceneNode): void {
   const caja = nodo.absoluteBoundingBox;
@@ -36,6 +37,8 @@ function finalizar(frame: FrameNode, nodo: SceneNode): void {
     frame.x = caja.x + caja.width + 100;
     frame.y = caja.y;
   }
+  const fondo = temaActual().fondo;
+  frame.fills = fondo ? [{ type: "SOLID", color: fondo }] : [];
   figma.viewport.scrollAndZoomIntoView([frame]);
   responder({ tipo: "resultado", ok: true });
 }
@@ -176,6 +179,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   }
 
   const nodo = seleccion[0];
+  aplicarTema(msg.dark ?? false);
   try {
     if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false);
     else if (msg.seccion === "properties") await generarSeccionProperties(nodo);
