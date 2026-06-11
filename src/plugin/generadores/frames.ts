@@ -1,5 +1,7 @@
 // Helpers compartidos para construir frames con Auto Layout. Tocan figma.*.
 
+import { temaActual } from "../utils/tema.ts";
+
 // Crea un frame con Auto Layout vertical configurado.
 export function frameVertical(nombre: string, gap: number, padding = 0): FrameNode {
   const f = figma.createFrame();
@@ -32,5 +34,6 @@ export async function texto(contenido: string, fontSize: number): Promise<TextNo
   t.fontName = { family: "Inter", style: "Regular" };
   t.characters = contenido;
   t.fontSize = fontSize;
+  t.fills = [{ type: "SOLID", color: temaActual().texto }];
   return t;
 }
