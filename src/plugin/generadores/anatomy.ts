@@ -59,18 +59,11 @@ async function marcador(numero: number, x: number, y: number): Promise<FrameNode
   return cont;
 }
 
-// Genera el spec completo para un nodo y su lista de elementos.
-// Devuelve el frame Specifications creado.
-export async function generarAnatomy(
-  seleccionado: SceneNode,
-  elementos: ElementoAnatomy[],
-): Promise<FrameNode> {
-  // Contenedores principales.
-  const specifications = frameVertical("Specifications", 128, 64);
+// Construye el [Nombre] Spec (heading + sección Anatomy con lista + artwork).
+async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[]): Promise<FrameNode> {
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
   const seccion = frameVertical("Anatomy", 64);
 
-  specifications.appendChild(spec);
   spec.appendChild(await texto(seleccionado.name, 64));
   spec.appendChild(seccion);
   seccion.appendChild(await texto("Anatomy", 48));
@@ -111,9 +104,6 @@ export async function generarAnatomy(
   artwork.resize(clon.width, clon.height);
 
   // Un marcador por elemento, posicionado por su caja relativa al clon.
-  // Los hijos directos del clon comparten orden con los primeros elementos;
-  // para la primera versión, ubicamos los marcadores por índice usando la
-  // posición vertical distribuida del clon (suficiente para validar el flujo).
   for (let i = 0; i < elementos.length; i++) {
     const altura = elementos.length > 0 ? clon.height / elementos.length : 0;
     const caja = { x: 0, y: i * altura, width: clon.width, height: altura };
@@ -121,6 +111,28 @@ export async function generarAnatomy(
     artwork.appendChild(await marcador(i + 1, pos.x, pos.y));
   }
 
+  return spec;
+}
+
+// Genera el spec de Anatomy de un solo ítem. Devuelve el frame Specifications.
+export async function generarAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[]): Promise<FrameNode> {
+  const specifications = frameVertical("Specifications", 128, 64);
+  specifications.appendChild(await specDeAnatomy(seleccionado, elementos));
+  figma.currentPage.appendChild(specifications);
+  return specifications;
+}
+
+// Genera el spec del principal + un spec por cada instancia anidada.
+export async function generarAnatomyConNested(
+  seleccionado: SceneNode,
+  elementos: ElementoAnatomy[],
+  nested: { nodo: SceneNode; elementos: ElementoAnatomy[] }[],
+): Promise<FrameNode> {
+  const specifications = frameVertical("Specifications", 128, 64);
+  specifications.appendChild(await specDeAnatomy(seleccionado, elementos));
+  for (const n of nested) {
+    specifications.appendChild(await specDeAnatomy(n.nodo, n.elementos));
+  }
   figma.currentPage.appendChild(specifications);
   return specifications;
 }
