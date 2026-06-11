@@ -1,6 +1,6 @@
 const estado = document.getElementById("estado") as HTMLParagraphElement;
 
-function generar(seccion: "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway"): void {
+function generar(seccion: "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway" | "complete"): void {
   parent.postMessage({ pluginMessage: { tipo: "generar", seccion } }, "*");
 }
 
@@ -11,6 +11,7 @@ function generar(seccion: "anatomy" | "properties" | "layout" | "data" | "stylin
 (document.getElementById("styling") as HTMLButtonElement).onclick = () => generar("styling");
 (document.getElementById("modes") as HTMLButtonElement).onclick = () => generar("modes");
 (document.getElementById("twoway") as HTMLButtonElement).onclick = () => generar("twoway");
+(document.getElementById("complete") as HTMLButtonElement).onclick = () => generar("complete");
 
 window.onmessage = (event: MessageEvent) => {
   const msg = event.data.pluginMessage;
