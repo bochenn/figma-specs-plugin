@@ -1,9 +1,10 @@
 const estado = document.getElementById("estado") as HTMLParagraphElement;
 const nestedCheck = document.getElementById("nested") as HTMLInputElement;
 const darkCheck = document.getElementById("dark") as HTMLInputElement;
+const columnasSelect = document.getElementById("columnas") as HTMLSelectElement;
 
 function generar(seccion: "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway" | "complete"): void {
-  parent.postMessage({ pluginMessage: { tipo: "generar", seccion, nested: nestedCheck.checked, dark: darkCheck.checked } }, "*");
+  parent.postMessage({ pluginMessage: { tipo: "generar", seccion, nested: nestedCheck.checked, dark: darkCheck.checked, columnas: parseInt(columnasSelect.value, 10) } }, "*");
 }
 
 (document.getElementById("anatomy") as HTMLButtonElement).onclick = () => generar("anatomy");
