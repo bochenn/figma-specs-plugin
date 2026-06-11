@@ -88,7 +88,7 @@ async function generarSeccionAnatomy(nodo: SceneNode, nested: boolean): Promise<
   finalizar(frame, nodo);
 }
 
-async function generarSeccionProperties(nodo: SceneNode): Promise<void> {
+async function generarSeccionProperties(nodo: SceneNode, columnas: number): Promise<void> {
   const componentSet = resolverComponentSet(nodo);
   if (!componentSet) {
     responder({ tipo: "resultado", ok: false, error: "Properties necesita un componente con variantes." });
@@ -96,7 +96,7 @@ async function generarSeccionProperties(nodo: SceneNode): Promise<void> {
   }
   const setNorm = normalizarSet(componentSet);
   const specs = extraerProperties(setNorm);
-  const frame = await generarProperties(componentSet, specs, setNorm.defaultProps);
+  const frame = await generarProperties(componentSet, specs, setNorm.defaultProps, columnas);
   finalizar(frame, nodo);
 }
 
@@ -184,7 +184,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   const columnas = clampColumnas(msg.columnas);
   try {
     if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false);
-    else if (msg.seccion === "properties") await generarSeccionProperties(nodo);
+    else if (msg.seccion === "properties") await generarSeccionProperties(nodo, columnas);
     else if (msg.seccion === "layout") await generarSeccionLayout(nodo, columnas);
     else if (msg.seccion === "data") await generarSeccionData(nodo);
     else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
