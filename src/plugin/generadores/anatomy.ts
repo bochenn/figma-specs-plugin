@@ -1,6 +1,7 @@
 import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { posicionMarcador, TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, frameHorizontal, texto } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, tablaDe } from "./frames.ts";
+import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
@@ -60,7 +61,7 @@ async function marcador(numero: number, x: number, y: number): Promise<FrameNode
 }
 
 // Construye el [Nombre] Spec (heading + sección Anatomy con lista + artwork).
-async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[]): Promise<FrameNode> {
+async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
   const seccion = frameVertical("Anatomy", 64);
 
@@ -78,15 +79,17 @@ async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy
   display.fills = [];
   seccion.appendChild(display);
 
-  // Lista de contenido.
-  const lista = frameVertical("Content", 16);
-  display.appendChild(lista);
+  // Contenido: tabla o lista.
   if (elementos.length === 0) {
-    lista.appendChild(await texto("Sin elementos detectados", 16));
+    display.appendChild(await texto("Sin elementos detectados", 16));
+  } else if (tabla) {
+    display.appendChild(await tablaDe(HEADERS_ANATOMY, elementos.map((e, i) => filaAnatomy(i + 1, e))));
   } else {
+    const lista = frameVertical("Content", 16);
     for (let i = 0; i < elementos.length; i++) {
       lista.appendChild(await entradaLista(i + 1, elementos[i]));
     }
+    display.appendChild(lista);
   }
 
   // Artwork: clon del seleccionado + marcadores.
@@ -115,9 +118,9 @@ async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy
 }
 
 // Genera el spec de Anatomy de un solo ítem. Devuelve el frame Specifications.
-export async function generarAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[]): Promise<FrameNode> {
+export async function generarAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
-  specifications.appendChild(await specDeAnatomy(seleccionado, elementos));
+  specifications.appendChild(await specDeAnatomy(seleccionado, elementos, tabla));
   figma.currentPage.appendChild(specifications);
   return specifications;
 }
@@ -127,11 +130,12 @@ export async function generarAnatomyConNested(
   seleccionado: SceneNode,
   elementos: ElementoAnatomy[],
   nested: { nodo: SceneNode; elementos: ElementoAnatomy[] }[],
+  tabla: boolean,
 ): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
-  specifications.appendChild(await specDeAnatomy(seleccionado, elementos));
+  specifications.appendChild(await specDeAnatomy(seleccionado, elementos, tabla));
   for (const n of nested) {
-    specifications.appendChild(await specDeAnatomy(n.nodo, n.elementos));
+    specifications.appendChild(await specDeAnatomy(n.nodo, n.elementos, tabla));
   }
   figma.currentPage.appendChild(specifications);
   return specifications;

@@ -72,7 +72,7 @@ function instanciasAnidadas(nodo: SceneNode): InstanceNode[] {
   return res;
 }
 
-async function generarSeccionAnatomy(nodo: SceneNode, nested: boolean): Promise<void> {
+async function generarSeccionAnatomy(nodo: SceneNode, nested: boolean, tabla: boolean): Promise<void> {
   if (!TIPOS_VALIDOS.includes(nodo.type)) {
     responder({ tipo: "resultado", ok: false, error: "Anatomy necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
     return;
@@ -81,9 +81,9 @@ async function generarSeccionAnatomy(nodo: SceneNode, nested: boolean): Promise<
   let frame: FrameNode;
   if (nested) {
     const nestedSpecs = instanciasAnidadas(nodo).map((inst) => ({ nodo: inst, elementos: extraerAnatomy(aNodoLike(inst)) }));
-    frame = await generarAnatomyConNested(nodo, elementos, nestedSpecs);
+    frame = await generarAnatomyConNested(nodo, elementos, nestedSpecs, tabla);
   } else {
-    frame = await generarAnatomy(nodo, elementos);
+    frame = await generarAnatomy(nodo, elementos, tabla);
   }
   finalizar(frame, nodo);
 }
@@ -183,7 +183,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   aplicarTema(msg.dark ?? false);
   const columnas = clampColumnas(msg.columnas);
   try {
-    if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false);
+    if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false, msg.tabla ?? false);
     else if (msg.seccion === "properties") await generarSeccionProperties(nodo, columnas);
     else if (msg.seccion === "layout") await generarSeccionLayout(nodo, columnas);
     else if (msg.seccion === "data") await generarSeccionData(nodo);
