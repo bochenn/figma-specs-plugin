@@ -3,9 +3,10 @@ const nestedCheck = document.getElementById("nested") as HTMLInputElement;
 const darkCheck = document.getElementById("dark") as HTMLInputElement;
 const tablaCheck = document.getElementById("tabla") as HTMLInputElement;
 const columnasSelect = document.getElementById("columnas") as HTMLSelectElement;
+const formatoColorSelect = document.getElementById("formatoColor") as HTMLSelectElement;
 
 function generar(seccion: "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway" | "complete"): void {
-  parent.postMessage({ pluginMessage: { tipo: "generar", seccion, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, columnas: parseInt(columnasSelect.value, 10) } }, "*");
+  parent.postMessage({ pluginMessage: { tipo: "generar", seccion, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value } }, "*");
 }
 
 (document.getElementById("anatomy") as HTMLButtonElement).onclick = () => generar("anatomy");

@@ -2,6 +2,7 @@ import type { MensajeUI, MensajePlugin, SetNorm } from "./modelo/tipos.ts";
 import { aNodoLike } from "./extraccion/adaptador.ts";
 import { aplicarTema, temaActual } from "./utils/tema.ts";
 import { clampColumnas } from "./utils/columnas.ts";
+import { aplicarFormatoColor } from "./utils/color.ts";
 import { extraerAnatomy } from "./extraccion/anatomy.ts";
 import { generarAnatomy, generarAnatomyConNested } from "./generadores/anatomy.ts";
 import { resolverComponentSet } from "./extraccion/resolver.ts";
@@ -24,7 +25,7 @@ import { generarComplete } from "./generadores/complete.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 400 });
+figma.showUI(__html__, { width: 280, height: 420 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
@@ -181,6 +182,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
 
   const nodo = seleccion[0];
   aplicarTema(msg.dark ?? false);
+  aplicarFormatoColor(msg.formatoColor ?? "HEX");
   const columnas = clampColumnas(msg.columnas);
   try {
     if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false, msg.tabla ?? false);
