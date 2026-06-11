@@ -1,7 +1,7 @@
 import type { MensajeUI, MensajePlugin, SetNorm } from "./modelo/tipos.ts";
 import { aNodoLike } from "./extraccion/adaptador.ts";
 import { extraerAnatomy } from "./extraccion/anatomy.ts";
-import { generarAnatomy } from "./generadores/anatomy.ts";
+import { generarAnatomy, generarAnatomyConNested } from "./generadores/anatomy.ts";
 import { resolverComponentSet } from "./extraccion/resolver.ts";
 import { extraerProperties } from "./extraccion/properties.ts";
 import { generarProperties } from "./generadores/properties.ts";
@@ -22,7 +22,7 @@ import { generarComplete } from "./generadores/complete.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 320 });
+figma.showUI(__html__, { width: 280, height: 340 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
@@ -54,13 +54,33 @@ function normalizarSet(componentSet: ComponentSetNode): SetNorm {
   return { propiedades, variantes, defaultProps };
 }
 
-async function generarSeccionAnatomy(nodo: SceneNode): Promise<void> {
+// Instancias anidadas de primer nivel (no entra dentro de las instancias).
+function instanciasAnidadas(nodo: SceneNode): InstanceNode[] {
+  const res: InstanceNode[] = [];
+  function walk(n: SceneNode): void {
+    if (!("children" in n)) return;
+    for (const c of n.children) {
+      if (c.type === "INSTANCE") res.push(c);
+      else walk(c);
+    }
+  }
+  walk(nodo);
+  return res;
+}
+
+async function generarSeccionAnatomy(nodo: SceneNode, nested: boolean): Promise<void> {
   if (!TIPOS_VALIDOS.includes(nodo.type)) {
     responder({ tipo: "resultado", ok: false, error: "Anatomy necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
     return;
   }
   const elementos = extraerAnatomy(aNodoLike(nodo));
-  const frame = await generarAnatomy(nodo, elementos);
+  let frame: FrameNode;
+  if (nested) {
+    const nestedSpecs = instanciasAnidadas(nodo).map((inst) => ({ nodo: inst, elementos: extraerAnatomy(aNodoLike(inst)) }));
+    frame = await generarAnatomyConNested(nodo, elementos, nestedSpecs);
+  } else {
+    frame = await generarAnatomy(nodo, elementos);
+  }
   finalizar(frame, nodo);
 }
 
@@ -157,7 +177,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
 
   const nodo = seleccion[0];
   try {
-    if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo);
+    if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false);
     else if (msg.seccion === "properties") await generarSeccionProperties(nodo);
     else if (msg.seccion === "layout") await generarSeccionLayout(nodo);
     else if (msg.seccion === "data") await generarSeccionData(nodo);
