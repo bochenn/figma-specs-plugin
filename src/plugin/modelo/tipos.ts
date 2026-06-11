@@ -53,7 +53,9 @@ export interface ElementoAnatomy {
 // Mensajes UI ↔ plugin.
 export type Seccion = "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway" | "complete";
 
-export type MensajeUI = { tipo: "generar"; seccion: Seccion; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean };
+export type FormatoColor = "HEX" | "RGB" | "HSL";
+
+export type MensajeUI = { tipo: "generar"; seccion: Seccion; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; formatoColor?: FormatoColor };
 
 export type MensajePlugin =
   | { tipo: "resultado"; ok: true }
