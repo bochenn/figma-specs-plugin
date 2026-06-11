@@ -1,5 +1,6 @@
-import type { SetNorm, PropiedadSpec, OpcionSpec, VarianteNorm, DosWaySpec, CombinacionSpec } from "../modelo/tipos.ts";
+import type { SetNorm, PropiedadSpec, OpcionSpec, VarianteNorm, DosWaySpec, CombinacionSpec, ElementoAdicional } from "../modelo/tipos.ts";
 import { mismasProps, compararVariante } from "../comparacion/variantes.ts";
+import { extraerAnatomy } from "./anatomy.ts";
 
 // Busca en el set la variante cuyo mapa de props coincide exactamente con el target.
 function buscarVariante(set: SetNorm, target: Record<string, string>): VarianteNorm | undefined {
@@ -55,4 +56,29 @@ export function extraerDosWay(set: SetNorm): DosWaySpec | null {
     }
   }
   return { prop1: p1, prop2: p2, combinaciones };
+}
+
+// Etiqueta legible de una variante a partir de sus props ("k=v, k2=v2").
+function etiquetaVariante(props: Record<string, string>): string {
+  return Object.entries(props).map(([k, v]) => `${k}=${v}`).join(", ");
+}
+
+// Lista los elementos que cada variante tiene y el default no (clave tipo|nombre).
+export function extraerCompleteAnatomy(set: SetNorm): ElementoAdicional[] {
+  const varianteDefault = buscarVariante(set, set.defaultProps);
+  if (!varianteDefault) return [];
+
+  const defaultKeys = new Set(extraerAnatomy(varianteDefault.raiz).map((e) => `${e.tipo}|${e.nombre}`));
+  const adicionales: ElementoAdicional[] = [];
+
+  for (const variante of set.variantes) {
+    if (mismasProps(variante.variantProperties, set.defaultProps)) continue;
+    const etiqueta = etiquetaVariante(variante.variantProperties);
+    for (const el of extraerAnatomy(variante.raiz)) {
+      if (!defaultKeys.has(`${el.tipo}|${el.nombre}`)) {
+        adicionales.push({ variante: etiqueta, nombre: el.nombre, tipo: el.tipo });
+      }
+    }
+  }
+  return adicionales;
 }

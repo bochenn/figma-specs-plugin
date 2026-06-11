@@ -17,10 +17,12 @@ import { agruparModes } from "./variables/modes.ts";
 import { generarModes } from "./generadores/modes.ts";
 import { extraerDosWay } from "./extraccion/properties.ts";
 import { generarDosWay } from "./generadores/properties.ts";
+import { extraerCompleteAnatomy } from "./extraccion/properties.ts";
+import { generarCompleteAnatomy } from "./generadores/complete.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 300 });
+figma.showUI(__html__, { width: 280, height: 320 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
@@ -131,6 +133,18 @@ async function generarSeccionTwoWay(nodo: SceneNode): Promise<void> {
   finalizar(frame, nodo);
 }
 
+async function generarSeccionComplete(nodo: SceneNode): Promise<void> {
+  const componentSet = resolverComponentSet(nodo);
+  if (!componentSet) {
+    responder({ tipo: "resultado", ok: false, error: "Complete Anatomy necesita un componente con variantes." });
+    return;
+  }
+  const setNorm = normalizarSet(componentSet);
+  const adicionales = extraerCompleteAnatomy(setNorm);
+  const frame = await generarCompleteAnatomy(componentSet.name, adicionales);
+  finalizar(frame, nodo);
+}
+
 figma.ui.onmessage = async (msg: MensajeUI) => {
   if (msg.tipo !== "generar") return;
 
@@ -148,7 +162,8 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     else if (msg.seccion === "data") await generarSeccionData(nodo);
     else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
     else if (msg.seccion === "modes") await generarSeccionModes(nodo);
-    else await generarSeccionTwoWay(nodo);
+    else if (msg.seccion === "twoway") await generarSeccionTwoWay(nodo);
+    else await generarSeccionComplete(nodo);
   } catch (e) {
     responder({ tipo: "resultado", ok: false, error: String(e) });
   }
