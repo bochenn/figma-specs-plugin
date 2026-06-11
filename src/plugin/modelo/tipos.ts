@@ -51,7 +51,7 @@ export interface ElementoAnatomy {
 }
 
 // Mensajes UI ↔ plugin.
-export type Seccion = "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway";
+export type Seccion = "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway" | "complete";
 
 export type MensajeUI = { tipo: "generar"; seccion: Seccion };
 
@@ -98,6 +98,12 @@ export interface DosWaySpec {
   prop1: string;
   prop2: string;
   combinaciones: CombinacionSpec[];
+}
+
+export interface ElementoAdicional {
+  variante: string;   // etiqueta de la variante, ej. "Size=M, Type=Sec"
+  nombre: string;
+  tipo: string;
 }
 
 // Par de elementos emparejados entre default y opción.
