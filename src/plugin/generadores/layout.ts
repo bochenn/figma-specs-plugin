@@ -1,6 +1,7 @@
 import type { LayoutSpec } from "../modelo/tipos.ts";
 import { frameVertical, texto, enColumnas } from "./frames.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
+import { formatearEspaciado, unidadActual } from "../utils/espaciado.ts";
 
 const AZUL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
 const VERDE: RGB = { r: 0.1, g: 0.7, b: 0.3 };
@@ -15,8 +16,9 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   fila.appendChild(await texto(`Alignment: ${spec.alineacionPrimaria} / ${spec.alineacionContraria}`, 12));
   fila.appendChild(await texto(`Resizing: ${spec.resizingHorizontal} × ${spec.resizingVertical}`, 12));
   const p = spec.padding;
-  fila.appendChild(await texto(`Padding: L${p.left} T${p.top} R${p.right} B${p.bottom}`, 12));
-  fila.appendChild(await texto(`Item spacing: ${spec.itemSpacing}`, 12));
+  const E = (n: number) => formatearEspaciado(n, unidadActual());
+  fila.appendChild(await texto(`Padding: L${E(p.left)} T${E(p.top)} R${E(p.right)} B${E(p.bottom)}`, 12));
+  fila.appendChild(await texto(`Item spacing: ${E(spec.itemSpacing)}`, 12));
   return fila;
 }
 

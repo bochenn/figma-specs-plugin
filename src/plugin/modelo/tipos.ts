@@ -55,7 +55,9 @@ export type Seccion = "anatomy" | "properties" | "layout" | "data" | "styling" |
 
 export type FormatoColor = "HEX" | "RGB" | "HSL";
 
-export type MensajeUI = { tipo: "generar"; seccion: Seccion; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; formatoColor?: FormatoColor };
+export type Unidad = "px" | "rem";
+
+export type MensajeUI = { tipo: "generar"; seccion: Seccion; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; formatoColor?: FormatoColor; unidad?: Unidad };
 
 export type MensajePlugin =
   | { tipo: "resultado"; ok: true }
