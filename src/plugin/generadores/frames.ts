@@ -65,3 +65,36 @@ export function enColumnas(items: FrameNode[], columnas: number): FrameNode {
   }
   return cont;
 }
+
+// Arma una tabla: text nodes de todas las celdas, alineadas fijando cada celda
+// al ancho máximo de su columna (≥ su ancho natural → sin overflow). Header arriba.
+export async function tablaDe(headers: string[], filas: string[][]): Promise<FrameNode> {
+  const registros = [headers, ...filas];
+  const ncols = headers.length;
+
+  const celdas: TextNode[][] = [];
+  for (const registro of registros) {
+    const row: TextNode[] = [];
+    for (let c = 0; c < ncols; c++) row.push(await texto(registro[c] ?? "", 14));
+    celdas.push(row);
+  }
+
+  const maxW: number[] = [];
+  for (let c = 0; c < ncols; c++) {
+    let m = 0;
+    for (const row of celdas) m = Math.max(m, row[c].width);
+    maxW.push(m);
+  }
+
+  const cont = frameVertical("Table", 8);
+  for (const row of celdas) {
+    const filaFrame = frameHorizontal("Row", 24);
+    for (let c = 0; c < ncols; c++) {
+      filaFrame.appendChild(row[c]);
+      row[c].layoutSizingHorizontal = "FIXED";
+      row[c].resize(maxW[c], row[c].height);
+    }
+    cont.appendChild(filaFrame);
+  }
+  return cont;
+}
