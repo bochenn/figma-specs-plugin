@@ -21,9 +21,9 @@ export function resizing(valor: string | undefined): string {
   }
 }
 
-// Produce un LayoutSpec por cada capa con Auto Layout de la selección.
-export function extraerLayout(raiz: NodoLike): LayoutSpec[] {
-  return recorrerAutoLayout(raiz).map((nodo) => ({
+// Construye el LayoutSpec de un solo nodo con Auto Layout.
+export function layoutSpecDe(nodo: NodoLike): LayoutSpec {
+  return {
     elementoNombre: nodo.name,
     tipo: nodo.type,
     direccion: nodo.layoutMode === "HORIZONTAL" ? "HORIZONTAL" : "VERTICAL",
@@ -38,5 +38,16 @@ export function extraerLayout(raiz: NodoLike): LayoutSpec[] {
       bottom: nodo.paddingBottom ?? 0,
     },
     itemSpacing: nodo.itemSpacing ?? 0,
-  }));
+  };
+}
+
+// Serializa la config de layout (para comparar entre variantes).
+export function claveLayout(spec: LayoutSpec): string {
+  const p = spec.padding;
+  return `${spec.direccion}|${spec.alineacionPrimaria}|${spec.alineacionContraria}|${spec.resizingHorizontal}|${spec.resizingVertical}|L${p.left}T${p.top}R${p.right}B${p.bottom}|gap${spec.itemSpacing}`;
+}
+
+// Produce un LayoutSpec por cada capa con Auto Layout de la selección.
+export function extraerLayout(raiz: NodoLike): LayoutSpec[] {
+  return recorrerAutoLayout(raiz).map(layoutSpecDe);
 }

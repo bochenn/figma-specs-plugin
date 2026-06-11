@@ -17,8 +17,8 @@ import { agruparModes } from "./variables/modes.ts";
 import { generarModes } from "./generadores/modes.ts";
 import { extraerDosWay } from "./extraccion/properties.ts";
 import { generarDosWay } from "./generadores/properties.ts";
-import { extraerCompleteAnatomy } from "./extraccion/properties.ts";
-import { generarCompleteAnatomy } from "./generadores/complete.ts";
+import { extraerCompleteAnatomy, extraerCompleteLayout } from "./extraccion/properties.ts";
+import { generarComplete } from "./generadores/complete.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
@@ -136,12 +136,13 @@ async function generarSeccionTwoWay(nodo: SceneNode): Promise<void> {
 async function generarSeccionComplete(nodo: SceneNode): Promise<void> {
   const componentSet = resolverComponentSet(nodo);
   if (!componentSet) {
-    responder({ tipo: "resultado", ok: false, error: "Complete Anatomy necesita un componente con variantes." });
+    responder({ tipo: "resultado", ok: false, error: "Complete necesita un componente con variantes." });
     return;
   }
   const setNorm = normalizarSet(componentSet);
-  const adicionales = extraerCompleteAnatomy(setNorm);
-  const frame = await generarCompleteAnatomy(componentSet.name, adicionales);
+  const anatomy = extraerCompleteAnatomy(setNorm);
+  const layout = extraerCompleteLayout(setNorm);
+  const frame = await generarComplete(componentSet.name, anatomy, layout);
   finalizar(frame, nodo);
 }
 

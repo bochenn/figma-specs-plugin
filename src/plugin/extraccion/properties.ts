@@ -1,6 +1,7 @@
-import type { SetNorm, PropiedadSpec, OpcionSpec, VarianteNorm, DosWaySpec, CombinacionSpec, ElementoAdicional } from "../modelo/tipos.ts";
+import type { SetNorm, PropiedadSpec, OpcionSpec, VarianteNorm, DosWaySpec, CombinacionSpec, ElementoAdicional, VarianteLayout, NodoLike } from "../modelo/tipos.ts";
 import { mismasProps, compararVariante } from "../comparacion/variantes.ts";
 import { extraerAnatomy } from "./anatomy.ts";
+import { layoutSpecDe, claveLayout } from "./layout.ts";
 
 // Busca en el set la variante cuyo mapa de props coincide exactamente con el target.
 function buscarVariante(set: SetNorm, target: Record<string, string>): VarianteNorm | undefined {
@@ -78,6 +79,32 @@ export function extraerCompleteAnatomy(set: SetNorm): ElementoAdicional[] {
       if (!defaultKeys.has(`${el.tipo}|${el.nombre}`)) {
         adicionales.push({ variante: etiqueta, nombre: el.nombre, tipo: el.tipo });
       }
+    }
+  }
+  return adicionales;
+}
+
+// True si el nodo tiene Auto Layout (horizontal o vertical).
+function tieneAutoLayout(n: NodoLike): boolean {
+  return n.layoutMode === "HORIZONTAL" || n.layoutMode === "VERTICAL";
+}
+
+// Variantes cuyo Auto Layout de la raíz difiere del default.
+export function extraerCompleteLayout(set: SetNorm): VarianteLayout[] {
+  const varianteDefault = buscarVariante(set, set.defaultProps);
+  if (!varianteDefault) return [];
+
+  const claveDefault = tieneAutoLayout(varianteDefault.raiz)
+    ? claveLayout(layoutSpecDe(varianteDefault.raiz))
+    : null;
+
+  const adicionales: VarianteLayout[] = [];
+  for (const variante of set.variantes) {
+    if (mismasProps(variante.variantProperties, set.defaultProps)) continue;
+    if (!tieneAutoLayout(variante.raiz)) continue;
+    const spec = layoutSpecDe(variante.raiz);
+    if (claveDefault === null || claveLayout(spec) !== claveDefault) {
+      adicionales.push({ variante: etiquetaVariante(variante.variantProperties), spec });
     }
   }
   return adicionales;
