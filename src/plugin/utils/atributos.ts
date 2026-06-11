@@ -1,5 +1,6 @@
 import type { NodoLike, Atributo } from "../modelo/tipos.ts";
 import { formatearColor, formatoColorActual } from "./color.ts";
+import { formatearEspaciado, unidadActual } from "./espaciado.ts";
 
 // Convierte un canal de color (0..1) a dos dígitos hex.
 function canalHex(canal: number): string {
@@ -53,7 +54,7 @@ export function leerAtributos(nodo: NodoLike): Atributo[] {
   if (bd) atributos.push(bd);
 
   if (typeof nodo.width === "number") {
-    atributos.push({ clave: "width", valor: String(nodo.width), formato: "HARDCODED" });
+    atributos.push({ clave: "width", valor: formatearEspaciado(nodo.width, unidadActual()), formato: "HARDCODED" });
   }
 
   if (typeof nodo.opacity === "number" && nodo.opacity < 1) {
