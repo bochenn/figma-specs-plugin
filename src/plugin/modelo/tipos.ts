@@ -139,6 +139,11 @@ export interface LayoutSpec {
   itemSpacing: number;
 }
 
+export interface VarianteLayout {
+  variante: string;
+  spec: LayoutSpec;
+}
+
 // --- Data (JSON export) ---
 
 export interface AtributoJson {
