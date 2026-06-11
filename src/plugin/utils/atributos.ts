@@ -1,4 +1,5 @@
 import type { NodoLike, Atributo } from "../modelo/tipos.ts";
+import { formatearColor, formatoColorActual } from "./color.ts";
 
 // Convierte un canal de color (0..1) a dos dígitos hex.
 function canalHex(canal: number): string {
@@ -22,7 +23,7 @@ export function colorAtributo(
   if (opts.styleName) {
     return { clave, valor: opts.styleName, formato: "STYLE", rawValue: opts.hex, swatchHex: opts.hex };
   }
-  return { clave, valor: opts.hex, formato: "HARDCODED", swatchHex: opts.hex };
+  return { clave, valor: formatearColor(opts.hex, formatoColorActual()), formato: "HARDCODED", swatchHex: opts.hex };
 }
 
 // Devuelve el hex del primer paint SOLID de una lista, o undefined.

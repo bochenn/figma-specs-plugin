@@ -35,3 +35,15 @@ export function formatearColor(hex: string, formato: FormatoColor): string {
   const { h, s, l } = rgbAHsl(r, g, b);
   return `hsl(${h}, ${s}%, ${l}%)`;
 }
+
+let formato: FormatoColor = "HEX";
+
+// Setea el formato de color actual (default HEX).
+export function aplicarFormatoColor(f: FormatoColor): void {
+  formato = f;
+}
+
+// Devuelve el formato de color actual.
+export function formatoColorActual(): FormatoColor {
+  return formato;
+}
