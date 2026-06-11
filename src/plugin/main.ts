@@ -131,13 +131,13 @@ async function generarSeccionStyling(nodo: SceneNode): Promise<void> {
   finalizar(frame, nodo);
 }
 
-async function generarSeccionModes(nodo: SceneNode): Promise<void> {
+async function generarSeccionModes(nodo: SceneNode, columnas: number): Promise<void> {
   if (!TIPOS_VALIDOS.includes(nodo.type)) {
     responder({ tipo: "resultado", ok: false, error: "Modes necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
     return;
   }
   const colecciones = agruparModes(recolectarModes(nodo));
-  const frame = await generarModes(nodo, colecciones);
+  const frame = await generarModes(nodo, colecciones, columnas);
   finalizar(frame, nodo);
 }
 
@@ -188,7 +188,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     else if (msg.seccion === "layout") await generarSeccionLayout(nodo, columnas);
     else if (msg.seccion === "data") await generarSeccionData(nodo);
     else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
-    else if (msg.seccion === "modes") await generarSeccionModes(nodo);
+    else if (msg.seccion === "modes") await generarSeccionModes(nodo, columnas);
     else if (msg.seccion === "twoway") await generarSeccionTwoWay(nodo);
     else await generarSeccionComplete(nodo);
   } catch (e) {
