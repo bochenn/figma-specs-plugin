@@ -23,7 +23,7 @@ import { generarComplete } from "./generadores/complete.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 360 });
+figma.showUI(__html__, { width: 280, height: 380 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
@@ -99,13 +99,14 @@ async function generarSeccionProperties(nodo: SceneNode): Promise<void> {
   finalizar(frame, nodo);
 }
 
-async function generarSeccionLayout(nodo: SceneNode): Promise<void> {
+async function generarSeccionLayout(nodo: SceneNode, columnasRaw: number | undefined): Promise<void> {
   if (!TIPOS_VALIDOS.includes(nodo.type)) {
     responder({ tipo: "resultado", ok: false, error: "Layout and Spacing necesita un FRAME, COMPONENT o INSTANCE." });
     return;
   }
+  const columnas = Math.min(Math.max(columnasRaw ?? 1, 1), 4);
   const specs = extraerLayout(aNodoLike(nodo));
-  const frame = await generarLayout(nodo, specs);
+  const frame = await generarLayout(nodo, specs, columnas);
   finalizar(frame, nodo);
 }
 
@@ -183,7 +184,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   try {
     if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false);
     else if (msg.seccion === "properties") await generarSeccionProperties(nodo);
-    else if (msg.seccion === "layout") await generarSeccionLayout(nodo);
+    else if (msg.seccion === "layout") await generarSeccionLayout(nodo, msg.columnas);
     else if (msg.seccion === "data") await generarSeccionData(nodo);
     else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
     else if (msg.seccion === "modes") await generarSeccionModes(nodo);

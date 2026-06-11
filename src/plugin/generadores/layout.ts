@@ -1,5 +1,5 @@
 import type { LayoutSpec } from "../modelo/tipos.ts";
-import { frameVertical, texto } from "./frames.ts";
+import { frameVertical, texto, enColumnas } from "./frames.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 
 const AZUL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
@@ -48,7 +48,7 @@ function dibujarOverlays(node: SceneNode, offX: number, offY: number, artwork: F
 }
 
 // Genera el output de Layout and Spacing: artwork con overlays + exhibits de texto.
-export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]): Promise<FrameNode> {
+export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
   const seccion = frameVertical("Layout and Spacing", 64);
@@ -74,9 +74,14 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
 
   if (specs.length === 0) {
     seccion.appendChild(await texto("No se detectaron capas con Auto Layout.", 16));
-  }
-  for (const s of specs) {
-    seccion.appendChild(await exhibit(s));
+  } else if (columnas > 1) {
+    const exhibits: FrameNode[] = [];
+    for (const s of specs) exhibits.push(await exhibit(s));
+    seccion.appendChild(enColumnas(exhibits, columnas));
+  } else {
+    for (const s of specs) {
+      seccion.appendChild(await exhibit(s));
+    }
   }
 
   figma.currentPage.appendChild(specifications);
