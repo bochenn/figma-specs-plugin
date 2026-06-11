@@ -26,7 +26,7 @@ import { generarComplete } from "./generadores/complete.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 420 });
+figma.showUI(__html__, { width: 280, height: 440 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
