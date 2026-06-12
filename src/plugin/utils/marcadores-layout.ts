@@ -55,3 +55,20 @@ export function marcasLayout(
   }
   return { ejeX, ejeY };
 }
+
+// Estilo de puntas de la cota azul según el resizing del eje:
+// Fixed = topes, Fill = flechas hacia afuera, Hug = flechas hacia adentro.
+export function estiloCota(resizing: string): "fixed" | "fill" | "hug" {
+  if (resizing === "Fill") return "fill";
+  if (resizing === "Hug") return "hug";
+  return "fixed";
+}
+
+// Ícono de dirección del artwork (variante grilla cuando hay wrap).
+export function iconoDireccion(
+  direccion: "HORIZONTAL" | "VERTICAL",
+  wrap: boolean,
+): "flecha-h" | "flecha-v" | "grilla-h" | "grilla-v" {
+  if (wrap) return direccion === "HORIZONTAL" ? "grilla-h" : "grilla-v";
+  return direccion === "HORIZONTAL" ? "flecha-h" : "flecha-v";
+}

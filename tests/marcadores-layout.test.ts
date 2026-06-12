@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { marcasLayout } from "../src/plugin/utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion } from "../src/plugin/utils/marcadores-layout.ts";
 import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 
 test("padding asimétrico + gap horizontal → marcas en ambos ejes", () => {
@@ -53,4 +53,17 @@ test("formatea con la unidad actual (rem)", () => {
   const { ejeX } = marcasLayout(frame, { left: 16, top: 0, right: 0, bottom: 0 }, [], "HORIZONTAL", false);
   assert.equal(ejeX[0].valor, "1rem");
   aplicarUnidad("px");
+});
+
+test("estiloCota mapea el resizing a las puntas de la cota", () => {
+  assert.equal(estiloCota("Fixed"), "fixed");
+  assert.equal(estiloCota("Fill"), "fill");
+  assert.equal(estiloCota("Hug"), "hug");
+});
+
+test("iconoDireccion elige según dirección y wrap", () => {
+  assert.equal(iconoDireccion("HORIZONTAL", false), "flecha-h");
+  assert.equal(iconoDireccion("VERTICAL", false), "flecha-v");
+  assert.equal(iconoDireccion("HORIZONTAL", true), "grilla-h");
+  assert.equal(iconoDireccion("VERTICAL", true), "grilla-v");
 });
