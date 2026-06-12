@@ -1,4 +1,12 @@
 import type { FormatoTipo, AlturaLinea, EspaciadoLetra } from "../modelo/tipos.ts";
+import { formatearEspaciado, unidadActual } from "./espaciado.ts";
+
+// Valor en px formateado según la unidad actual:
+// px → "16" (Plain) o "16px" (CSS); rem → "1rem" en ambos.
+function valorPx(n: number, conSufijo: boolean): string {
+  if (unidadActual() === "rem") return formatearEspaciado(n, "rem");
+  return conSufijo ? `${n}px` : String(n);
+}
 
 // Formatea la tipografía de un nodo (line-height y letter-spacing incluidos) según el formato elegido.
 export function formatearTipografia(
@@ -8,19 +16,19 @@ export function formatearTipografia(
   const lh = t.lineHeight;
   const ls = t.letterSpacing;
   if (formato === "CSS") {
-    let medida = `${t.size}px`;
-    if (lh && lh.unidad === "px") medida += `/${lh.valor}px`;
+    let medida = valorPx(t.size, true);
+    if (lh && lh.unidad === "px") medida += `/${valorPx(lh.valor, true)}`;
     else if (lh && lh.unidad === "percent") medida += `/${lh.valor}%`;
     let s = `${medida} ${t.style} ${t.family}`;
-    if (ls) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : `${ls.valor}px`}`;
+    if (ls) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : valorPx(ls.valor, true)}`;
     return s;
   }
-  let s = `${t.family} ${t.style} ${t.size}`;
+  let s = `${t.family} ${t.style} ${valorPx(t.size, false)}`;
   if (lh) {
-    const lhStr = lh.unidad === "auto" ? "auto" : lh.unidad === "percent" ? `${lh.valor}%` : `${lh.valor}`;
+    const lhStr = lh.unidad === "auto" ? "auto" : lh.unidad === "percent" ? `${lh.valor}%` : valorPx(lh.valor, false);
     s += ` / ${lhStr}`;
   }
-  if (ls) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : `${ls.valor}`}`;
+  if (ls) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : valorPx(ls.valor, false)}`;
   return s;
 }
 
