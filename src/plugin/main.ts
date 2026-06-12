@@ -3,6 +3,7 @@ import { aNodoLike } from "./extraccion/adaptador.ts";
 import { aplicarTema, temaActual } from "./utils/tema.ts";
 import { clampColumnas } from "./utils/columnas.ts";
 import { aplicarFormatoColor } from "./utils/color.ts";
+import { aplicarFormatoRaw, aplicarMostrarRaw, aplicarPreferencia } from "./utils/valores.ts";
 import { aplicarUnidad } from "./utils/espaciado.ts";
 import { aplicarFormatoTipo } from "./utils/tipografia.ts";
 import { extraerAnatomy } from "./extraccion/anatomy.ts";
@@ -187,6 +188,9 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   aplicarFormatoColor(msg.formatoColor ?? "HEX");
   aplicarUnidad(msg.unidad ?? "px");
   aplicarFormatoTipo(msg.formatoTipo ?? "Plain");
+  aplicarFormatoRaw(msg.formatoRaw ?? "HEX");
+  aplicarMostrarRaw(msg.mostrarRaw ?? true);
+  aplicarPreferencia(msg.preferencia ?? "VARIABLE");
   const columnas = clampColumnas(msg.columnas);
   try {
     if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false, msg.tabla ?? false);
