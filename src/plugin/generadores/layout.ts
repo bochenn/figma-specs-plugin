@@ -60,6 +60,49 @@ async function textoMarca(valor: string, color: RGB, artwork: FrameNode): Promis
   return t;
 }
 
+const AZUL_HEX = "#0D66D9";
+const GRIS_HEX = "#444444";
+
+// Cota horizontal de `largo` px; las puntas codifican el resizing.
+function svgCotaH(estilo: "fixed" | "fill" | "hug", largo: number): string {
+  const L = largo;
+  const base = `<line x1="0" y1="6" x2="${L}" y2="6" stroke="${AZUL_HEX}"/>`;
+  const topes = `<line x1="0.5" y1="0" x2="0.5" y2="12" stroke="${AZUL_HEX}"/><line x1="${L - 0.5}" y1="0" x2="${L - 0.5}" y2="12" stroke="${AZUL_HEX}"/>`;
+  let puntas = topes; // fixed
+  if (estilo === "fill") {
+    puntas = `<path d="M6 1 L1 6 L6 11" stroke="${AZUL_HEX}" fill="none"/><path d="M${L - 6} 1 L${L - 1} 6 L${L - 6} 11" stroke="${AZUL_HEX}" fill="none"/>`;
+  } else if (estilo === "hug") {
+    puntas = `${topes}<path d="M2 1 L7 6 L2 11" stroke="${AZUL_HEX}" fill="none"/><path d="M${L - 2} 1 L${L - 7} 6 L${L - 2} 11" stroke="${AZUL_HEX}" fill="none"/>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="12">${base}${puntas}</svg>`;
+}
+
+// Cota vertical de `largo` px (misma idea, ejes intercambiados).
+function svgCotaV(estilo: "fixed" | "fill" | "hug", largo: number): string {
+  const L = largo;
+  const base = `<line x1="6" y1="0" x2="6" y2="${L}" stroke="${AZUL_HEX}"/>`;
+  const topes = `<line x1="0" y1="0.5" x2="12" y2="0.5" stroke="${AZUL_HEX}"/><line x1="0" y1="${L - 0.5}" x2="12" y2="${L - 0.5}" stroke="${AZUL_HEX}"/>`;
+  let puntas = topes; // fixed
+  if (estilo === "fill") {
+    puntas = `<path d="M1 6 L6 1 L11 6" stroke="${AZUL_HEX}" fill="none"/><path d="M1 ${L - 6} L6 ${L - 1} L11 ${L - 6}" stroke="${AZUL_HEX}" fill="none"/>`;
+  } else if (estilo === "hug") {
+    puntas = `${topes}<path d="M1 2 L6 7 L11 2" stroke="${AZUL_HEX}" fill="none"/><path d="M1 ${L - 2} L6 ${L - 7} L11 ${L - 2}" stroke="${AZUL_HEX}" fill="none"/>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="${L}">${base}${puntas}</svg>`;
+}
+
+// Íconos de dirección (24x24): flecha → / ↓, variante con grilla si hay wrap.
+const ICONOS: Record<string, string> = {
+  "flecha-h": `<path d="M3 12 H21 M15 6 L21 12 L15 18" stroke="${GRIS_HEX}" fill="none" stroke-width="2"/>`,
+  "flecha-v": `<path d="M12 3 V21 M6 15 L12 21 L18 15" stroke="${GRIS_HEX}" fill="none" stroke-width="2"/>`,
+  "grilla-h": `<rect x="3" y="3" width="6" height="6" fill="${GRIS_HEX}"/><rect x="11" y="3" width="6" height="6" fill="${GRIS_HEX}"/><rect x="3" y="11" width="6" height="6" fill="${GRIS_HEX}"/><path d="M14 17 H21 M18 14 L21 17 L18 20" stroke="${GRIS_HEX}" fill="none" stroke-width="2"/>`,
+  "grilla-v": `<rect x="3" y="3" width="6" height="6" fill="${GRIS_HEX}"/><rect x="11" y="3" width="6" height="6" fill="${GRIS_HEX}"/><rect x="3" y="11" width="6" height="6" fill="${GRIS_HEX}"/><path d="M17 14 V21 M14 18 L17 21 L20 18" stroke="${GRIS_HEX}" fill="none" stroke-width="2"/>`,
+};
+
+function svgIcono(nombre: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">${ICONOS[nombre]}</svg>`;
+}
+
 // Construye el artwork anotado de UN contenedor con Auto Layout: clon del
 // subárbol + overlays de ese contenedor (hijos azules, padding verde, gaps
 // naranjas). El clon va corrido (MARGEN, MARGEN) para dejar lugar a las
@@ -104,6 +147,22 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec): Promise<Frame
     t.x = MARGEN - 16 - t.width;
     t.y = m.y - t.height / 2;
   }
+
+  // Cotas azules de resizing (sin número): horizontal arriba, vertical a la izquierda.
+  const cotaH = figma.createNodeFromSvg(svgCotaH(estiloCota(spec.resizingHorizontal), clon.width));
+  cotaH.x = MARGEN;
+  cotaH.y = MARGEN - 44;
+  artwork.appendChild(cotaH);
+  const cotaV = figma.createNodeFromSvg(svgCotaV(estiloCota(spec.resizingVertical), clon.height));
+  cotaV.x = MARGEN - 44;
+  cotaV.y = MARGEN;
+  artwork.appendChild(cotaV);
+
+  // Ícono de dirección, arriba a la izquierda del artwork.
+  const icono = figma.createNodeFromSvg(svgIcono(iconoDireccion(spec.direccion, spec.wrap)));
+  icono.x = 8;
+  icono.y = 8;
+  artwork.appendChild(icono);
 
   return artwork;
 }
