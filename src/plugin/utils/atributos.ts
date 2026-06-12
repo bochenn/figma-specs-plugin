@@ -65,7 +65,7 @@ export function leerAtributos(nodo: NodoLike): Atributo[] {
   if (nodo.fontFamily && typeof nodo.fontSize === "number") {
     atributos.push({
       clave: "typography",
-      valor: formatearTipografia({ family: nodo.fontFamily, style: nodo.fontStyle ?? "", size: nodo.fontSize, lineHeight: nodo.lineHeight }, formatoTipoActual()),
+      valor: formatearTipografia({ family: nodo.fontFamily, style: nodo.fontStyle ?? "", size: nodo.fontSize, lineHeight: nodo.lineHeight, letterSpacing: nodo.letterSpacing }, formatoTipoActual()),
       formato: "HARDCODED",
     });
   }

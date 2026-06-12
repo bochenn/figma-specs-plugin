@@ -1,22 +1,26 @@
-import type { FormatoTipo, AlturaLinea } from "../modelo/tipos.ts";
+import type { FormatoTipo, AlturaLinea, EspaciadoLetra } from "../modelo/tipos.ts";
 
-// Formatea la tipografía de un nodo (incluido el line-height) según el formato elegido.
+// Formatea la tipografía de un nodo (line-height y letter-spacing incluidos) según el formato elegido.
 export function formatearTipografia(
-  t: { family: string; style: string; size: number; lineHeight?: AlturaLinea },
+  t: { family: string; style: string; size: number; lineHeight?: AlturaLinea; letterSpacing?: EspaciadoLetra },
   formato: FormatoTipo,
 ): string {
   const lh = t.lineHeight;
+  const ls = t.letterSpacing;
   if (formato === "CSS") {
     let medida = `${t.size}px`;
     if (lh && lh.unidad === "px") medida += `/${lh.valor}px`;
     else if (lh && lh.unidad === "percent") medida += `/${lh.valor}%`;
-    return `${medida} ${t.style} ${t.family}`;
+    let s = `${medida} ${t.style} ${t.family}`;
+    if (ls) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : `${ls.valor}px`}`;
+    return s;
   }
   let s = `${t.family} ${t.style} ${t.size}`;
   if (lh) {
     const lhStr = lh.unidad === "auto" ? "auto" : lh.unidad === "percent" ? `${lh.valor}%` : `${lh.valor}`;
     s += ` / ${lhStr}`;
   }
+  if (ls) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : `${ls.valor}`}`;
   return s;
 }
 
