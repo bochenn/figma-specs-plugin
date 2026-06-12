@@ -1,7 +1,6 @@
 import type { ColeccionModes } from "../modelo/tipos.ts";
-import { frameVertical, texto, enColumnas } from "./frames.ts";
-
-const GRIS_CLARO: RGB = { r: 0.96, g: 0.96, b: 0.96 };
+import { frameVertical, texto, enColumnas, fillTematizado } from "./frames.ts";
+import { varsTema } from "../utils/variables-tema.ts";
 
 // Bloque de un mode: nombre + artwork (clon con el mode aplicado) + atributos.
 async function bloqueMode(
@@ -19,7 +18,7 @@ async function bloqueMode(
     const artwork = figma.createFrame();
     artwork.name = "Artwork";
     artwork.layoutMode = "NONE";
-    artwork.fills = [{ type: "SOLID", color: GRIS_CLARO }];
+    artwork.fills = fillTematizado(varsTema().fondoArtwork);
     artwork.appendChild(clon);
     clon.x = 0;
     clon.y = 0;

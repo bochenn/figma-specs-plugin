@@ -1,6 +1,7 @@
 import type { PropiedadSpec, ElementoCambiado, AtributoCambiado, DosWaySpec } from "../modelo/tipos.ts";
 import { mismasProps } from "../comparacion/variantes.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado } from "./frames.ts";
+import { varsTema } from "../utils/variables-tema.ts";
 import { hexARgb } from "../utils/color.ts";
 import { nombrePropiedad } from "../utils/propiedades.ts";
 
@@ -39,7 +40,7 @@ async function subseccionBoolean(componentSet: ComponentSetNode, nombre: string,
     artwork.name = "Artwork";
     artwork.layoutMode = "NONE";
     artwork.clipsContent = false;
-    artwork.fills = [{ type: "SOLID", color: GRIS(0.96) }];
+    artwork.fills = fillTematizado(varsTema().fondoArtwork);
     const clon = defaultVariant.clone();
     artwork.appendChild(clon);
     clon.x = 0;
@@ -119,7 +120,7 @@ async function displayOpcion(
     const artwork = figma.createFrame();
     artwork.name = "Artwork";
     artwork.layoutMode = "NONE";
-    artwork.fills = [{ type: "SOLID", color: GRIS(0.96) }];
+    artwork.fills = fillTematizado(varsTema().fondoArtwork);
     const clon = componente.clone();
     artwork.appendChild(clon);
     clon.x = 0;

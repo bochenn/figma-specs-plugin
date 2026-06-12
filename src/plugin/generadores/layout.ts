@@ -1,5 +1,6 @@
 import type { LayoutSpec, NodoLike } from "../modelo/tipos.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado } from "./frames.ts";
+import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { formatearEspaciado, unidadActual } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
@@ -112,7 +113,7 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec): Promise<Frame
   artwork.name = `Artwork ${spec.elementoNombre}`;
   artwork.layoutMode = "NONE";
   artwork.clipsContent = false;
-  artwork.fills = [{ type: "SOLID", color: { r: 0.96, g: 0.96, b: 0.96 } }];
+  artwork.fills = fillTematizado(varsTema().fondoArtwork);
   const clon = contenedor.clone();
   artwork.appendChild(clon);
   clon.x = MARGEN;

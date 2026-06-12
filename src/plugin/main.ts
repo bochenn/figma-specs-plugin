@@ -1,6 +1,7 @@
 import type { MensajeUI, MensajePlugin, SetNorm } from "./modelo/tipos.ts";
 import { aNodoLike } from "./extraccion/adaptador.ts";
-import { aplicarTema, temaActual } from "./utils/tema.ts";
+import { asegurarVariablesTema, varsTema } from "./utils/variables-tema.ts";
+import { fillTematizado } from "./generadores/frames.ts";
 import { clampColumnas } from "./utils/columnas.ts";
 import { aplicarFormatoColor } from "./utils/color.ts";
 import { aplicarFormatoRaw, aplicarMostrarRaw, aplicarPreferencia } from "./utils/valores.ts";
@@ -35,6 +36,9 @@ function responder(msg: MensajePlugin): void {
 }
 
 // Ubica el output a la derecha del nodo seleccionado, aplica el fondo del tema,
+// Toggle Dark de la última generación (setea el modo explícito del frame).
+let modoOscuro = false;
+
 // hace foco y avisa éxito a la UI.
 function finalizar(frame: FrameNode, nodo: SceneNode): void {
   const caja = nodo.absoluteBoundingBox;
@@ -42,8 +46,10 @@ function finalizar(frame: FrameNode, nodo: SceneNode): void {
     frame.x = caja.x + caja.width + 100;
     frame.y = caja.y;
   }
-  const fondo = temaActual().fondo;
-  frame.fills = fondo ? [{ type: "SOLID", color: fondo }] : [];
+  frame.fills = fillTematizado(varsTema().fondoSpec);
+  if (modoOscuro) {
+    frame.setExplicitVariableModeForCollection(varsTema().coleccion, varsTema().modoDark);
+  }
   figma.viewport.scrollAndZoomIntoView([frame]);
   responder({ tipo: "resultado", ok: true });
 }
@@ -208,7 +214,8 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   }
 
   const nodo = seleccion[0];
-  aplicarTema(msg.dark ?? false);
+  modoOscuro = msg.dark ?? false;
+  await asegurarVariablesTema();
   aplicarFormatoColor(msg.formatoColor ?? "HEX");
   aplicarUnidad(msg.unidad ?? "px");
   aplicarFormatoTipo(msg.formatoTipo ?? "Plain");

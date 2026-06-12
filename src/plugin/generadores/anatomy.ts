@@ -1,6 +1,7 @@
 import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { posicionMarcador, TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, frameHorizontal, texto, tablaDe } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado } from "./frames.ts";
+import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
 
@@ -97,7 +98,7 @@ async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy
   artwork.name = "Artwork";
   artwork.layoutMode = "NONE";
   artwork.clipsContent = false; // los marcadores van fuera del borde izquierdo
-  artwork.fills = [{ type: "SOLID", color: GRIS(0.96) }];
+  artwork.fills = fillTematizado(varsTema().fondoArtwork);
   display.appendChild(artwork);
 
   const clon = seleccionado.clone();
