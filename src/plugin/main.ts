@@ -185,7 +185,7 @@ async function generarSeccionTwoWay(nodo: SceneNode, columnas: number): Promise<
   finalizar(frame, nodo);
 }
 
-async function generarSeccionComplete(nodo: SceneNode): Promise<void> {
+async function generarSeccionComplete(nodo: SceneNode, columnas: number): Promise<void> {
   const componentSet = resolverComponentSet(nodo);
   if (!componentSet) {
     responder({ tipo: "resultado", ok: false, error: "Complete necesita un componente con variantes." });
@@ -194,7 +194,7 @@ async function generarSeccionComplete(nodo: SceneNode): Promise<void> {
   const setNorm = normalizarSet(componentSet);
   const anatomy = extraerCompleteAnatomy(setNorm);
   const layout = extraerCompleteLayout(setNorm);
-  const frame = await generarComplete(componentSet.name, anatomy, layout);
+  const frame = await generarComplete(componentSet.name, anatomy, layout, columnas);
   finalizar(frame, nodo);
 }
 
@@ -224,7 +224,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
     else if (msg.seccion === "modes") await generarSeccionModes(nodo, columnas);
     else if (msg.seccion === "twoway") await generarSeccionTwoWay(nodo, columnas);
-    else await generarSeccionComplete(nodo);
+    else await generarSeccionComplete(nodo, columnas);
   } catch (e) {
     responder({ tipo: "resultado", ok: false, error: String(e) });
   }
