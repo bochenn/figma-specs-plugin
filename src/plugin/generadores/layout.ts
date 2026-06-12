@@ -3,10 +3,15 @@ import { frameVertical, frameHorizontal, texto, enColumnas } from "./frames.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { formatearEspaciado, unidadActual } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
+import { marcasLayout, estiloCota, iconoDireccion } from "../utils/marcadores-layout.ts";
 
 const AZUL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
 const VERDE: RGB = { r: 0.1, g: 0.7, b: 0.3 };
 const NARANJA: RGB = { r: 1, g: 0.5, b: 0.1 };
+
+// Versiones oscuras para los textos de las marcas (legibles sobre el gris).
+const VERDE_TEXTO: RGB = { r: 0.05, g: 0.5, b: 0.2 };
+const NARANJA_TEXTO: RGB = { r: 0.85, g: 0.4, b: 0 };
 
 // Margen del artwork reservado para las anotaciones (arriba e izquierda).
 const MARGEN = 56;
@@ -37,6 +42,24 @@ function rectOverlay(r: Rect, color: RGB, opacity: number, artwork: FrameNode): 
   artwork.appendChild(rect);
 }
 
+// Línea fina (rect de 1px) para ticks de las marcas.
+function linea(x: number, y: number, w: number, h: number, color: RGB, artwork: FrameNode): void {
+  const r = figma.createRectangle();
+  r.x = x;
+  r.y = y;
+  r.resize(Math.max(w, 1), Math.max(h, 1));
+  r.fills = [{ type: "SOLID", color }];
+  artwork.appendChild(r);
+}
+
+// Texto chico de marca, coloreado; el caller lo posiciona después (necesita width/height).
+async function textoMarca(valor: string, color: RGB, artwork: FrameNode): Promise<TextNode> {
+  const t = await texto(valor, 10);
+  t.fills = [{ type: "SOLID", color }];
+  artwork.appendChild(t);
+  return t;
+}
+
 // Construye el artwork anotado de UN contenedor con Auto Layout: clon del
 // subárbol + overlays de ese contenedor (hijos azules, padding verde, gaps
 // naranjas). El clon va corrido (MARGEN, MARGEN) para dejar lugar a las
@@ -61,6 +84,26 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec): Promise<Frame
   for (const r of rectsPadding(frameRect, spec.padding)) rectOverlay(r, VERDE, 0.35, artwork);
   const gaps = rectsSpacing(hijosRects, spec.direccion);
   for (const r of gaps) rectOverlay(r, NARANJA, 0.5, artwork);
+
+  // Marcas numéricas: eje X arriba, eje Y a la izquierda, con ticks en los
+  // bordes de cada banda.
+  const { ejeX, ejeY } = marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto);
+  for (const m of ejeX) {
+    const color = m.tipo === "padding" ? VERDE_TEXTO : NARANJA_TEXTO;
+    linea(m.desde, MARGEN - 12, 1, 12, color, artwork);
+    linea(m.hasta - 1, MARGEN - 12, 1, 12, color, artwork);
+    const t = await textoMarca(m.valor, color, artwork);
+    t.x = m.x - t.width / 2;
+    t.y = MARGEN - 26;
+  }
+  for (const m of ejeY) {
+    const color = m.tipo === "padding" ? VERDE_TEXTO : NARANJA_TEXTO;
+    linea(MARGEN - 12, m.desde, 12, 1, color, artwork);
+    linea(MARGEN - 12, m.hasta - 1, 12, 1, color, artwork);
+    const t = await textoMarca(m.valor, color, artwork);
+    t.x = MARGEN - 16 - t.width;
+    t.y = m.y - t.height / 2;
+  }
 
   return artwork;
 }
