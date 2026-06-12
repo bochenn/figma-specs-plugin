@@ -41,3 +41,10 @@ test("leerAtributos incluye el line-height en typography", () => {
   assert.ok(typo);
   assert.equal(typo.valor, "Inter Regular 16 / 24");
 });
+
+test("leerAtributos incluye el letter-spacing en typography", () => {
+  const nodo: NodoLike = { id: "t", name: "Text", type: "TEXT", fontFamily: "Inter", fontStyle: "Regular", fontSize: 16, letterSpacing: { unidad: "px", valor: 0.5 } };
+  const typo = leerAtributos(nodo).find((a) => a.clave === "typography");
+  assert.ok(typo);
+  assert.equal(typo.valor, "Inter Regular 16 · LS 0.5");
+});
