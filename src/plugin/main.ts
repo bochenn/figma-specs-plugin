@@ -10,7 +10,7 @@ import { extraerAnatomy } from "./extraccion/anatomy.ts";
 import { generarAnatomy, generarAnatomyConNested } from "./generadores/anatomy.ts";
 import { resolverComponentSet } from "./extraccion/resolver.ts";
 import { extraerProperties } from "./extraccion/properties.ts";
-import { generarProperties } from "./generadores/properties.ts";
+import { generarProperties, generarPropertiesConNested } from "./generadores/properties.ts";
 import { extraerLayout } from "./extraccion/layout.ts";
 import { generarLayout } from "./generadores/layout.ts";
 import { serializarAnatomy } from "./serializacion/anatomy-json.ts";
@@ -76,6 +76,21 @@ function instanciasAnidadas(nodo: SceneNode): InstanceNode[] {
   return res;
 }
 
+// Component sets de las instancias anidadas (en la variante default), sin
+// repetidos, sin el set principal y sin componentes que no tengan variantes.
+function setsAnidados(componentSet: ComponentSetNode): ComponentSetNode[] {
+  const raiz = componentSet.defaultVariant ?? componentSet;
+  const res: ComponentSetNode[] = [];
+  const vistos = new Set<string>([componentSet.id]);
+  for (const inst of instanciasAnidadas(raiz)) {
+    const set = resolverComponentSet(inst);
+    if (!set || vistos.has(set.id)) continue;
+    vistos.add(set.id);
+    res.push(set);
+  }
+  return res;
+}
+
 async function generarSeccionAnatomy(nodo: SceneNode, nested: boolean, tabla: boolean): Promise<void> {
   if (!TIPOS_VALIDOS.includes(nodo.type)) {
     responder({ tipo: "resultado", ok: false, error: "Anatomy necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
@@ -92,7 +107,7 @@ async function generarSeccionAnatomy(nodo: SceneNode, nested: boolean, tabla: bo
   finalizar(frame, nodo);
 }
 
-async function generarSeccionProperties(nodo: SceneNode, columnas: number): Promise<void> {
+async function generarSeccionProperties(nodo: SceneNode, columnas: number, nested: boolean): Promise<void> {
   const componentSet = resolverComponentSet(nodo);
   if (!componentSet) {
     responder({ tipo: "resultado", ok: false, error: "Properties necesita un componente con variantes." });
@@ -100,7 +115,16 @@ async function generarSeccionProperties(nodo: SceneNode, columnas: number): Prom
   }
   const setNorm = normalizarSet(componentSet);
   const specs = extraerProperties(setNorm);
-  const frame = await generarProperties(componentSet, specs, setNorm.defaultProps, columnas);
+  let frame: FrameNode;
+  if (nested) {
+    const nestedSpecs = setsAnidados(componentSet).map((set) => {
+      const norm = normalizarSet(set);
+      return { set, propiedades: extraerProperties(norm), defaultProps: norm.defaultProps };
+    });
+    frame = await generarPropertiesConNested(componentSet, specs, setNorm.defaultProps, columnas, nestedSpecs);
+  } else {
+    frame = await generarProperties(componentSet, specs, setNorm.defaultProps, columnas);
+  }
   finalizar(frame, nodo);
 }
 
@@ -194,7 +218,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   const columnas = clampColumnas(msg.columnas);
   try {
     if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false, msg.tabla ?? false);
-    else if (msg.seccion === "properties") await generarSeccionProperties(nodo, columnas);
+    else if (msg.seccion === "properties") await generarSeccionProperties(nodo, columnas, msg.nested ?? false);
     else if (msg.seccion === "layout") await generarSeccionLayout(nodo, columnas);
     else if (msg.seccion === "data") await generarSeccionData(nodo);
     else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
