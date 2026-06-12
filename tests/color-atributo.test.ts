@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import { colorAtributo } from "../src/plugin/utils/atributos.ts";
+import { aplicarFormatoRaw, aplicarMostrarRaw, aplicarPreferencia } from "../src/plugin/utils/valores.ts";
 
 test("solo hex → HARDCODED con swatchHex, sin rawValue", () => {
   assert.deepEqual(colorAtributo("background-color", { hex: "#000000" }), {
@@ -28,4 +29,35 @@ test("variable + style → gana la variable", () => {
 
 test("sin hex → undefined", () => {
   assert.equal(colorAtributo("background-color", { variableName: "Color/Action" }), undefined);
+});
+
+test("rawValue respeta el formato raw (RGB)", () => {
+  aplicarFormatoRaw("RGB");
+  const a = colorAtributo("background-color", { hex: "#0E68D4", variableName: "Color/Action" });
+  assert.equal(a?.rawValue, "rgb(14, 104, 212)");
+  assert.equal(a?.swatchHex, "#0E68D4"); // el swatch sigue en hex crudo
+  aplicarFormatoRaw("HEX");
+});
+
+test("mostrarRaw false → sin rawValue (pero con swatchHex)", () => {
+  aplicarMostrarRaw(false);
+  const a = colorAtributo("background-color", { hex: "#0E68D4", variableName: "Color/Action" });
+  assert.equal(a?.rawValue, undefined);
+  assert.equal(a?.swatchHex, "#0E68D4");
+  aplicarMostrarRaw(true);
+});
+
+test("preferencia STYLE + variable y style → gana el style", () => {
+  aplicarPreferencia("STYLE");
+  const a = colorAtributo("background-color", { hex: "#0E68D4", variableName: "Color/Action", styleName: "Brand/Surface" });
+  assert.equal(a?.formato, "STYLE");
+  assert.equal(a?.valor, "Brand/Surface");
+  aplicarPreferencia("VARIABLE");
+});
+
+test("preferencia STYLE + solo variable → variable igual", () => {
+  aplicarPreferencia("STYLE");
+  const a = colorAtributo("background-color", { hex: "#0E68D4", variableName: "Color/Action" });
+  assert.equal(a?.formato, "VARIABLE");
+  aplicarPreferencia("VARIABLE");
 });
