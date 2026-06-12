@@ -5,9 +5,10 @@ const tablaCheck = document.getElementById("tabla") as HTMLInputElement;
 const columnasSelect = document.getElementById("columnas") as HTMLSelectElement;
 const formatoColorSelect = document.getElementById("formatoColor") as HTMLSelectElement;
 const unidadSelect = document.getElementById("unidad") as HTMLSelectElement;
+const formatoTipoSelect = document.getElementById("formatoTipo") as HTMLSelectElement;
 
 function generar(seccion: "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway" | "complete"): void {
-  parent.postMessage({ pluginMessage: { tipo: "generar", seccion, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value, unidad: unidadSelect.value } }, "*");
+  parent.postMessage({ pluginMessage: { tipo: "generar", seccion, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value, unidad: unidadSelect.value, formatoTipo: formatoTipoSelect.value } }, "*");
 }
 
 (document.getElementById("anatomy") as HTMLButtonElement).onclick = () => generar("anatomy");
