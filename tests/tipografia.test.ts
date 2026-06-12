@@ -9,6 +9,13 @@ test("formatearTipografia en Plain y CSS", () => {
   assert.equal(formatearTipografia({ family: "Inter", style: "Bold", size: 24 }, "CSS"), "24px Bold Inter");
 });
 
+test("formatearTipografia con line-height", () => {
+  assert.equal(formatearTipografia({ family: "Inter", style: "Regular", size: 16, lineHeight: { unidad: "px", valor: 24 } }, "Plain"), "Inter Regular 16 / 24");
+  assert.equal(formatearTipografia({ family: "Inter", style: "Regular", size: 16, lineHeight: { unidad: "px", valor: 24 } }, "CSS"), "16px/24px Regular Inter");
+  assert.equal(formatearTipografia({ family: "Inter", style: "Regular", size: 16, lineHeight: { unidad: "percent", valor: 150 } }, "Plain"), "Inter Regular 16 / 150%");
+  assert.equal(formatearTipografia({ family: "Inter", style: "Regular", size: 16, lineHeight: { unidad: "auto" } }, "CSS"), "16px Regular Inter");
+});
+
 test("leerAtributos agrega typography para nodos con fuente", () => {
   const nodo: NodoLike = { id: "t", name: "Text", type: "TEXT", fontFamily: "Inter", fontStyle: "Regular", fontSize: 16 };
   const typo = leerAtributos(nodo).find((a) => a.clave === "typography");

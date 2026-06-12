@@ -1,3 +1,8 @@
+export interface AlturaLinea {
+  unidad: "px" | "percent" | "auto";
+  valor?: number;
+}
+
 // Interfaz mínima de un nodo de Figma: solo lo que leen los módulos puros.
 // Permite testear sin cargar la API real de Figma.
 export interface NodoLike {
@@ -31,6 +36,7 @@ export interface NodoLike {
   fontFamily?: string;
   fontStyle?: string;
   fontSize?: number;
+  lineHeight?: AlturaLinea;
   // variables de color resueltas (Variable Formatting):
   fillVariableName?: string;     // "Colección/Variable" del fill
   strokeVariableName?: string;   // idem stroke
