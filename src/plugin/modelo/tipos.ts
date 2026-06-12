@@ -28,6 +28,9 @@ export interface NodoLike {
   fillStyleName?: string;
   strokeStyleName?: string;
   textStyleName?: string;
+  fontFamily?: string;
+  fontStyle?: string;
+  fontSize?: number;
   // variables de color resueltas (Variable Formatting):
   fillVariableName?: string;     // "Colección/Variable" del fill
   strokeVariableName?: string;   // idem stroke
@@ -57,7 +60,9 @@ export type FormatoColor = "HEX" | "RGB" | "HSL";
 
 export type Unidad = "px" | "rem";
 
-export type MensajeUI = { tipo: "generar"; seccion: Seccion; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; formatoColor?: FormatoColor; unidad?: Unidad };
+export type FormatoTipo = "Plain" | "CSS";
+
+export type MensajeUI = { tipo: "generar"; seccion: Seccion; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo };
 
 export type MensajePlugin =
   | { tipo: "resultado"; ok: true }

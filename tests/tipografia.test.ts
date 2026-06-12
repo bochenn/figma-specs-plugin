@@ -1,0 +1,22 @@
+import { test } from "node:test";
+import assert from "node:assert";
+import { formatearTipografia } from "../src/plugin/utils/tipografia.ts";
+import { leerAtributos } from "../src/plugin/utils/atributos.ts";
+import type { NodoLike } from "../src/plugin/modelo/tipos.ts";
+
+test("formatearTipografia en Plain y CSS", () => {
+  assert.equal(formatearTipografia({ family: "Inter", style: "Regular", size: 16 }, "Plain"), "Inter Regular 16");
+  assert.equal(formatearTipografia({ family: "Inter", style: "Bold", size: 24 }, "CSS"), "24px Bold Inter");
+});
+
+test("leerAtributos agrega typography para nodos con fuente", () => {
+  const nodo: NodoLike = { id: "t", name: "Text", type: "TEXT", fontFamily: "Inter", fontStyle: "Regular", fontSize: 16 };
+  const typo = leerAtributos(nodo).find((a) => a.clave === "typography");
+  assert.ok(typo);
+  assert.equal(typo.valor, "Inter Regular 16");
+});
+
+test("leerAtributos no agrega typography sin fuente", () => {
+  const nodo: NodoLike = { id: "f", name: "Frame", type: "FRAME" };
+  assert.equal(leerAtributos(nodo).find((a) => a.clave === "typography"), undefined);
+});

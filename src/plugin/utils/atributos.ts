@@ -1,6 +1,7 @@
 import type { NodoLike, Atributo } from "../modelo/tipos.ts";
 import { formatearColor, formatoColorActual } from "./color.ts";
 import { formatearEspaciado, unidadActual } from "./espaciado.ts";
+import { formatearTipografia, formatoTipoActual } from "./tipografia.ts";
 
 // Convierte un canal de color (0..1) a dos dígitos hex.
 function canalHex(canal: number): string {
@@ -59,6 +60,14 @@ export function leerAtributos(nodo: NodoLike): Atributo[] {
 
   if (typeof nodo.opacity === "number" && nodo.opacity < 1) {
     atributos.push({ clave: "opacity", valor: Math.round(nodo.opacity * 100) + "%", formato: "HARDCODED" });
+  }
+
+  if (nodo.fontFamily && typeof nodo.fontSize === "number") {
+    atributos.push({
+      clave: "typography",
+      valor: formatearTipografia({ family: nodo.fontFamily, style: nodo.fontStyle ?? "", size: nodo.fontSize }, formatoTipoActual()),
+      formato: "HARDCODED",
+    });
   }
 
   return atributos;

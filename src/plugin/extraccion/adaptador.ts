@@ -55,6 +55,14 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
     const estilo = figma.getStyleById(nodo.textStyleId);
     if (estilo) base.textStyleName = estilo.name;
   }
+  if (nodo.type === "TEXT") {
+    const fn = nodo.fontName;
+    if (fn !== figma.mixed) {
+      base.fontFamily = fn.family;
+      base.fontStyle = fn.style;
+    }
+    if (nodo.fontSize !== figma.mixed) base.fontSize = nodo.fontSize;
+  }
   if ("boundVariables" in nodo && nodo.boundVariables) {
     const bv = nodo.boundVariables as {
       fills?: readonly VariableAlias[];
