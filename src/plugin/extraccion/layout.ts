@@ -38,6 +38,8 @@ export function layoutSpecDe(nodo: NodoLike): LayoutSpec {
       bottom: nodo.paddingBottom ?? 0,
     },
     itemSpacing: nodo.itemSpacing ?? 0,
+    wrap: nodo.layoutWrap === "WRAP",
+    spacingAuto: nodo.primaryAxisAlignItems === "SPACE_BETWEEN",
   };
 }
 

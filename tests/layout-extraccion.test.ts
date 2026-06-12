@@ -27,6 +27,8 @@ test("arma un LayoutSpec completo desde un nodo con Auto Layout", () => {
     resizingVertical: "Hug",
     padding: { left: 16, top: 8, right: 16, bottom: 8 },
     itemSpacing: 12,
+    wrap: false,
+    spacingAuto: false,
   });
 });
 
@@ -35,4 +37,17 @@ test("padding e itemSpacing ausentes → 0", () => {
   const specs = extraerLayout(raiz);
   assert.deepEqual(specs[0].padding, { left: 0, top: 0, right: 0, bottom: 0 });
   assert.equal(specs[0].itemSpacing, 0);
+});
+
+test("wrap y space between → wrap/spacingAuto true", () => {
+  const raiz: NodoLike = {
+    id: "r", name: "Tags", type: "FRAME",
+    layoutMode: "HORIZONTAL",
+    layoutWrap: "WRAP",
+    primaryAxisAlignItems: "SPACE_BETWEEN",
+    children: [],
+  };
+  const s = extraerLayout(raiz)[0];
+  assert.equal(s.wrap, true);
+  assert.equal(s.spacingAuto, true);
 });
