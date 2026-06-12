@@ -68,6 +68,10 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
       else if (lh.unit === "PERCENT") base.lineHeight = { unidad: "percent", valor: lh.value };
       else base.lineHeight = { unidad: "px", valor: lh.value };
     }
+    const ls = nodo.letterSpacing;
+    if (ls !== figma.mixed && ls.value !== 0) {
+      base.letterSpacing = { unidad: ls.unit === "PERCENT" ? "percent" : "px", valor: ls.value };
+    }
   }
   if ("boundVariables" in nodo && nodo.boundVariables) {
     const bv = nodo.boundVariables as {
