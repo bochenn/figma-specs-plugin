@@ -73,9 +73,11 @@ export type FormatoColor = "HEX" | "RGB" | "HSL";
 
 export type Unidad = "px" | "rem";
 
+export type Preferencia = "VARIABLE" | "STYLE";
+
 export type FormatoTipo = "Plain" | "CSS";
 
-export type MensajeUI = { tipo: "generar"; seccion: Seccion; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo };
+export type MensajeUI = { tipo: "generar"; seccion: Seccion; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo; formatoRaw?: FormatoColor; mostrarRaw?: boolean; preferencia?: Preferencia };
 
 export type MensajePlugin =
   | { tipo: "resultado"; ok: true }

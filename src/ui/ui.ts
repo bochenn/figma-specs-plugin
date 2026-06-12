@@ -6,9 +6,12 @@ const columnasSelect = document.getElementById("columnas") as HTMLSelectElement;
 const formatoColorSelect = document.getElementById("formatoColor") as HTMLSelectElement;
 const unidadSelect = document.getElementById("unidad") as HTMLSelectElement;
 const formatoTipoSelect = document.getElementById("formatoTipo") as HTMLSelectElement;
+const mostrarRawCheck = document.getElementById("mostrarRaw") as HTMLInputElement;
+const formatoRawSelect = document.getElementById("formatoRaw") as HTMLSelectElement;
+const preferenciaSelect = document.getElementById("preferencia") as HTMLSelectElement;
 
 function generar(seccion: "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway" | "complete"): void {
-  parent.postMessage({ pluginMessage: { tipo: "generar", seccion, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value, unidad: unidadSelect.value, formatoTipo: formatoTipoSelect.value } }, "*");
+  parent.postMessage({ pluginMessage: { tipo: "generar", seccion, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value, unidad: unidadSelect.value, formatoTipo: formatoTipoSelect.value, formatoRaw: formatoRawSelect.value, mostrarRaw: mostrarRawCheck.checked, preferencia: preferenciaSelect.value } }, "*");
 }
 
 (document.getElementById("anatomy") as HTMLButtonElement).onclick = () => generar("anatomy");

@@ -1,5 +1,6 @@
 import type { NodoLike, Atributo } from "../modelo/tipos.ts";
 import { formatearColor, formatoColorActual } from "./color.ts";
+import { formatoRawActual, mostrarRawActual, preferenciaActual } from "./valores.ts";
 import { formatearEspaciado, unidadActual } from "./espaciado.ts";
 import { formatearTipografia, formatoTipoActual } from "./tipografia.ts";
 
@@ -12,20 +13,24 @@ function aHex(color: { r: number; g: number; b: number }): string {
   return "#" + canalHex(color.r) + canalHex(color.g) + canalHex(color.b);
 }
 
-// Aplica la prioridad variable > style > hardcoded para un atributo de color.
-// Devuelve undefined si no hay un color resuelto (hex).
+// Atributo de color: variable o style (según la preferencia cuando hay ambos),
+// con el valor resuelto formateado según las opciones de Custom Value Formats;
+// hardcoded si no hay ninguno. Devuelve undefined si no hay un color resuelto.
 export function colorAtributo(
   clave: string,
   opts: { hex?: string; variableName?: string; styleName?: string },
 ): Atributo | undefined {
-  if (!opts.hex) return undefined;
-  if (opts.variableName) {
-    return { clave, valor: opts.variableName, formato: "VARIABLE", rawValue: opts.hex, swatchHex: opts.hex };
-  }
-  if (opts.styleName) {
-    return { clave, valor: opts.styleName, formato: "STYLE", rawValue: opts.hex, swatchHex: opts.hex };
-  }
-  return { clave, valor: formatearColor(opts.hex, formatoColorActual()), formato: "HARDCODED", swatchHex: opts.hex };
+  const hex = opts.hex;
+  if (!hex) return undefined;
+  const nombrado = (valor: string, formato: "VARIABLE" | "STYLE"): Atributo => {
+    const a: Atributo = { clave, valor, formato, swatchHex: hex };
+    if (mostrarRawActual()) a.rawValue = formatearColor(hex, formatoRawActual());
+    return a;
+  };
+  if (preferenciaActual() === "STYLE" && opts.styleName) return nombrado(opts.styleName, "STYLE");
+  if (opts.variableName) return nombrado(opts.variableName, "VARIABLE");
+  if (opts.styleName) return nombrado(opts.styleName, "STYLE");
+  return { clave, valor: formatearColor(hex, formatoColorActual()), formato: "HARDCODED", swatchHex: hex };
 }
 
 // Devuelve el hex del primer paint SOLID de una lista, o undefined.
