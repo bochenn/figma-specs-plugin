@@ -3,6 +3,11 @@ export interface AlturaLinea {
   valor?: number;
 }
 
+export interface EspaciadoLetra {
+  unidad: "px" | "percent";
+  valor: number;
+}
+
 // Interfaz mínima de un nodo de Figma: solo lo que leen los módulos puros.
 // Permite testear sin cargar la API real de Figma.
 export interface NodoLike {
@@ -37,6 +42,7 @@ export interface NodoLike {
   fontStyle?: string;
   fontSize?: number;
   lineHeight?: AlturaLinea;
+  letterSpacing?: EspaciadoLetra;
   // variables de color resueltas (Variable Formatting):
   fillVariableName?: string;     // "Colección/Variable" del fill
   strokeVariableName?: string;   // idem stroke

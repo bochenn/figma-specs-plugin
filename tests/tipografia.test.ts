@@ -16,6 +16,13 @@ test("formatearTipografia con line-height", () => {
   assert.equal(formatearTipografia({ family: "Inter", style: "Regular", size: 16, lineHeight: { unidad: "auto" } }, "CSS"), "16px Regular Inter");
 });
 
+test("formatearTipografia con letter-spacing", () => {
+  assert.equal(formatearTipografia({ family: "Inter", style: "Regular", size: 16, letterSpacing: { unidad: "px", valor: 0.5 } }, "Plain"), "Inter Regular 16 · LS 0.5");
+  assert.equal(formatearTipografia({ family: "Inter", style: "Regular", size: 16, letterSpacing: { unidad: "px", valor: 0.5 } }, "CSS"), "16px Regular Inter · LS 0.5px");
+  assert.equal(formatearTipografia({ family: "Inter", style: "Regular", size: 16, letterSpacing: { unidad: "percent", valor: 5 } }, "Plain"), "Inter Regular 16 · LS 5%");
+  assert.equal(formatearTipografia({ family: "Inter", style: "Regular", size: 16, lineHeight: { unidad: "px", valor: 24 }, letterSpacing: { unidad: "px", valor: 0.5 } }, "Plain"), "Inter Regular 16 / 24 · LS 0.5");
+});
+
 test("leerAtributos agrega typography para nodos con fuente", () => {
   const nodo: NodoLike = { id: "t", name: "Text", type: "TEXT", fontFamily: "Inter", fontStyle: "Regular", fontSize: 16 };
   const typo = leerAtributos(nodo).find((a) => a.clave === "typography");
