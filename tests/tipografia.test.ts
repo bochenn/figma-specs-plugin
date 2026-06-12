@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert";
 import { formatearTipografia } from "../src/plugin/utils/tipografia.ts";
 import { leerAtributos } from "../src/plugin/utils/atributos.ts";
+import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 import type { NodoLike } from "../src/plugin/modelo/tipos.ts";
 
 test("formatearTipografia en Plain y CSS", () => {
@@ -47,4 +48,35 @@ test("leerAtributos incluye el letter-spacing en typography", () => {
   const typo = leerAtributos(nodo).find((a) => a.clave === "typography");
   assert.ok(typo);
   assert.equal(typo.valor, "Inter Regular 16 · LS 0.5");
+});
+
+test("con Units=rem, Plain convierte size, line-height y letter-spacing", () => {
+  aplicarUnidad("rem");
+  assert.equal(
+    formatearTipografia({ family: "Inter", style: "Regular", size: 16, lineHeight: { unidad: "px", valor: 24 }, letterSpacing: { unidad: "px", valor: 4 } }, "Plain"),
+    "Inter Regular 1rem / 1.5rem · LS 0.25rem",
+  );
+  aplicarUnidad("px");
+});
+
+test("con Units=rem, CSS convierte size, line-height y letter-spacing", () => {
+  aplicarUnidad("rem");
+  assert.equal(
+    formatearTipografia({ family: "Inter", style: "Regular", size: 16, lineHeight: { unidad: "px", valor: 24 }, letterSpacing: { unidad: "px", valor: 4 } }, "CSS"),
+    "1rem/1.5rem Regular Inter · LS 0.25rem",
+  );
+  aplicarUnidad("px");
+});
+
+test("con Units=rem, percent y auto quedan intactos", () => {
+  aplicarUnidad("rem");
+  assert.equal(
+    formatearTipografia({ family: "Inter", style: "Regular", size: 16, lineHeight: { unidad: "percent", valor: 150 } }, "Plain"),
+    "Inter Regular 1rem / 150%",
+  );
+  assert.equal(
+    formatearTipografia({ family: "Inter", style: "Regular", size: 16, lineHeight: { unidad: "auto" }, letterSpacing: { unidad: "percent", valor: 5 } }, "CSS"),
+    "1rem Regular Inter · LS 5%",
+  );
+  aplicarUnidad("px");
 });
