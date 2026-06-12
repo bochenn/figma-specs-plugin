@@ -17,6 +17,17 @@ export interface MarcaY {
   tipo: "padding" | "spacing";
 }
 
+// Descarta marcas que se pisan con otra anterior de igual valor (típico en
+// wrap: el gap de cada fila se proyecta casi en la misma posición).
+function sinPisadas<T extends { desde: number; hasta: number; valor: string }>(marcas: T[]): T[] {
+  const resultado: T[] = [];
+  for (const m of marcas) {
+    const pisada = resultado.some((o) => o.valor === m.valor && m.desde < o.hasta && o.desde < m.hasta);
+    if (!pisada) resultado.push(m);
+  }
+  return resultado;
+}
+
 // Marcas numéricas de un contenedor: las bandas verticales (padding left/right,
 // gaps de dirección HORIZONTAL) se anotan arriba del artwork (eje X); las
 // horizontales (padding top/bottom, gaps de dirección VERTICAL), a la izquierda
@@ -53,7 +64,7 @@ export function marcasLayout(
       ejeY.push({ y: g.y + g.height / 2, desde: g.y, hasta: g.y + g.height, valor: spacingAuto ? "Auto" : E(g.height), tipo: "spacing" });
     }
   }
-  return { ejeX, ejeY };
+  return { ejeX: sinPisadas(ejeX), ejeY: sinPisadas(ejeY) };
 }
 
 // Estilo de puntas de la cota azul según el resizing del eje:

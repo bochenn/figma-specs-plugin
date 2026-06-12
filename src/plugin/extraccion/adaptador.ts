@@ -40,6 +40,7 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
     base.paddingRight = nodo.paddingRight;
     base.paddingBottom = nodo.paddingBottom;
     base.itemSpacing = nodo.itemSpacing;
+    if ("layoutWrap" in nodo) base.layoutWrap = nodo.layoutWrap;
     if ("layoutSizingHorizontal" in nodo) base.layoutSizingHorizontal = nodo.layoutSizingHorizontal;
     if ("layoutSizingVertical" in nodo) base.layoutSizingVertical = nodo.layoutSizingVertical;
   }

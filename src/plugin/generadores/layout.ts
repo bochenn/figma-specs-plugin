@@ -21,7 +21,7 @@ const RESPIRO = 16; // borde derecho e inferior
 async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const fila = frameVertical(spec.elementoNombre, 4);
   fila.appendChild(await texto(`${spec.elementoNombre} · ${spec.tipo}`, 16));
-  const direccion = spec.direccion === "HORIZONTAL" ? "Horizontal" : "Vertical";
+  const direccion = (spec.direccion === "HORIZONTAL" ? "Horizontal" : "Vertical") + (spec.wrap ? ", wrapping" : "");
   fila.appendChild(await texto(`Direction: ${direccion}`, 12));
   fila.appendChild(await texto(`Alignment: ${spec.alineacionPrimaria} / ${spec.alineacionContraria}`, 12));
   fila.appendChild(await texto(`Resizing: ${spec.resizingHorizontal} × ${spec.resizingVertical}`, 12));

@@ -55,6 +55,31 @@ test("formatea con la unidad actual (rem)", () => {
   aplicarUnidad("px");
 });
 
+test("gaps superpuestos con el mismo valor → una sola marca (wrap)", () => {
+  // Dos filas wrapeadas: el gap de cada fila se proyecta casi en la misma x.
+  const frame = { x: 0, y: 0, width: 200, height: 100 };
+  const padding = { left: 0, top: 0, right: 0, bottom: 0 };
+  const gaps = [
+    { x: 80, y: 0, width: 12, height: 40 },   // gap fila 1
+    { x: 85, y: 60, width: 12, height: 40 },  // gap fila 2 (se superpone en x)
+  ];
+  const { ejeX } = marcasLayout(frame, padding, gaps, "HORIZONTAL", false);
+  assert.deepEqual(ejeX, [
+    { x: 86, desde: 80, hasta: 92, valor: "12", tipo: "spacing" },
+  ]);
+});
+
+test("gaps superpuestos con distinto valor se conservan", () => {
+  const frame = { x: 0, y: 0, width: 200, height: 100 };
+  const padding = { left: 0, top: 0, right: 0, bottom: 0 };
+  const gaps = [
+    { x: 80, y: 0, width: 12, height: 40 },
+    { x: 85, y: 60, width: 20, height: 40 },
+  ];
+  const { ejeX } = marcasLayout(frame, padding, gaps, "HORIZONTAL", false);
+  assert.equal(ejeX.length, 2);
+});
+
 test("estiloCota mapea el resizing a las puntas de la cota", () => {
   assert.equal(estiloCota("Fixed"), "fixed");
   assert.equal(estiloCota("Fill"), "fill");
