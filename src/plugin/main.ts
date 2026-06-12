@@ -169,7 +169,7 @@ async function generarSeccionModes(nodo: SceneNode, columnas: number): Promise<v
   finalizar(frame, nodo);
 }
 
-async function generarSeccionTwoWay(nodo: SceneNode): Promise<void> {
+async function generarSeccionTwoWay(nodo: SceneNode, columnas: number): Promise<void> {
   const componentSet = resolverComponentSet(nodo);
   if (!componentSet) {
     responder({ tipo: "resultado", ok: false, error: "Two-Way necesita un componente con variantes." });
@@ -181,7 +181,7 @@ async function generarSeccionTwoWay(nodo: SceneNode): Promise<void> {
     responder({ tipo: "resultado", ok: false, error: "Two-Way necesita al menos dos propiedades de variante." });
     return;
   }
-  const frame = await generarDosWay(componentSet, dosway, setNorm.defaultProps);
+  const frame = await generarDosWay(componentSet, dosway, setNorm.defaultProps, columnas);
   finalizar(frame, nodo);
 }
 
@@ -223,7 +223,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     else if (msg.seccion === "data") await generarSeccionData(nodo);
     else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
     else if (msg.seccion === "modes") await generarSeccionModes(nodo, columnas);
-    else if (msg.seccion === "twoway") await generarSeccionTwoWay(nodo);
+    else if (msg.seccion === "twoway") await generarSeccionTwoWay(nodo, columnas);
     else await generarSeccionComplete(nodo);
   } catch (e) {
     responder({ tipo: "resultado", ok: false, error: String(e) });

@@ -222,6 +222,7 @@ export async function generarDosWay(
   componentSet: ComponentSetNode,
   dosway: DosWaySpec,
   defaultProps: Record<string, string>,
+  columnas: number,
 ): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${componentSet.name} Spec`, 48);
@@ -233,12 +234,18 @@ export async function generarDosWay(
   seccion.appendChild(await texto("Two-Way", 48));
   seccion.appendChild(await texto(`${dosway.prop1} × ${dosway.prop2}`, 24));
 
+  const bloques: FrameNode[] = [];
   for (const comb of dosway.combinaciones) {
     const bloque = frameVertical(`${comb.valor1} + ${comb.valor2}`, 16);
     bloque.appendChild(await texto(`${comb.valor1} + ${comb.valor2}`, 24));
     const target = { ...defaultProps, [dosway.prop1]: comb.valor1, [dosway.prop2]: comb.valor2 };
     bloque.appendChild(await displayOpcion(componentSet, target, comb.cambios));
-    seccion.appendChild(bloque);
+    bloques.push(bloque);
+  }
+  if (columnas > 1) {
+    seccion.appendChild(enColumnas(bloques, columnas));
+  } else {
+    for (const b of bloques) seccion.appendChild(b);
   }
 
   figma.currentPage.appendChild(specifications);
