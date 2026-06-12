@@ -62,6 +62,12 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
       base.fontStyle = fn.style;
     }
     if (nodo.fontSize !== figma.mixed) base.fontSize = nodo.fontSize;
+    const lh = nodo.lineHeight;
+    if (lh !== figma.mixed) {
+      if (lh.unit === "AUTO") base.lineHeight = { unidad: "auto" };
+      else if (lh.unit === "PERCENT") base.lineHeight = { unidad: "percent", valor: lh.value };
+      else base.lineHeight = { unidad: "px", valor: lh.value };
+    }
   }
   if ("boundVariables" in nodo && nodo.boundVariables) {
     const bv = nodo.boundVariables as {
