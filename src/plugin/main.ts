@@ -4,6 +4,7 @@ import { aplicarTema, temaActual } from "./utils/tema.ts";
 import { clampColumnas } from "./utils/columnas.ts";
 import { aplicarFormatoColor } from "./utils/color.ts";
 import { aplicarUnidad } from "./utils/espaciado.ts";
+import { aplicarFormatoTipo } from "./utils/tipografia.ts";
 import { extraerAnatomy } from "./extraccion/anatomy.ts";
 import { generarAnatomy, generarAnatomyConNested } from "./generadores/anatomy.ts";
 import { resolverComponentSet } from "./extraccion/resolver.ts";
@@ -185,6 +186,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   aplicarTema(msg.dark ?? false);
   aplicarFormatoColor(msg.formatoColor ?? "HEX");
   aplicarUnidad(msg.unidad ?? "px");
+  aplicarFormatoTipo(msg.formatoTipo ?? "Plain");
   const columnas = clampColumnas(msg.columnas);
   try {
     if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false, msg.tabla ?? false);
