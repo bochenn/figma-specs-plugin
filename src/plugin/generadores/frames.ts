@@ -1,7 +1,13 @@
 // Helpers compartidos para construir frames con Auto Layout. Tocan figma.*.
 
-import { temaActual } from "../utils/tema.ts";
+import { varsTema } from "../utils/variables-tema.ts";
 import { anchoContenedor } from "../utils/columnas.ts";
+
+// Fill SOLID atado a una variable de tema (se re-tematiza al cambiar el modo en Figma).
+export function fillTematizado(variable: Variable): Paint[] {
+  const base: SolidPaint = { type: "SOLID", color: { r: 0, g: 0, b: 0 } };
+  return [figma.variables.setBoundVariableForPaint(base, "color", variable)];
+}
 
 // Crea un frame con Auto Layout vertical configurado.
 export function frameVertical(nombre: string, gap: number, padding = 0): FrameNode {
@@ -35,7 +41,7 @@ export async function texto(contenido: string, fontSize: number): Promise<TextNo
   t.fontName = { family: "Inter", style: "Regular" };
   t.characters = contenido;
   t.fontSize = fontSize;
-  t.fills = [{ type: "SOLID", color: temaActual().texto }];
+  t.fills = fillTematizado(varsTema().texto);
   return t;
 }
 
