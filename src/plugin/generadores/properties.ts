@@ -132,18 +132,17 @@ async function displayOpcion(
   return display;
 }
 
-// Genera el output de Properties. Devuelve el frame Specifications creado.
-export async function generarProperties(
+// Construye el frame "{nombre} Spec" completo de un component set: título +
+// sección Properties (subsección por propiedad de variante + booleans).
+async function specDeProperties(
   componentSet: ComponentSetNode,
   propiedades: PropiedadSpec[],
   defaultProps: Record<string, string>,
   columnas: number,
 ): Promise<FrameNode> {
-  const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${componentSet.name} Spec`, 48);
   const seccion = frameVertical("Properties", 64);
 
-  specifications.appendChild(spec);
   spec.appendChild(await texto(componentSet.name, 64));
   spec.appendChild(seccion);
   seccion.appendChild(await texto("Properties", 48));
@@ -178,6 +177,42 @@ export async function generarProperties(
     }
   }
 
+  return spec;
+}
+
+// Genera el output de Properties. Devuelve el frame Specifications creado.
+export async function generarProperties(
+  componentSet: ComponentSetNode,
+  propiedades: PropiedadSpec[],
+  defaultProps: Record<string, string>,
+  columnas: number,
+): Promise<FrameNode> {
+  const specifications = frameVertical("Specifications", 128, 64);
+  specifications.appendChild(await specDeProperties(componentSet, propiedades, defaultProps, columnas));
+  figma.currentPage.appendChild(specifications);
+  return specifications;
+}
+
+// Properties de un set anidado, ya extraídas.
+export interface PropertiesDeSet {
+  set: ComponentSetNode;
+  propiedades: PropiedadSpec[];
+  defaultProps: Record<string, string>;
+}
+
+// Genera Properties del set principal + una sección por cada set anidado.
+export async function generarPropertiesConNested(
+  componentSet: ComponentSetNode,
+  propiedades: PropiedadSpec[],
+  defaultProps: Record<string, string>,
+  columnas: number,
+  nested: PropertiesDeSet[],
+): Promise<FrameNode> {
+  const specifications = frameVertical("Specifications", 128, 64);
+  specifications.appendChild(await specDeProperties(componentSet, propiedades, defaultProps, columnas));
+  for (const n of nested) {
+    specifications.appendChild(await specDeProperties(n.set, n.propiedades, n.defaultProps, columnas));
+  }
   figma.currentPage.appendChild(specifications);
   return specifications;
 }
