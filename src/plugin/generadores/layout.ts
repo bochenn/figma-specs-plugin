@@ -170,7 +170,7 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec): Promise<Frame
 
 // Genera el output de Layout and Spacing: una fila artwork+exhibit por cada
 // contenedor con Auto Layout (raíz + anidados; mismo orden que extraerLayout).
-export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number): Promise<FrameNode> {
+export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
   const seccion = frameVertical("Layout and Spacing", 64);
@@ -182,22 +182,23 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
 
   const contenedores = recorrerAutoLayout(seleccionado as unknown as NodoLike) as unknown as FrameNode[];
 
-  if (specs.length === 0) {
+  // Con hideOuter, se omite la fila del raíz (solo si la selección misma es el
+  // primer contenedor; recorrerAutoLayout devuelve los nodos reales).
+  const inicio = hideOuter && contenedores.length > 0 && (contenedores[0] as SceneNode) === seleccionado ? 1 : 0;
+  const filas: FrameNode[] = [];
+  const n = Math.min(contenedores.length, specs.length);
+  for (let i = inicio; i < n; i++) {
+    const fila = frameHorizontal(`Layout ${specs[i].elementoNombre}`, 48);
+    fila.appendChild(await artworkDe(contenedores[i], specs[i]));
+    fila.appendChild(await exhibit(specs[i]));
+    filas.push(fila);
+  }
+  if (filas.length === 0) {
     seccion.appendChild(await texto("No se detectaron capas con Auto Layout.", 16));
+  } else if (columnas > 1) {
+    seccion.appendChild(enColumnas(filas, columnas));
   } else {
-    const filas: FrameNode[] = [];
-    const n = Math.min(contenedores.length, specs.length);
-    for (let i = 0; i < n; i++) {
-      const fila = frameHorizontal(`Layout ${specs[i].elementoNombre}`, 48);
-      fila.appendChild(await artworkDe(contenedores[i], specs[i]));
-      fila.appendChild(await exhibit(specs[i]));
-      filas.push(fila);
-    }
-    if (columnas > 1) {
-      seccion.appendChild(enColumnas(filas, columnas));
-    } else {
-      for (const f of filas) seccion.appendChild(f);
-    }
+    for (const f of filas) seccion.appendChild(f);
   }
 
   figma.currentPage.appendChild(specifications);
