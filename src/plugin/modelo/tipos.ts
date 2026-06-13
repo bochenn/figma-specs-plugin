@@ -151,6 +151,15 @@ export interface SetNorm {
 
 // --- Layout and Spacing ---
 
+export interface GridSpec {
+  patron: "GRID" | "COLUMNS" | "ROWS";
+  alineacion?: "MIN" | "MAX" | "CENTER" | "STRETCH";
+  count?: number;        // puede venir Infinity ("Auto")
+  gutter?: number;
+  sectionSize?: number;
+  offset?: number;
+}
+
 export interface LayoutSpec {
   elementoNombre: string;
   tipo: string;                  // FRAME, COMPONENT, etc.
