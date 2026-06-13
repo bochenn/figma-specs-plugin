@@ -44,6 +44,16 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
     if ("layoutWrap" in nodo) base.layoutWrap = nodo.layoutWrap;
     if ("layoutSizingHorizontal" in nodo) base.layoutSizingHorizontal = nodo.layoutSizingHorizontal;
     if ("layoutSizingVertical" in nodo) base.layoutSizingVertical = nodo.layoutSizingVertical;
+    const bvLayout = (nodo.boundVariables ?? {}) as Record<string, VariableAlias | undefined>;
+    const sv: NonNullable<NodoLike["spacingVars"]> = {};
+    for (const campo of ["paddingLeft", "paddingTop", "paddingRight", "paddingBottom", "itemSpacing"] as const) {
+      const alias = bvLayout[campo];
+      if (alias) {
+        const nombre = nombreVariable(alias.id);
+        if (nombre) sv[campo] = nombre;
+      }
+    }
+    if (Object.keys(sv).length > 0) base.spacingVars = sv;
   }
   if ("layoutGrids" in nodo && Array.isArray(nodo.layoutGrids)) {
     base.layoutGrids = nodo.layoutGrids.map((g) => gridSpecDe(g));

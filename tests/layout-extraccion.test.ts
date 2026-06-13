@@ -30,6 +30,18 @@ test("arma un LayoutSpec completo desde un nodo con Auto Layout", () => {
     wrap: false,
     spacingAuto: false,
     grids: [],
+    spacingVars: {},
+  });
+});
+
+test("spacingVars del nodo pasan al spec", () => {
+  const raiz: NodoLike = {
+    id: "r", name: "Row", type: "FRAME", layoutMode: "HORIZONTAL",
+    spacingVars: { paddingLeft: "DS Space/padding/1x", itemSpacing: "DS Space/gap" },
+    children: [],
+  };
+  assert.deepEqual(extraerLayout(raiz)[0].spacingVars, {
+    paddingLeft: "DS Space/padding/1x", itemSpacing: "DS Space/gap",
   });
 });
 

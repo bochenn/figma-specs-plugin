@@ -2,7 +2,7 @@ import type { LayoutSpec, NodoLike } from "../modelo/tipos.ts";
 import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
-import { formatearEspaciado, unidadActual } from "../utils/espaciado.ts";
+import { unidadActual, etiquetaSpacing } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
 import { marcasLayout, estiloCota, iconoDireccion } from "../utils/marcadores-layout.ts";
 import { rectsGrid, textoGrid, gridSpecDe } from "../utils/grilla.ts";
@@ -30,9 +30,10 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   fila.appendChild(await texto(`Alignment: ${spec.alineacionPrimaria} / ${spec.alineacionContraria}`, 12));
   fila.appendChild(await texto(`Resizing: ${spec.resizingHorizontal} × ${spec.resizingVertical}`, 12));
   const p = spec.padding;
-  const E = (n: number) => formatearEspaciado(n, unidadActual());
-  fila.appendChild(await texto(`Padding: L${E(p.left)} T${E(p.top)} R${E(p.right)} B${E(p.bottom)}`, 12));
-  fila.appendChild(await texto(`Item spacing: ${E(spec.itemSpacing)}`, 12));
+  const sv = spec.spacingVars;
+  const Et = (n: number, nombre?: string) => etiquetaSpacing(n, unidadActual(), nombre);
+  fila.appendChild(await texto(`Padding: L${Et(p.left, sv.paddingLeft)} T${Et(p.top, sv.paddingTop)} R${Et(p.right, sv.paddingRight)} B${Et(p.bottom, sv.paddingBottom)}`, 12));
+  fila.appendChild(await texto(`Item spacing: ${Et(spec.itemSpacing, sv.itemSpacing)}`, 12));
   for (const g of spec.grids) fila.appendChild(await texto(`Grid: ${textoGrid(g)}`, 12));
   return fila;
 }
