@@ -40,6 +40,7 @@ export function layoutSpecDe(nodo: NodoLike): LayoutSpec {
     itemSpacing: nodo.itemSpacing ?? 0,
     wrap: nodo.layoutWrap === "WRAP",
     spacingAuto: nodo.primaryAxisAlignItems === "SPACE_BETWEEN",
+    grids: nodo.layoutGrids ?? [],
   };
 }
 

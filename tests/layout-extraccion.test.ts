@@ -29,7 +29,20 @@ test("arma un LayoutSpec completo desde un nodo con Auto Layout", () => {
     itemSpacing: 12,
     wrap: false,
     spacingAuto: false,
+    grids: [],
   });
+});
+
+test("layoutGrids del nodo pasan al spec", () => {
+  const raiz: NodoLike = {
+    id: "r", name: "Page", type: "FRAME",
+    layoutMode: "VERTICAL",
+    layoutGrids: [{ patron: "COLUMNS", alineacion: "STRETCH", count: 12, gutter: 20, offset: 16 }],
+    children: [],
+  };
+  assert.deepEqual(extraerLayout(raiz)[0].grids, [
+    { patron: "COLUMNS", alineacion: "STRETCH", count: 12, gutter: 20, offset: 16 },
+  ]);
 });
 
 test("padding e itemSpacing ausentes → 0", () => {

@@ -5,10 +5,13 @@ import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { formatearEspaciado, unidadActual } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
 import { marcasLayout, estiloCota, iconoDireccion } from "../utils/marcadores-layout.ts";
+import { rectsGrid, textoGrid, gridSpecDe } from "../utils/grilla.ts";
+import type { GridSpec } from "../modelo/tipos.ts";
 
 const AZUL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
 const VERDE: RGB = { r: 0.1, g: 0.7, b: 0.3 };
 const NARANJA: RGB = { r: 1, g: 0.5, b: 0.1 };
+const ROJO: RGB = { r: 1, g: 0.1, b: 0.3 };
 
 // Versiones oscuras para los textos de las marcas (legibles sobre el gris).
 const VERDE_TEXTO: RGB = { r: 0.05, g: 0.5, b: 0.2 };
@@ -30,6 +33,7 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const E = (n: number) => formatearEspaciado(n, unidadActual());
   fila.appendChild(await texto(`Padding: L${E(p.left)} T${E(p.top)} R${E(p.right)} B${E(p.bottom)}`, 12));
   fila.appendChild(await texto(`Item spacing: ${E(spec.itemSpacing)}`, 12));
+  for (const g of spec.grids) fila.appendChild(await texto(`Grid: ${textoGrid(g)}`, 12));
   return fila;
 }
 
@@ -128,6 +132,9 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec): Promise<Frame
   for (const r of rectsPadding(frameRect, spec.padding)) rectOverlay(r, VERDE, 0.35, artwork);
   const gaps = rectsSpacing(hijosRects, spec.direccion);
   for (const r of gaps) rectOverlay(r, NARANJA, 0.5, artwork);
+  for (const g of spec.grids) {
+    for (const r of rectsGrid(frameRect, g)) rectOverlay(r, ROJO, 0.12, artwork);
+  }
 
   // Marcas numéricas: eje X arriba, eje Y a la izquierda, con ticks en los
   // bordes de cada banda.
@@ -168,6 +175,34 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec): Promise<Frame
   return artwork;
 }
 
+// Artwork de un frame con layout grids pero sin Auto Layout: clon + franjas
+// rojas, sin marcadores ni cotas.
+async function artworkGrids(frame: FrameNode, grids: GridSpec[]): Promise<FrameNode> {
+  const artwork = figma.createFrame();
+  artwork.name = `Artwork ${frame.name}`;
+  artwork.layoutMode = "NONE";
+  artwork.clipsContent = false;
+  artwork.fills = fillTematizado(varsTema().fondoArtwork);
+  const clon = frame.clone();
+  artwork.appendChild(clon);
+  clon.x = 0;
+  clon.y = 0;
+  artwork.resize(clon.width + RESPIRO, clon.height + RESPIRO);
+  const frameRect: Rect = { x: 0, y: 0, width: clon.width, height: clon.height };
+  for (const g of grids) {
+    for (const r of rectsGrid(frameRect, g)) rectOverlay(r, ROJO, 0.12, artwork);
+  }
+  return artwork;
+}
+
+// Exhibit reducido de un frame con grids (nombre · tipo + líneas Grid).
+async function exhibitGrids(frame: SceneNode, grids: GridSpec[]): Promise<FrameNode> {
+  const fila = frameVertical(frame.name, 4);
+  fila.appendChild(await texto(`${frame.name} · ${frame.type}`, 16));
+  for (const g of grids) fila.appendChild(await texto(`Grid: ${textoGrid(g)}`, 12));
+  return fila;
+}
+
 // Genera el output de Layout and Spacing: una fila artwork+exhibit por cada
 // contenedor con Auto Layout (raíz + anidados; mismo orden que extraerLayout).
 export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean): Promise<FrameNode> {
@@ -193,6 +228,19 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
     fila.appendChild(await exhibit(specs[i]));
     filas.push(fila);
   }
+
+  // Raíz con layout grids pero sin Auto Layout: fila propia (respeta hideOuter).
+  const raizEnFilas = contenedores.length > 0 && (contenedores[0] as SceneNode) === seleccionado;
+  if (!raizEnFilas && !hideOuter && "layoutGrids" in seleccionado && Array.isArray(seleccionado.layoutGrids)) {
+    const gridsRaiz = seleccionado.layoutGrids.map(gridSpecDe);
+    if (gridsRaiz.length > 0) {
+      const fila = frameHorizontal(`Layout ${seleccionado.name}`, 48);
+      fila.appendChild(await artworkGrids(seleccionado as FrameNode, gridsRaiz));
+      fila.appendChild(await exhibitGrids(seleccionado, gridsRaiz));
+      filas.unshift(fila);
+    }
+  }
+
   if (filas.length === 0) {
     seccion.appendChild(await texto("No se detectaron capas con Auto Layout.", 16));
   } else if (columnas > 1) {
