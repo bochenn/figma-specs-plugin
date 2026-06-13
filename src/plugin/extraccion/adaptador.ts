@@ -1,4 +1,5 @@
 import type { NodoLike } from "../modelo/tipos.ts";
+import { gridSpecDe } from "../utils/grilla.ts";
 
 // Resuelve una variable a "Colección/Variable" (o solo su nombre si no hay collection).
 function nombreVariable(id: string): string | undefined {
@@ -43,6 +44,9 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
     if ("layoutWrap" in nodo) base.layoutWrap = nodo.layoutWrap;
     if ("layoutSizingHorizontal" in nodo) base.layoutSizingHorizontal = nodo.layoutSizingHorizontal;
     if ("layoutSizingVertical" in nodo) base.layoutSizingVertical = nodo.layoutSizingVertical;
+  }
+  if ("layoutGrids" in nodo && Array.isArray(nodo.layoutGrids)) {
+    base.layoutGrids = nodo.layoutGrids.map((g) => gridSpecDe(g));
   }
   if ("fillStyleId" in nodo && typeof nodo.fillStyleId === "string" && nodo.fillStyleId !== "") {
     const estilo = figma.getStyleById(nodo.fillStyleId);

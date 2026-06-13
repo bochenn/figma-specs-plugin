@@ -33,6 +33,7 @@ export interface NodoLike {
   paddingBottom?: number;
   itemSpacing?: number;
   layoutWrap?: "NO_WRAP" | "WRAP";
+  layoutGrids?: GridSpec[];
   layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
   // estilos resueltos (Styling Inventory):
@@ -172,6 +173,7 @@ export interface LayoutSpec {
   itemSpacing: number;
   wrap: boolean;          // layoutWrap === "WRAP"
   spacingAuto: boolean;   // primaryAxisAlignItems === "SPACE_BETWEEN" → marcador "Auto"
+  grids: GridSpec[];
 }
 
 export interface VarianteLayout {
