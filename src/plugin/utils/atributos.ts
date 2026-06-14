@@ -41,6 +41,14 @@ function hexSolido(
   return p && p.color ? aHex(p.color) : undefined;
 }
 
+// Atributo de dimensión: VARIABLE (nombre + rawValue) si hay variable atada;
+// HARDCODED (valor pelado) si no.
+function dimensionAtributo(clave: string, px: number, nombreVar?: string): Atributo {
+  const valorFmt = formatearEspaciado(px, unidadActual());
+  if (nombreVar) return { clave, valor: nombreVar, formato: "VARIABLE", rawValue: valorFmt };
+  return { clave, valor: valorFmt, formato: "HARDCODED" };
+}
+
 // Lee los atributos visuales presentes en un nodo.
 export function leerAtributos(nodo: NodoLike): Atributo[] {
   const atributos: Atributo[] = [];
@@ -60,7 +68,11 @@ export function leerAtributos(nodo: NodoLike): Atributo[] {
   if (bd) atributos.push(bd);
 
   if (typeof nodo.width === "number") {
-    atributos.push({ clave: "width", valor: formatearEspaciado(nodo.width, unidadActual()), formato: "HARDCODED" });
+    atributos.push(dimensionAtributo("width", nodo.width, nodo.widthVariableName));
+  }
+
+  if (typeof nodo.height === "number" && nodo.heightVariableName) {
+    atributos.push(dimensionAtributo("height", nodo.height, nodo.heightVariableName));
   }
 
   if (typeof nodo.opacity === "number" && nodo.opacity < 1) {

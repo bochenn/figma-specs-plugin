@@ -92,6 +92,8 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
     const bv = nodo.boundVariables as {
       fills?: readonly VariableAlias[];
       strokes?: readonly VariableAlias[];
+      width?: VariableAlias;
+      height?: VariableAlias;
     };
     if (bv.fills && bv.fills.length > 0) {
       const nombre = nombreVariable(bv.fills[0].id);
@@ -100,6 +102,14 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
     if (bv.strokes && bv.strokes.length > 0) {
       const nombre = nombreVariable(bv.strokes[0].id);
       if (nombre) base.strokeVariableName = nombre;
+    }
+    if (bv.width) {
+      const nombre = nombreVariable(bv.width.id);
+      if (nombre) base.widthVariableName = nombre;
+    }
+    if (bv.height) {
+      const nombre = nombreVariable(bv.height.id);
+      if (nombre) base.heightVariableName = nombre;
     }
   }
   if ("children" in nodo) {
