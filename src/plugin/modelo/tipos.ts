@@ -49,6 +49,8 @@ export interface NodoLike {
   // variables de color resueltas (Variable Formatting):
   fillVariableName?: string;     // "Colección/Variable" del fill
   strokeVariableName?: string;   // idem stroke
+  widthVariableName?: string;    // variable atada al ancho
+  heightVariableName?: string;   // variable atada al alto
 }
 
 export interface Atributo {
