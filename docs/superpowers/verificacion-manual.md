@@ -13,17 +13,74 @@ Este checklist reemplaza al acotado de `verificacion-manual-34-37.md`.
 
 ---
 
-## 0. Preparación (componente de prueba)
+## 0. Preparación (qué armar en Figma, paso a paso)
 
-Un frame que ejercite todo:
-- Frame de pantalla con **layout grid de columnas** (ej. 12 cols, gutter 20, offset 16), **sin**
-  Auto Layout en la raíz.
-- Adentro, un **contenedor con Auto Layout** con padding e item-spacing atados a **variables**
-  (ej. `DS Space/padding/1x`).
-- Un componente con **variantes** (para Properties / Two-Way / Complete) que contenga una
-  **instancia anidada** de otro componente con variantes (para Spec nested).
-- Nodos con **width/height** atados a variables, y fills/strokes con variables y/o styles.
-- Texto con **line-height y letter-spacing** definidos.
+Seguí estos 5 pasos en un archivo de Figma en blanco. Al terminar tenés 3 objetos seleccionables
+(`Tag`, `Card`, `Screen`) que entre los tres ejercitan todo el checklist.
+
+### Paso 1 — Crear las variables (colección "Tokens")
+
+Panel derecho → pestaña con el ícono de variables (al lado de "Local styles") → **+** para crear
+colección, nombrarla **`Tokens`**. Adentro, crear estas variables (botón **+** en el panel de la
+colección; elegí el tipo a la izquierda de cada fila):
+
+| Nombre | Tipo | Valor |
+|---|---|---|
+| `space/padding-1x` | Number | `16` |
+| `space/gap-0_5x` | Number | `8` |
+| `sizing/card-width` | Number | `240` |
+| `sizing/card-height` | Number | `48` |
+| `color/surface` | Color | `#FFFFFF` |
+| `color/border` | Color | `#A6ACB0` |
+
+> El nombre con `/` crea grupos (`space`, `sizing`, `color`); es a propósito, así el plugin muestra
+> `space/padding-1x (16)`.
+
+### Paso 2 — Crear un style de color (para probar "Preferred")
+
+Local styles → **+** en Color styles → nombre **`Brand/Surface`**, color cualquiera (ej. `#EEEEEE`).
+
+### Paso 3 — Componente `Tag` (el que se va a anidar)
+
+1. Dibujá un frame chico, ponele **Auto Layout** (tecla `A`), nombralo **`Tag`**.
+2. Adentro un texto "Label".
+3. Seleccioná el frame `Tag` → click derecho → **Create component** (`⌥⌘K`).
+4. Con el componente seleccionado → **Create variant** (botón `+` en la sección Variants del panel)
+   una vez, para que tenga 2 variantes (queda una propiedad `Property 1` con valores `Default`/`Variant2`).
+
+### Paso 4 — Componente `Card` con variantes (el principal)
+
+1. Frame nuevo con **Auto Layout vertical**, nombralo **`Card`**.
+2. En el panel de Auto Layout: **padding** → click en el ícono de variable del padding → atar a
+   `space/padding-1x`. **Item spacing (gap)** → atar a `space/gap-0_5x`.
+3. **Width**: poné resizing Fixed y atá el ancho a `sizing/card-width` (ícono de variable junto a W).
+4. **Fill** → atar a la variable `color/surface`. Agregá un **stroke** → atalo al **style**
+   `Brand/Surface` **y** además dejá la variable `color/border` en otra capa, para tener un caso con
+   variable y otro con style (ver nota abajo).
+5. Adentro del `Card`: un texto **`Title`** (asignale un text style con line-height y
+   letter-spacing, o seteá line-height 24 y letter-spacing 0.5 a mano) y **una instancia de `Tag`**
+   (arrastrá `Tag` adentro).
+6. Convertí `Card` en componente y creá variantes hasta tener **2 propiedades** (ej. `Size`=Large/Small
+   y `Type`=Primary/Secondary → 4 variantes). Para que Two-Way y Complete muestren diferencias,
+   en **una** variante cambiá algo: borrá el `Tag`, o cambiá el padding, o agregá una capa extra.
+
+> Para el caso "variable **y** style en el mismo color" (toggle Preferred): en una capa, atá el fill
+> a la variable `color/surface` y además asignale el style `Brand/Surface`. Si Figma no deja ambos a
+> la vez, alcanza con tener una capa con variable y otra con style por separado.
+
+### Paso 5 — Frame `Screen` con layout grid (sin Auto Layout)
+
+1. Frame grande (ej. 390×800), nombralo **`Screen`**. **No** le pongas Auto Layout.
+2. Panel derecho → **Layout grid** → **+** → cambiá el tipo a **Columns**.
+3. Seteá: Count **12**, Type **Stretch**, Gutter **20**, Margin **16**.
+4. Meté el componente `Card` (una instancia) adentro del `Screen`.
+
+### Qué seleccionar para cada botón
+
+- **Anatomy / Layout & Spacing / Data / Styling Inventory**: seleccioná una instancia de `Card`
+  (o el `Screen` para ver la fila propia del grid en Layout).
+- **Properties / Modes / Two-Way / Complete A/L**: seleccioná el **component set** de `Card`
+  (el contenedor de todas las variantes).
 
 ---
 
