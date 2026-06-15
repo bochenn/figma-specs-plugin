@@ -2,28 +2,135 @@
 <html>
   <head>
     <meta charset="utf-8" />
+    <style>
+      :root {
+        --bg: var(--figma-color-bg, #fff);
+        --bg-2: var(--figma-color-bg-secondary, #f5f5f5);
+        --text: var(--figma-color-text, #1e1e1e);
+        --text-2: var(--figma-color-text-secondary, #8a8a8a);
+        --border: var(--figma-color-border, #e6e6e6);
+        --brand: var(--figma-color-bg-brand, #0d99ff);
+        --on-brand: var(--figma-color-text-onbrand, #fff);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, "Helvetica Neue", sans-serif;
+        font-size: 11px;
+        line-height: 1.4;
+        color: var(--text);
+        background: var(--bg);
+      }
+      .seccion {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .seccion:last-of-type { border-bottom: none; }
+      .titulo {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-2);
+        margin-bottom: 10px;
+      }
+      /* Toggles: lista vertical, checkbox + label */
+      .toggles { display: flex; flex-direction: column; gap: 8px; }
+      .toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+      .toggle input { width: 13px; height: 13px; margin: 0; accent-color: var(--brand); cursor: pointer; }
+      /* Formato: filas label → control */
+      .campos { display: flex; flex-direction: column; gap: 8px; }
+      .campo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .campo label { color: var(--text-2); }
+      .campo select {
+        font-size: 11px;
+        padding: 3px 6px;
+        min-width: 92px;
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+      }
+      /* Botones de generación: grilla 2 columnas */
+      .acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .acciones button {
+        font-size: 11px;
+        font-weight: 500;
+        padding: 8px 10px;
+        color: var(--text);
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+        text-align: center;
+      }
+      .acciones button:hover { border-color: var(--brand); }
+      .estado {
+        padding: 10px 16px;
+        min-height: 16px;
+        font-size: 11px;
+        color: var(--text-2);
+        border-top: 1px solid var(--border);
+      }
+    </style>
   </head>
   <body>
-    <label><input type="checkbox" id="nested" /> Spec nested subcomponents</label>
-    <label><input type="checkbox" id="dark" /> Dark mode</label>
-    <label><input type="checkbox" id="tabla" /> Tabular anatomy</label>
-    <label><input type="checkbox" id="hideOuter" /> Hide outer layout</label>
-    <label>Columns <select id="columnas"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
-    <label>Color <select id="formatoColor"><option>HEX</option><option>RGB</option><option>HSL</option></select></label>
-    <label>Units <select id="unidad"><option>px</option><option>rem</option></select></label>
-    <label>Type <select id="formatoTipo"><option>Plain</option><option>CSS</option></select></label>
-    <label><input type="checkbox" id="mostrarRaw" checked /> Show raw value</label>
-    <label>Raw value <select id="formatoRaw"><option>HEX</option><option>RGB</option><option>HSL</option></select></label>
-    <label>Preferred <select id="preferencia"><option value="VARIABLE">Variable</option><option value="STYLE">Style</option></select></label>
-    <button id="anatomy">Anatomy</button>
-    <button id="properties">Properties</button>
-    <button id="layout">Layout &amp; Spacing</button>
-    <button id="data">Data (JSON)</button>
-    <button id="styling">Styling Inventory</button>
-    <button id="modes">Modes</button>
-    <button id="twoway">Two-Way</button>
-    <button id="complete">Complete A/L</button>
-    <p id="estado"></p>
+    <div class="seccion">
+      <div class="titulo">Opciones</div>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="nested" /> Spec nested subcomponents</label>
+        <label class="toggle"><input type="checkbox" id="dark" /> Dark mode</label>
+        <label class="toggle"><input type="checkbox" id="tabla" /> Tabular anatomy</label>
+        <label class="toggle"><input type="checkbox" id="hideOuter" /> Hide outer layout</label>
+        <label class="toggle"><input type="checkbox" id="mostrarRaw" checked /> Show raw value</label>
+      </div>
+    </div>
+
+    <div class="seccion">
+      <div class="titulo">Formato</div>
+      <div class="campos">
+        <div class="campo">
+          <label for="columnas">Columns</label>
+          <select id="columnas"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+        </div>
+        <div class="campo">
+          <label for="formatoColor">Color</label>
+          <select id="formatoColor"><option>HEX</option><option>RGB</option><option>HSL</option></select>
+        </div>
+        <div class="campo">
+          <label for="unidad">Units</label>
+          <select id="unidad"><option>px</option><option>rem</option></select>
+        </div>
+        <div class="campo">
+          <label for="formatoTipo">Type</label>
+          <select id="formatoTipo"><option>Plain</option><option>CSS</option></select>
+        </div>
+        <div class="campo">
+          <label for="formatoRaw">Raw value</label>
+          <select id="formatoRaw"><option>HEX</option><option>RGB</option><option>HSL</option></select>
+        </div>
+        <div class="campo">
+          <label for="preferencia">Preferred</label>
+          <select id="preferencia"><option value="VARIABLE">Variable</option><option value="STYLE">Style</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="seccion">
+      <div class="titulo">Generar spec</div>
+      <div class="acciones">
+        <button id="anatomy">Anatomy</button>
+        <button id="properties">Properties</button>
+        <button id="layout">Layout &amp; Spacing</button>
+        <button id="data">Data (JSON)</button>
+        <button id="styling">Styling Inventory</button>
+        <button id="modes">Modes</button>
+        <button id="twoway">Two-Way</button>
+        <button id="complete">Complete A/L</button>
+      </div>
+    </div>
+
+    <p class="estado" id="estado"></p>
     <script src="ui.js"></script>
   </body>
 </html>
