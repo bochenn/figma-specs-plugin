@@ -230,9 +230,11 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
     filas.push(fila);
   }
 
-  // Raíz con layout grids pero sin Auto Layout: fila propia (respeta hideOuter).
+  // Raíz con layout grids pero sin Auto Layout: fila propia. No depende de
+  // hideOuter: el grid de la pantalla es información propia, no una anotación de
+  // layout del contenedor exterior (esas son padding/spacing/resizing).
   const raizEnFilas = contenedores.length > 0 && (contenedores[0] as SceneNode) === seleccionado;
-  if (!raizEnFilas && !hideOuter && "layoutGrids" in seleccionado && Array.isArray(seleccionado.layoutGrids)) {
+  if (!raizEnFilas && "layoutGrids" in seleccionado && Array.isArray(seleccionado.layoutGrids)) {
     const gridsRaiz = seleccionado.layoutGrids.map(gridSpecDe);
     if (gridsRaiz.length > 0) {
       const fila = frameHorizontal(`Layout ${seleccionado.name}`, 48);
