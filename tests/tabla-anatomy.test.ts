@@ -25,3 +25,20 @@ test("filaAnatomy aplana los atributos como clave: valor", () => {
   };
   assert.deepEqual(filaAnatomy(1, el), ["1", "Box", "FRAME", "width: 120, opacity: 50%"]);
 });
+
+test("filaAnatomy incluye el valor resuelto (rawValue) de variables/styles", () => {
+  const el: ElementoAnatomy = {
+    id: "3",
+    nombre: "Card",
+    tipo: "INSTANCE",
+    esInstancia: true,
+    atributos: [
+      { clave: "background-color", valor: "color/surface", formato: "VARIABLE", rawValue: "#FFFFFF" },
+      { clave: "width", valor: "sizing/card-width", formato: "VARIABLE", rawValue: "240" },
+    ],
+  };
+  assert.deepEqual(filaAnatomy(1, el), [
+    "1", "Card", "INSTANCE",
+    "background-color: color/surface (#FFFFFF), width: sizing/card-width (240)",
+  ]);
+});
