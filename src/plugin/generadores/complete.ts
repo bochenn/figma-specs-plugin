@@ -1,6 +1,7 @@
 import type { ElementoAdicional, VarianteLayout } from "../modelo/tipos.ts";
 import { frameVertical, texto, enColumnas } from "./frames.ts";
 import { agruparPorVariante } from "../utils/agrupar-variante.ts";
+import { etiquetaSpacing, unidadActual } from "../utils/espaciado.ts";
 
 // Apila los bloques o los reparte en columnas según el selector.
 function agregarBloques(seccion: FrameNode, bloques: FrameNode[], columnas: number): void {
@@ -54,10 +55,12 @@ export async function generarComplete(
   for (const v of layout) {
     const s = v.spec;
     const dir = s.direccion === "HORIZONTAL" ? "Horizontal" : "Vertical";
+    const sv = s.spacingVars;
+    const E = (n: number, nombre?: string) => etiquetaSpacing(n, unidadActual(), nombre);
     const bloque = frameVertical(v.variante, 4);
     bloque.appendChild(await texto(v.variante, 16));
     bloque.appendChild(await texto(
-      `Direction: ${dir} · Align: ${s.alineacionPrimaria}/${s.alineacionContraria} · Resize: ${s.resizingHorizontal}×${s.resizingVertical} · Padding: L${s.padding.left} T${s.padding.top} R${s.padding.right} B${s.padding.bottom} · Item spacing: ${s.itemSpacing}`,
+      `Direction: ${dir} · Align: ${s.alineacionPrimaria}/${s.alineacionContraria} · Resize: ${s.resizingHorizontal}×${s.resizingVertical} · Padding: L${E(s.padding.left, sv.paddingLeft)} T${E(s.padding.top, sv.paddingTop)} R${E(s.padding.right, sv.paddingRight)} B${E(s.padding.bottom, sv.paddingBottom)} · Item spacing: ${E(s.itemSpacing, sv.itemSpacing)}`,
       12,
     ));
     bloquesL.push(bloque);
