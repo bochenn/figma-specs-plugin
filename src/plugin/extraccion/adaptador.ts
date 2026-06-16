@@ -32,7 +32,7 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
     const main = (nodo as InstanceNode).mainComponent;
     if (main) base.mainComponentName = main.name;
   }
-  if ("layoutMode" in nodo && (nodo.layoutMode === "HORIZONTAL" || nodo.layoutMode === "VERTICAL")) {
+  if ("layoutMode" in nodo && (nodo.layoutMode === "HORIZONTAL" || nodo.layoutMode === "VERTICAL" || nodo.layoutMode === "GRID")) {
     base.layoutMode = nodo.layoutMode;
     base.primaryAxisAlignItems = nodo.primaryAxisAlignItems;
     base.counterAxisAlignItems = nodo.counterAxisAlignItems;
@@ -54,6 +54,13 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
       }
     }
     if (Object.keys(sv).length > 0) base.spacingVars = sv;
+    if (nodo.layoutMode === "GRID") {
+      const g = nodo as unknown as { gridColumnCount?: number; gridRowCount?: number; gridColumnGap?: number; gridRowGap?: number };
+      base.gridColumnCount = g.gridColumnCount;
+      base.gridRowCount = g.gridRowCount;
+      base.gridColumnGap = g.gridColumnGap;
+      base.gridRowGap = g.gridRowGap;
+    }
   }
   if ("layoutGrids" in nodo && Array.isArray(nodo.layoutGrids)) {
     base.layoutGrids = nodo.layoutGrids.map((g) => gridSpecDe(g));

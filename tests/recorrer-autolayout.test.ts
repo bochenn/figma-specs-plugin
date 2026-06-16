@@ -33,6 +33,11 @@ test("frame anidado con Auto Layout se incluye además de la raíz", () => {
   assert.deepEqual(recorrerAutoLayout(raiz).map((r) => r.nodo.id), ["r", "n"]);
 });
 
+test("detecta layoutMode GRID como auto-layout", () => {
+  const raiz: NodoLike = { id: "g", name: "Screen", type: "FRAME", layoutMode: "GRID", children: [] };
+  assert.deepEqual(recorrerAutoLayout(raiz).map((r) => r.nodo.id), ["g"]);
+});
+
 test("con itemizar entra en la instancia con Auto Layout (profundidad +1)", () => {
   const raiz: NodoLike = {
     id: "r", name: "Root", type: "FRAME", layoutMode: "VERTICAL",
