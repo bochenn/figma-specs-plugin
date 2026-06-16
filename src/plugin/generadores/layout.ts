@@ -19,7 +19,9 @@ const VERDE_TEXTO: RGB = { r: 0.05, g: 0.5, b: 0.2 };
 const NARANJA_TEXTO: RGB = { r: 0.85, g: 0.4, b: 0 };
 
 // Margen del artwork reservado para las anotaciones (arriba e izquierda).
-const MARGEN = 56;
+// 80px: la cota vertical (44) + el número de la medida (hasta ~3 dígitos) deben
+// entrar sin cortarse contra el borde izquierdo.
+const MARGEN = 80;
 const RESPIRO = 16; // borde derecho e inferior
 
 // Texto de un atributo de color para el exhibit: "valor (raw)" o "valor".
