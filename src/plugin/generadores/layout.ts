@@ -5,7 +5,7 @@ import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
 import { marcasLayout, estiloCota, iconoDireccion, textoDimension } from "../utils/marcadores-layout.ts";
-import { rectsGrid, textoGrid, gridSpecDe } from "../utils/grilla.ts";
+import { rectsGrid, textoGrid, gridSpecDe, franjasGridAutolayout } from "../utils/grilla.ts";
 import { prefijoProfundidad } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
 
@@ -85,6 +85,14 @@ async function textoMarca(valor: string, color: RGB, artwork: FrameNode): Promis
   return t;
 }
 
+// Texto del valor de una cota (azul), agregado al artwork; el caller lo posiciona.
+async function textoCota(valor: string, artwork: FrameNode): Promise<TextNode> {
+  const t = await texto(valor, 10);
+  t.fills = [{ type: "SOLID", color: { r: 0.05, g: 0.4, b: 0.85 } }];
+  artwork.appendChild(t);
+  return t;
+}
+
 const AZUL_HEX = "#0D66D9";
 const GRIS_HEX = "#444444";
 
@@ -128,6 +136,26 @@ function svgIcono(nombre: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">${ICONOS[nombre]}</svg>`;
 }
 
+// Cotas azules de W/H con su valor numérico (resizing en las puntas, medida en
+// el texto). Aplica a cualquier contenedor (H/V y GRID).
+async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpec): Promise<void> {
+  const u = unidadActual();
+  const cotaH = figma.createNodeFromSvg(svgCotaH(estiloCota(spec.resizingHorizontal), clon.width));
+  cotaH.x = MARGEN;
+  cotaH.y = MARGEN - 44;
+  artwork.appendChild(cotaH);
+  const tW = await textoCota(etiquetaSpacing(spec.width, u, spec.widthVar), artwork);
+  tW.x = MARGEN + clon.width / 2 - tW.width / 2;
+  tW.y = MARGEN - 44 - 12;
+  const cotaV = figma.createNodeFromSvg(svgCotaV(estiloCota(spec.resizingVertical), clon.height));
+  cotaV.x = MARGEN - 44;
+  cotaV.y = MARGEN;
+  artwork.appendChild(cotaV);
+  const tH = await textoCota(etiquetaSpacing(spec.height, u, spec.heightVar), artwork);
+  tH.x = MARGEN - 44 - tH.width - 2;
+  tH.y = MARGEN + clon.height / 2 - tH.height / 2;
+}
+
 // Construye el artwork anotado de UN contenedor con Auto Layout: clon del
 // subárbol + overlays de ese contenedor (hijos azules, padding verde, gaps
 // naranjas). El clon va corrido (MARGEN, MARGEN) para dejar lugar a las
@@ -150,7 +178,13 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec): Promise<Frame
   }));
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
   for (const r of rectsPadding(frameRect, spec.padding)) rectOverlay(r, VERDE, 0.35, artwork);
-  if (spec.direccion === "GRID") return artwork; // overlays 2D del grid → Rebanada C
+  if (spec.direccion === "GRID") {
+    const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
+    for (const r of columnas) rectOverlay(r, ROJO, 0.12, artwork);
+    for (const r of filas) rectOverlay(r, ROJO, 0.12, artwork);
+    await dibujarCotas(artwork, clon, spec);
+    return artwork;
+  }
   const gaps = rectsSpacing(hijosRects, spec.direccion);
   for (const r of gaps) rectOverlay(r, NARANJA, 0.5, artwork);
   for (const g of spec.grids) {
@@ -177,15 +211,8 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec): Promise<Frame
     t.y = m.y - t.height / 2;
   }
 
-  // Cotas azules de resizing (sin número): horizontal arriba, vertical a la izquierda.
-  const cotaH = figma.createNodeFromSvg(svgCotaH(estiloCota(spec.resizingHorizontal), clon.width));
-  cotaH.x = MARGEN;
-  cotaH.y = MARGEN - 44;
-  artwork.appendChild(cotaH);
-  const cotaV = figma.createNodeFromSvg(svgCotaV(estiloCota(spec.resizingVertical), clon.height));
-  cotaV.x = MARGEN - 44;
-  cotaV.y = MARGEN;
-  artwork.appendChild(cotaV);
+  // Cotas azules de W/H con su valor (horizontal arriba, vertical a la izquierda).
+  await dibujarCotas(artwork, clon, spec);
 
   // Ícono de dirección, arriba a la izquierda del artwork.
   const icono = figma.createNodeFromSvg(svgIcono(iconoDireccion(spec.direccion, spec.wrap)));
