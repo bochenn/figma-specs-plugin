@@ -11,6 +11,23 @@ export function etiquetaSpacing(px: number, unidad: Unidad, nombreVar?: string):
   return nombreVar ? `${nombreVar} (${v})` : v;
 }
 
+// Padding legible al estilo CSS: colapsa lados iguales. 4 iguales → un valor;
+// pares vertical/horizontal → "V H"; todos distintos → "T R B L". Cada lado se
+// formatea con etiquetaSpacing (respeta unidad y nombre de variable).
+export function textoPadding(
+  p: { left: number; top: number; right: number; bottom: number },
+  unidad: Unidad,
+  sv: { paddingLeft?: string; paddingTop?: string; paddingRight?: string; paddingBottom?: string } = {},
+): string {
+  const T = etiquetaSpacing(p.top, unidad, sv.paddingTop);
+  const R = etiquetaSpacing(p.right, unidad, sv.paddingRight);
+  const B = etiquetaSpacing(p.bottom, unidad, sv.paddingBottom);
+  const L = etiquetaSpacing(p.left, unidad, sv.paddingLeft);
+  if (T === R && R === B && B === L) return T;
+  if (T === B && L === R) return `${T} ${R}`;
+  return `${T} ${R} ${B} ${L}`;
+}
+
 let unidad: Unidad = "px";
 
 // Setea la unidad actual (default px).
