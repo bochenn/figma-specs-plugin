@@ -51,6 +51,7 @@ export interface NodoLike {
   strokeVariableName?: string;   // idem stroke
   widthVariableName?: string;    // variable atada al ancho
   heightVariableName?: string;   // variable atada al alto
+  cornerRadius?: number;         // radio de esquina (uniforme)
 }
 
 export interface Atributo {
@@ -180,6 +181,13 @@ export interface LayoutSpec {
   spacingAuto: boolean;   // primaryAxisAlignItems === "SPACE_BETWEEN" → marcador "Auto"
   grids: GridSpec[];
   spacingVars: { paddingLeft?: string; paddingTop?: string; paddingRight?: string; paddingBottom?: string; itemSpacing?: string };
+  width: number;
+  height: number;
+  widthVar?: string;
+  heightVar?: string;
+  cornerRadius?: number;
+  fill?: Atributo;
+  stroke?: Atributo;
 }
 
 export interface VarianteLayout {

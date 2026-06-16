@@ -58,6 +58,7 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
   if ("layoutGrids" in nodo && Array.isArray(nodo.layoutGrids)) {
     base.layoutGrids = nodo.layoutGrids.map((g) => gridSpecDe(g));
   }
+  if ("cornerRadius" in nodo && typeof nodo.cornerRadius === "number") base.cornerRadius = nodo.cornerRadius;
   if ("fillStyleId" in nodo && typeof nodo.fillStyleId === "string" && nodo.fillStyleId !== "") {
     const estilo = figma.getStyleById(nodo.fillStyleId);
     if (estilo) base.fillStyleName = estilo.name;

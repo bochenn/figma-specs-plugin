@@ -1,5 +1,6 @@
 import type { NodoLike, LayoutSpec } from "../modelo/tipos.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
+import { colorAtributo, hexSolido } from "../utils/atributos.ts";
 
 // Traduce el valor de alineación de Figma a texto legible.
 export function alineacion(valor: string | undefined): string {
@@ -23,7 +24,9 @@ export function resizing(valor: string | undefined): string {
 
 // Construye el LayoutSpec de un solo nodo con Auto Layout.
 export function layoutSpecDe(nodo: NodoLike): LayoutSpec {
-  return {
+  const fill = colorAtributo("fill", { hex: hexSolido(nodo.fills), variableName: nodo.fillVariableName, styleName: nodo.fillStyleName });
+  const stroke = colorAtributo("stroke", { hex: hexSolido(nodo.strokes), variableName: nodo.strokeVariableName, styleName: nodo.strokeStyleName });
+  const spec: LayoutSpec = {
     elementoNombre: nodo.name,
     tipo: nodo.type,
     direccion: nodo.layoutMode === "HORIZONTAL" ? "HORIZONTAL" : "VERTICAL",
@@ -42,7 +45,15 @@ export function layoutSpecDe(nodo: NodoLike): LayoutSpec {
     spacingAuto: nodo.primaryAxisAlignItems === "SPACE_BETWEEN",
     grids: nodo.layoutGrids ?? [],
     spacingVars: nodo.spacingVars ?? {},
+    width: nodo.width ?? 0,
+    height: nodo.height ?? 0,
   };
+  if (nodo.widthVariableName) spec.widthVar = nodo.widthVariableName;
+  if (nodo.heightVariableName) spec.heightVar = nodo.heightVariableName;
+  if (typeof nodo.cornerRadius === "number" && nodo.cornerRadius > 0) spec.cornerRadius = nodo.cornerRadius;
+  if (fill) spec.fill = fill;
+  if (stroke) spec.stroke = stroke;
+  return spec;
 }
 
 // Serializa la config de layout (para comparar entre variantes).

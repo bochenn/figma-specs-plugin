@@ -1,5 +1,12 @@
 import type { Rect } from "./overlays.ts";
-import { formatearEspaciado, unidadActual } from "./espaciado.ts";
+import type { Unidad } from "../modelo/tipos.ts";
+import { formatearEspaciado, unidadActual, etiquetaSpacing } from "./espaciado.ts";
+
+// "<resizing> <dim>" con la dimensión formateada (variable + valor si la hay):
+// "Fixed sizing/card-width (240)", "Hug 88", "Fixed 1rem".
+export function textoDimension(resizing: string, px: number, unidad: Unidad, nombreVar?: string): string {
+  return `${resizing} ${etiquetaSpacing(px, unidad, nombreVar)}`;
+}
 
 export interface MarcaX {
   x: number;       // centro de la banda (donde va el texto)
