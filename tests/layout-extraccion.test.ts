@@ -13,6 +13,7 @@ test("arma un LayoutSpec completo desde un nodo con Auto Layout", () => {
     itemSpacing: 12,
     layoutSizingHorizontal: "FILL",
     layoutSizingVertical: "HUG",
+    width: 240, height: 100,
     children: [],
   };
   const specs = extraerLayout(raiz);
@@ -31,7 +32,29 @@ test("arma un LayoutSpec completo desde un nodo con Auto Layout", () => {
     spacingAuto: false,
     grids: [],
     spacingVars: {},
+    width: 240,
+    height: 100,
   });
+});
+
+test("layoutSpecDe puebla fill/stroke/cornerRadius/dimension vars", () => {
+  const nodo: NodoLike = {
+    id: "r", name: "Card", type: "FRAME", layoutMode: "VERTICAL",
+    width: 240, height: 88,
+    widthVariableName: "sizing/card-width",
+    cornerRadius: 8,
+    fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
+    fillVariableName: "color/surface",
+    strokes: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
+    children: [],
+  };
+  const s = extraerLayout(nodo)[0];
+  assert.equal(s.width, 240);
+  assert.equal(s.widthVar, "sizing/card-width");
+  assert.equal(s.cornerRadius, 8);
+  assert.equal(s.fill?.valor, "color/surface");
+  assert.equal(s.fill?.formato, "VARIABLE");
+  assert.equal(s.stroke?.valor, "#000000"); // sin variable → hardcoded
 });
 
 test("spacingVars del nodo pasan al spec", () => {

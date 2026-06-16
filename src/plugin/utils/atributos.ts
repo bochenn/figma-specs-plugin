@@ -34,7 +34,7 @@ export function colorAtributo(
 }
 
 // Devuelve el hex del primer paint SOLID de una lista, o undefined.
-function hexSolido(
+export function hexSolido(
   paints: ReadonlyArray<{ type: string; color?: { r: number; g: number; b: number } }> | undefined,
 ): string | undefined {
   const p = paints?.find((f) => f.type === "SOLID" && f.color);
