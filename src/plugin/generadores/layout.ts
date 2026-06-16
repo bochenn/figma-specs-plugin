@@ -158,11 +158,30 @@ async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpe
   tH.y = MARGEN + clon.height / 2 - tH.height / 2;
 }
 
+// Cotas de ancho (arriba) y alto (izquierda) de un hijo directo, con su número.
+async function dibujarCotaHijo(artwork: FrameNode, hijo: Rect): Promise<void> {
+  const u = unidadActual();
+  const cw = figma.createNodeFromSvg(svgCotaH("fixed", hijo.width));
+  cw.x = hijo.x;
+  cw.y = hijo.y - 14;
+  artwork.appendChild(cw);
+  const tw = await textoCota(etiquetaSpacing(hijo.width, u), artwork);
+  tw.x = hijo.x + hijo.width / 2 - tw.width / 2;
+  tw.y = hijo.y - 14 - 12;
+  const chh = figma.createNodeFromSvg(svgCotaV("fixed", hijo.height));
+  chh.x = hijo.x - 14;
+  chh.y = hijo.y;
+  artwork.appendChild(chh);
+  const th = await textoCota(etiquetaSpacing(hijo.height, u), artwork);
+  th.x = hijo.x - 14 - th.width - 2;
+  th.y = hijo.y + hijo.height / 2 - th.height / 2;
+}
+
 // Construye el artwork anotado de UN contenedor con Auto Layout: clon del
 // subárbol + overlays de ese contenedor (hijos azules, padding verde, gaps
 // naranjas). El clon va corrido (MARGEN, MARGEN) para dejar lugar a las
 // anotaciones.
-async function artworkDe(contenedor: FrameNode, spec: LayoutSpec): Promise<FrameNode> {
+async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: boolean): Promise<FrameNode> {
   const artwork = figma.createFrame();
   artwork.name = `Artwork ${spec.elementoNombre}`;
   artwork.layoutMode = "NONE";
@@ -179,6 +198,7 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec): Promise<Frame
     x: MARGEN + c.x, y: MARGEN + c.y, width: c.width, height: c.height,
   }));
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
+  if (medirHijos) for (const h of hijosRects) await dibujarCotaHijo(artwork, h);
   for (const r of rectsPadding(frameRect, spec.padding)) rectOverlay(r, VERDE, 0.35, artwork);
   if (spec.direccion === "GRID") {
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
@@ -255,7 +275,7 @@ async function exhibitGrids(frame: SceneNode, grids: GridSpec[]): Promise<FrameN
 
 // Genera el output de Layout and Spacing: una fila artwork+exhibit por cada
 // contenedor con Auto Layout (raíz + anidados; mismo orden que extraerLayout).
-export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean): Promise<FrameNode> {
+export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
   const seccion = frameVertical("Layout and Spacing", 64);
@@ -274,7 +294,7 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
   const n = Math.min(contenedores.length, specs.length);
   for (let i = inicio; i < n; i++) {
     const fila = frameHorizontal(`Layout ${specs[i].elementoNombre}`, 48);
-    fila.appendChild(await artworkDe(contenedores[i], specs[i]));
+    fila.appendChild(await artworkDe(contenedores[i], specs[i], medirHijos));
     fila.appendChild(await exhibit(specs[i]));
     filas.push(fila);
   }
