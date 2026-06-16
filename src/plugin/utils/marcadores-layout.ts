@@ -1,6 +1,6 @@
 import type { Rect } from "./overlays.ts";
 import type { Unidad } from "../modelo/tipos.ts";
-import { formatearEspaciado, unidadActual, etiquetaSpacing } from "./espaciado.ts";
+import { unidadActual, etiquetaSpacing } from "./espaciado.ts";
 
 // "<resizing> <dim>" con la dimensión formateada (variable + valor si la hay):
 // "Fixed sizing/card-width (240)", "Hug 88", "Fixed 1rem".
@@ -46,29 +46,30 @@ export function marcasLayout(
   gaps: Rect[],
   direccion: "HORIZONTAL" | "VERTICAL",
   spacingAuto: boolean,
+  spacingVars: { paddingLeft?: string; paddingTop?: string; paddingRight?: string; paddingBottom?: string; itemSpacing?: string } = {},
 ): { ejeX: MarcaX[]; ejeY: MarcaY[] } {
-  const E = (n: number) => formatearEspaciado(n, unidadActual());
+  const u = unidadActual();
   const ejeX: MarcaX[] = [];
   const ejeY: MarcaY[] = [];
   if (padding.left > 0) {
-    ejeX.push({ x: frame.x + padding.left / 2, desde: frame.x, hasta: frame.x + padding.left, valor: E(padding.left), tipo: "padding" });
+    ejeX.push({ x: frame.x + padding.left / 2, desde: frame.x, hasta: frame.x + padding.left, valor: etiquetaSpacing(padding.left, u, spacingVars.paddingLeft), tipo: "padding" });
   }
   if (padding.right > 0) {
     const desde = frame.x + frame.width - padding.right;
-    ejeX.push({ x: desde + padding.right / 2, desde, hasta: frame.x + frame.width, valor: E(padding.right), tipo: "padding" });
+    ejeX.push({ x: desde + padding.right / 2, desde, hasta: frame.x + frame.width, valor: etiquetaSpacing(padding.right, u, spacingVars.paddingRight), tipo: "padding" });
   }
   if (padding.top > 0) {
-    ejeY.push({ y: frame.y + padding.top / 2, desde: frame.y, hasta: frame.y + padding.top, valor: E(padding.top), tipo: "padding" });
+    ejeY.push({ y: frame.y + padding.top / 2, desde: frame.y, hasta: frame.y + padding.top, valor: etiquetaSpacing(padding.top, u, spacingVars.paddingTop), tipo: "padding" });
   }
   if (padding.bottom > 0) {
     const desde = frame.y + frame.height - padding.bottom;
-    ejeY.push({ y: desde + padding.bottom / 2, desde, hasta: frame.y + frame.height, valor: E(padding.bottom), tipo: "padding" });
+    ejeY.push({ y: desde + padding.bottom / 2, desde, hasta: frame.y + frame.height, valor: etiquetaSpacing(padding.bottom, u, spacingVars.paddingBottom), tipo: "padding" });
   }
   for (const g of gaps) {
     if (direccion === "HORIZONTAL") {
-      ejeX.push({ x: g.x + g.width / 2, desde: g.x, hasta: g.x + g.width, valor: spacingAuto ? "Auto" : E(g.width), tipo: "spacing" });
+      ejeX.push({ x: g.x + g.width / 2, desde: g.x, hasta: g.x + g.width, valor: spacingAuto ? "Auto" : etiquetaSpacing(g.width, u, spacingVars.itemSpacing), tipo: "spacing" });
     } else {
-      ejeY.push({ y: g.y + g.height / 2, desde: g.y, hasta: g.y + g.height, valor: spacingAuto ? "Auto" : E(g.height), tipo: "spacing" });
+      ejeY.push({ y: g.y + g.height / 2, desde: g.y, hasta: g.y + g.height, valor: spacingAuto ? "Auto" : etiquetaSpacing(g.height, u, spacingVars.itemSpacing), tipo: "spacing" });
     }
   }
   return { ejeX: sinPisadas(ejeX), ejeY: sinPisadas(ejeY) };

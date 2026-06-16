@@ -14,9 +14,12 @@ const VERDE: RGB = { r: 0.1, g: 0.7, b: 0.3 };
 const NARANJA: RGB = { r: 1, g: 0.5, b: 0.1 };
 const ROJO: RGB = { r: 1, g: 0.1, b: 0.3 };
 
-// Versiones oscuras para los textos de las marcas (legibles sobre el gris).
-const VERDE_TEXTO: RGB = { r: 0.05, g: 0.5, b: 0.2 };
-const NARANJA_TEXTO: RGB = { r: 0.85, g: 0.4, b: 0 };
+// Color semántico estilo DesignDoc: padding azul, gap rosa, dimensión rojo.
+const CHIP_PADDING: RGB = { r: 0.05, g: 0.5, b: 1 };
+const CHIP_GAP: RGB = { r: 0.9, g: 0.2, b: 0.5 };
+const CHIP_DIM: RGB = { r: 0.95, g: 0.25, b: 0.15 };
+const PADDING_BANDA: RGB = { r: 0.6, g: 0.78, b: 1 };
+const GAP_BANDA: RGB = { r: 1, g: 0.7, b: 0.85 };
 
 // Margen del artwork reservado para las anotaciones (arriba e izquierda).
 // 80px: la cota vertical (44) + el número de la medida (hasta ~3 dígitos) deben
@@ -79,20 +82,22 @@ function linea(x: number, y: number, w: number, h: number, color: RGB, artwork: 
   artwork.appendChild(r);
 }
 
-// Texto chico de marca, coloreado; el caller lo posiciona después (necesita width/height).
-async function textoMarca(valor: string, color: RGB, artwork: FrameNode): Promise<TextNode> {
-  const t = await texto(valor, 10);
-  t.fills = [{ type: "SOLID", color }];
-  artwork.appendChild(t);
-  return t;
-}
-
-// Texto del valor de una cota (azul), agregado al artwork; el caller lo posiciona.
-async function textoCota(valor: string, artwork: FrameNode): Promise<TextNode> {
-  const t = await texto(valor, 10);
-  t.fills = [{ type: "SOLID", color: { r: 0.05, g: 0.4, b: 0.85 } }];
-  artwork.appendChild(t);
-  return t;
+// Chip de medida: frame con fondo de color y texto blanco; el caller lo posiciona.
+async function chip(valor: string, color: RGB, artwork: FrameNode): Promise<FrameNode> {
+  const c = figma.createFrame();
+  c.name = "Chip";
+  c.layoutMode = "HORIZONTAL";
+  c.primaryAxisSizingMode = "AUTO";
+  c.counterAxisSizingMode = "AUTO";
+  c.paddingTop = c.paddingBottom = 1;
+  c.paddingLeft = c.paddingRight = 4;
+  c.cornerRadius = 4;
+  c.fills = [{ type: "SOLID", color }];
+  const t = await texto(valor, 9);
+  t.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
+  c.appendChild(t);
+  artwork.appendChild(c);
+  return c;
 }
 
 const AZUL_HEX = "#0D66D9";
@@ -146,14 +151,14 @@ async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpe
   cotaH.x = MARGEN;
   cotaH.y = MARGEN - 44;
   artwork.appendChild(cotaH);
-  const tW = await textoCota(etiquetaSpacing(spec.width, u, spec.widthVar), artwork);
+  const tW = await chip(etiquetaSpacing(spec.width, u, spec.widthVar), CHIP_DIM, artwork);
   tW.x = MARGEN + clon.width / 2 - tW.width / 2;
   tW.y = MARGEN - 44 - 12;
   const cotaV = figma.createNodeFromSvg(svgCotaV(estiloCota(spec.resizingVertical), clon.height));
   cotaV.x = MARGEN - 44;
   cotaV.y = MARGEN;
   artwork.appendChild(cotaV);
-  const tH = await textoCota(etiquetaSpacing(spec.height, u, spec.heightVar), artwork);
+  const tH = await chip(etiquetaSpacing(spec.height, u, spec.heightVar), CHIP_DIM, artwork);
   tH.x = MARGEN - 44 - tH.width - 2;
   tH.y = MARGEN + clon.height / 2 - tH.height / 2;
 }
@@ -165,14 +170,14 @@ async function dibujarCotaHijo(artwork: FrameNode, hijo: Rect): Promise<void> {
   cw.x = hijo.x;
   cw.y = hijo.y - 14;
   artwork.appendChild(cw);
-  const tw = await textoCota(etiquetaSpacing(hijo.width, u), artwork);
+  const tw = await chip(etiquetaSpacing(hijo.width, u), CHIP_DIM, artwork);
   tw.x = hijo.x + hijo.width / 2 - tw.width / 2;
   tw.y = hijo.y - 14 - 12;
   const chh = figma.createNodeFromSvg(svgCotaV("fixed", hijo.height));
   chh.x = hijo.x - 14;
   chh.y = hijo.y;
   artwork.appendChild(chh);
-  const th = await textoCota(etiquetaSpacing(hijo.height, u), artwork);
+  const th = await chip(etiquetaSpacing(hijo.height, u), CHIP_DIM, artwork);
   th.x = hijo.x - 14 - th.width - 2;
   th.y = hijo.y + hijo.height / 2 - th.height / 2;
 }
@@ -199,7 +204,7 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
   }));
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
   if (medirHijos) for (const h of hijosRects) await dibujarCotaHijo(artwork, h);
-  for (const r of rectsPadding(frameRect, spec.padding)) rectOverlay(r, VERDE, 0.35, artwork);
+  for (const r of rectsPadding(frameRect, spec.padding)) rectOverlay(r, PADDING_BANDA, 0.30, artwork);
   if (spec.direccion === "GRID") {
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
     for (const r of columnas) rectOverlay(r, ROJO, 0.12, artwork);
@@ -208,29 +213,29 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
     return artwork;
   }
   const gaps = rectsSpacing(hijosRects, spec.direccion);
-  for (const r of gaps) rectOverlay(r, NARANJA, 0.5, artwork);
+  for (const r of gaps) rectOverlay(r, GAP_BANDA, 0.45, artwork);
   for (const g of spec.grids) {
     for (const r of rectsGrid(frameRect, g)) rectOverlay(r, ROJO, 0.12, artwork);
   }
 
   // Marcas numéricas: eje X arriba, eje Y a la izquierda, con ticks en los
   // bordes de cada banda.
-  const { ejeX, ejeY } = marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto);
+  const { ejeX, ejeY } = marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto, spec.spacingVars);
   for (const m of ejeX) {
-    const color = m.tipo === "padding" ? VERDE_TEXTO : NARANJA_TEXTO;
+    const color = m.tipo === "padding" ? CHIP_PADDING : CHIP_GAP;
     linea(m.desde, MARGEN - 12, 1, 12, color, artwork);
     linea(m.hasta - 1, MARGEN - 12, 1, 12, color, artwork);
-    const t = await textoMarca(m.valor, color, artwork);
-    t.x = m.x - t.width / 2;
-    t.y = MARGEN - 26;
+    const c = await chip(m.valor, color, artwork);
+    c.x = m.x - c.width / 2;
+    c.y = MARGEN - 14 - c.height;
   }
   for (const m of ejeY) {
-    const color = m.tipo === "padding" ? VERDE_TEXTO : NARANJA_TEXTO;
+    const color = m.tipo === "padding" ? CHIP_PADDING : CHIP_GAP;
     linea(MARGEN - 12, m.desde, 12, 1, color, artwork);
     linea(MARGEN - 12, m.hasta - 1, 12, 1, color, artwork);
-    const t = await textoMarca(m.valor, color, artwork);
-    t.x = MARGEN - 16 - t.width;
-    t.y = m.y - t.height / 2;
+    const c = await chip(m.valor, color, artwork);
+    c.x = MARGEN - 16 - c.width;
+    c.y = m.y - c.height / 2;
   }
 
   // Cotas azules de W/H con su valor (horizontal arriba, vertical a la izquierda).

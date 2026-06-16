@@ -104,3 +104,16 @@ test("textoDimension: Hug sin variable es resizing + valor", () => {
 test("textoDimension: respeta rem", () => {
   assert.equal(textoDimension("Fixed", 16, "rem"), "Fixed 1rem");
 });
+
+test("marcasLayout incluye el nombre de variable del padding cuando se pasa spacingVars", () => {
+  const frame = { x: 0, y: 0, width: 200, height: 100 };
+  const padding = { left: 16, top: 0, right: 0, bottom: 0 };
+  const { ejeX } = marcasLayout(frame, padding, [], "HORIZONTAL", false, { paddingLeft: "space/padding-1x" });
+  assert.equal(ejeX[0].valor, "space/padding-1x (16)");
+});
+
+test("marcasLayout sin spacingVars → solo el número (compatibilidad)", () => {
+  const frame = { x: 0, y: 0, width: 200, height: 100 };
+  const { ejeX } = marcasLayout(frame, { left: 16, top: 0, right: 0, bottom: 0 }, [], "HORIZONTAL", false);
+  assert.equal(ejeX[0].valor, "16");
+});
