@@ -37,6 +37,15 @@ test("arma un LayoutSpec completo desde un nodo con Auto Layout", () => {
   });
 });
 
+test("extraerLayout con itemizar marca profundidad de la instancia interna", () => {
+  const raiz: NodoLike = {
+    id: "r", name: "card", type: "FRAME", layoutMode: "VERTICAL",
+    children: [{ id: "t", name: "tag", type: "INSTANCE", layoutMode: "HORIZONTAL", children: [] }],
+  };
+  const specs = extraerLayout(raiz, true);
+  assert.deepEqual(specs.map((s) => [s.elementoNombre, s.profundidad ?? 0]), [["card", 0], ["tag", 1]]);
+});
+
 test("layoutSpecDe puebla fill/stroke/cornerRadius/dimension vars", () => {
   const nodo: NodoLike = {
     id: "r", name: "Card", type: "FRAME", layoutMode: "VERTICAL",

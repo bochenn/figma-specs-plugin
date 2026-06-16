@@ -23,7 +23,7 @@ export function resizing(valor: string | undefined): string {
 }
 
 // Construye el LayoutSpec de un solo nodo con Auto Layout.
-export function layoutSpecDe(nodo: NodoLike): LayoutSpec {
+export function layoutSpecDe(nodo: NodoLike, profundidad = 0): LayoutSpec {
   const fill = colorAtributo("fill", { hex: hexSolido(nodo.fills), variableName: nodo.fillVariableName, styleName: nodo.fillStyleName });
   const stroke = colorAtributo("stroke", { hex: hexSolido(nodo.strokes), variableName: nodo.strokeVariableName, styleName: nodo.strokeStyleName });
   const spec: LayoutSpec = {
@@ -53,6 +53,7 @@ export function layoutSpecDe(nodo: NodoLike): LayoutSpec {
   if (typeof nodo.cornerRadius === "number" && nodo.cornerRadius > 0) spec.cornerRadius = nodo.cornerRadius;
   if (fill) spec.fill = fill;
   if (stroke) spec.stroke = stroke;
+  if (profundidad > 0) spec.profundidad = profundidad;
   return spec;
 }
 
@@ -63,6 +64,6 @@ export function claveLayout(spec: LayoutSpec): string {
 }
 
 // Produce un LayoutSpec por cada capa con Auto Layout de la selección.
-export function extraerLayout(raiz: NodoLike): LayoutSpec[] {
-  return recorrerAutoLayout(raiz).map(layoutSpecDe);
+export function extraerLayout(raiz: NodoLike, itemizar = false): LayoutSpec[] {
+  return recorrerAutoLayout(raiz, itemizar).map((r) => layoutSpecDe(r.nodo, r.profundidad));
 }

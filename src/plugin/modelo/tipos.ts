@@ -69,6 +69,7 @@ export interface ElementoAnatomy {
   esInstancia: boolean;
   dependeDe?: string; // "Depends on"
   atributos: Atributo[];
+  profundidad?: number; // instancias atravesadas (ausente = 0, capa propia)
 }
 
 // Mensajes UI ↔ plugin.
@@ -188,6 +189,7 @@ export interface LayoutSpec {
   cornerRadius?: number;
   fill?: Atributo;
   stroke?: Atributo;
+  profundidad?: number; // instancias atravesadas (ausente = 0)
 }
 
 export interface VarianteLayout {
