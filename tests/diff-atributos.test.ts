@@ -44,3 +44,16 @@ test("cambio no-color → sin swatchHex", () => {
     { clave: "width", valorDefault: "100", valorOpcion: "200" },
   ]);
 });
+
+test("atributos VARIABLE con rawValue → cambio incluye el valor resuelto de ambos lados", () => {
+  const def: Atributo[] = [{ clave: "background-color", valor: "color/border", formato: "VARIABLE", rawValue: "#A6ACB0", swatchHex: "#A6ACB0" }];
+  const opc: Atributo[] = [{ clave: "background-color", valor: "color/surface", formato: "VARIABLE", rawValue: "#FFFFFF", swatchHex: "#FFFFFF" }];
+  assert.deepEqual(diffAtributos(def, opc), [
+    {
+      clave: "background-color",
+      valorDefault: "color/border", valorOpcion: "color/surface",
+      rawValueDefault: "#A6ACB0", rawValueOpcion: "#FFFFFF",
+      swatchHex: "#FFFFFF",
+    },
+  ]);
+});

@@ -95,6 +95,8 @@ export interface AtributoCambiado {
   clave: string;          // "background-color", "width", "opacity"
   valorDefault?: string;  // ausente si el atributo no existía en el default
   valorOpcion?: string;   // ausente si el atributo desaparece en la opción
+  rawValueDefault?: string; // valor resuelto del default (variables/styles)
+  rawValueOpcion?: string;  // valor resuelto de la opción
   swatchHex?: string;     // color del swatch (el de la opción; solo atributos de color)
 }
 
