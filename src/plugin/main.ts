@@ -134,13 +134,13 @@ async function generarSeccionProperties(nodo: SceneNode, columnas: number, neste
   finalizar(frame, nodo);
 }
 
-async function generarSeccionLayout(nodo: SceneNode, columnas: number, hideOuter: boolean, itemizar: boolean): Promise<void> {
+async function generarSeccionLayout(nodo: SceneNode, columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<void> {
   if (!TIPOS_VALIDOS.includes(nodo.type)) {
     responder({ tipo: "resultado", ok: false, error: "Layout and Spacing necesita un FRAME, COMPONENT o INSTANCE." });
     return;
   }
   const specs = extraerLayout(aNodoLike(nodo), itemizar);
-  const frame = await generarLayout(nodo, specs, columnas, hideOuter, itemizar);
+  const frame = await generarLayout(nodo, specs, columnas, hideOuter, itemizar, medirHijos);
   finalizar(frame, nodo);
 }
 
@@ -226,7 +226,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   try {
     if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false, msg.tabla ?? false, msg.itemizar ?? false);
     else if (msg.seccion === "properties") await generarSeccionProperties(nodo, columnas, msg.nested ?? false);
-    else if (msg.seccion === "layout") await generarSeccionLayout(nodo, columnas, msg.hideOuter ?? false, msg.itemizar ?? false);
+    else if (msg.seccion === "layout") await generarSeccionLayout(nodo, columnas, msg.hideOuter ?? false, msg.itemizar ?? false, msg.medirHijos ?? false);
     else if (msg.seccion === "data") await generarSeccionData(nodo);
     else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
     else if (msg.seccion === "modes") await generarSeccionModes(nodo, columnas);
