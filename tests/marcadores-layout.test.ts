@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { marcasLayout, estiloCota, iconoDireccion } from "../src/plugin/utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, textoDimension } from "../src/plugin/utils/marcadores-layout.ts";
 import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 
 test("padding asimétrico + gap horizontal → marcas en ambos ejes", () => {
@@ -91,4 +91,16 @@ test("iconoDireccion elige según dirección y wrap", () => {
   assert.equal(iconoDireccion("VERTICAL", false), "flecha-v");
   assert.equal(iconoDireccion("HORIZONTAL", true), "grilla-h");
   assert.equal(iconoDireccion("VERTICAL", true), "grilla-v");
+});
+
+test("textoDimension: Fixed con variable incluye nombre y valor", () => {
+  assert.equal(textoDimension("Fixed", 240, "px", "sizing/card-width"), "Fixed sizing/card-width (240)");
+});
+
+test("textoDimension: Hug sin variable es resizing + valor", () => {
+  assert.equal(textoDimension("Hug", 88, "px"), "Hug 88");
+});
+
+test("textoDimension: respeta rem", () => {
+  assert.equal(textoDimension("Fixed", 16, "rem"), "Fixed 1rem");
 });
