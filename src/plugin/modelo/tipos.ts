@@ -69,6 +69,7 @@ export interface ElementoAnatomy {
   esInstancia: boolean;
   dependeDe?: string; // "Depends on"
   atributos: Atributo[];
+  profundidad?: number; // instancias atravesadas (ausente = 0, capa propia)
 }
 
 // Mensajes UI ↔ plugin.
@@ -82,7 +83,7 @@ export type Preferencia = "VARIABLE" | "STYLE";
 
 export type FormatoTipo = "Plain" | "CSS";
 
-export type MensajeUI = { tipo: "generar"; seccion: Seccion; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; hideOuter?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo; formatoRaw?: FormatoColor; mostrarRaw?: boolean; preferencia?: Preferencia };
+export type MensajeUI = { tipo: "generar"; seccion: Seccion; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; hideOuter?: boolean; itemizar?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo; formatoRaw?: FormatoColor; mostrarRaw?: boolean; preferencia?: Preferencia };
 
 export type MensajePlugin =
   | { tipo: "resultado"; ok: true }
@@ -188,6 +189,7 @@ export interface LayoutSpec {
   cornerRadius?: number;
   fill?: Atributo;
   stroke?: Atributo;
+  profundidad?: number; // instancias atravesadas (ausente = 0)
 }
 
 export interface VarianteLayout {

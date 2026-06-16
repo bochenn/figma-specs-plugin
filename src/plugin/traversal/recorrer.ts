@@ -1,18 +1,21 @@
 import type { NodoLike } from "../modelo/tipos.ts";
 
+export interface Recorrido { nodo: NodoLike; profundidad: number; }
+
 const TIPOS_INSTANCIA = "INSTANCE";
 const TIPOS_CONTENEDOR = ["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET"];
 
-// Recorre los descendientes de un nodo y devuelve la lista plana de elementos.
-// Regla del PRD: las instancias son elemento pero NO se itemizan sus hijos;
-// los contenedores son elemento y además se recorren hacia adentro;
-// el resto (textos, shapes) son hojas.
-export function recorrer(nodo: NodoLike): NodoLike[] {
-  const elementos: NodoLike[] = [];
+// Recorre los descendientes y devuelve la lista plana con su profundidad.
+// La profundidad cuenta instancias atravesadas: un frame normal mantiene la del
+// contexto; al entrar en una instancia (solo con itemizar) sube +1.
+export function recorrer(nodo: NodoLike, itemizar = false, prof = 0): Recorrido[] {
+  const elementos: Recorrido[] = [];
   for (const hijo of nodo.children ?? []) {
-    elementos.push(hijo);
-    if (hijo.type !== TIPOS_INSTANCIA && TIPOS_CONTENEDOR.includes(hijo.type)) {
-      elementos.push(...recorrer(hijo));
+    elementos.push({ nodo: hijo, profundidad: prof });
+    if (hijo.type === TIPOS_INSTANCIA) {
+      if (itemizar) elementos.push(...recorrer(hijo, itemizar, prof + 1));
+    } else if (TIPOS_CONTENEDOR.includes(hijo.type)) {
+      elementos.push(...recorrer(hijo, itemizar, prof));
     }
   }
   return elementos;

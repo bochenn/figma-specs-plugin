@@ -25,6 +25,15 @@ test("marca instancia y resuelve dependeDe desde mainComponentName", () => {
   assert.equal(elementos[0].dependeDe, "ESDSV Button");
 });
 
+test("extraerAnatomy con itemizar incluye capas internas con profundidad", () => {
+  const raiz: NodoLike = {
+    id: "r", name: "card", type: "FRAME",
+    children: [{ id: "t", name: "tag", type: "INSTANCE", children: [{ id: "l", name: "Label", type: "TEXT" }] }],
+  };
+  const els = extraerAnatomy(raiz, true);
+  assert.deepEqual(els.map((e) => [e.nombre, e.profundidad ?? 0]), [["tag", 0], ["Label", 1]]);
+});
+
 test("incluye atributos visuales del elemento", () => {
   const raiz: NodoLike = {
     id: "raiz", name: "Card", type: "FRAME",

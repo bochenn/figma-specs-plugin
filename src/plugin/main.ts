@@ -97,15 +97,15 @@ function setsAnidados(componentSet: ComponentSetNode): ComponentSetNode[] {
   return res;
 }
 
-async function generarSeccionAnatomy(nodo: SceneNode, nested: boolean, tabla: boolean): Promise<void> {
+async function generarSeccionAnatomy(nodo: SceneNode, nested: boolean, tabla: boolean, itemizar: boolean): Promise<void> {
   if (!TIPOS_VALIDOS.includes(nodo.type)) {
     responder({ tipo: "resultado", ok: false, error: "Anatomy necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
     return;
   }
-  const elementos = extraerAnatomy(aNodoLike(nodo));
+  const elementos = extraerAnatomy(aNodoLike(nodo), itemizar);
   let frame: FrameNode;
   if (nested) {
-    const nestedSpecs = instanciasAnidadas(nodo).map((inst) => ({ nodo: inst, elementos: extraerAnatomy(aNodoLike(inst)) }));
+    const nestedSpecs = instanciasAnidadas(nodo).map((inst) => ({ nodo: inst, elementos: extraerAnatomy(aNodoLike(inst), itemizar) }));
     frame = await generarAnatomyConNested(nodo, elementos, nestedSpecs, tabla);
   } else {
     frame = await generarAnatomy(nodo, elementos, tabla);
@@ -134,13 +134,13 @@ async function generarSeccionProperties(nodo: SceneNode, columnas: number, neste
   finalizar(frame, nodo);
 }
 
-async function generarSeccionLayout(nodo: SceneNode, columnas: number, hideOuter: boolean): Promise<void> {
+async function generarSeccionLayout(nodo: SceneNode, columnas: number, hideOuter: boolean, itemizar: boolean): Promise<void> {
   if (!TIPOS_VALIDOS.includes(nodo.type)) {
     responder({ tipo: "resultado", ok: false, error: "Layout and Spacing necesita un FRAME, COMPONENT o INSTANCE." });
     return;
   }
-  const specs = extraerLayout(aNodoLike(nodo));
-  const frame = await generarLayout(nodo, specs, columnas, hideOuter);
+  const specs = extraerLayout(aNodoLike(nodo), itemizar);
+  const frame = await generarLayout(nodo, specs, columnas, hideOuter, itemizar);
   finalizar(frame, nodo);
 }
 
@@ -224,9 +224,9 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   aplicarPreferencia(msg.preferencia ?? "VARIABLE");
   const columnas = clampColumnas(msg.columnas);
   try {
-    if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false, msg.tabla ?? false);
+    if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false, msg.tabla ?? false, msg.itemizar ?? false);
     else if (msg.seccion === "properties") await generarSeccionProperties(nodo, columnas, msg.nested ?? false);
-    else if (msg.seccion === "layout") await generarSeccionLayout(nodo, columnas, msg.hideOuter ?? false);
+    else if (msg.seccion === "layout") await generarSeccionLayout(nodo, columnas, msg.hideOuter ?? false, msg.itemizar ?? false);
     else if (msg.seccion === "data") await generarSeccionData(nodo);
     else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
     else if (msg.seccion === "modes") await generarSeccionModes(nodo, columnas);

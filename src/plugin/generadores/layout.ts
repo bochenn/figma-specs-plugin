@@ -6,6 +6,7 @@ import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
 import { marcasLayout, estiloCota, iconoDireccion, textoDimension } from "../utils/marcadores-layout.ts";
 import { rectsGrid, textoGrid, gridSpecDe } from "../utils/grilla.ts";
+import { prefijoProfundidad } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
 
 const AZUL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
@@ -29,7 +30,7 @@ function lineaColor(attr: { valor: string; rawValue?: string }): string {
 // Construye el exhibit (bloque de texto) de una capa con Auto Layout.
 async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const fila = frameVertical(spec.elementoNombre, 4);
-  fila.appendChild(await texto(`${spec.elementoNombre} · ${spec.tipo}`, 16));
+  fila.appendChild(await texto(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`, 16));
   const u = unidadActual();
   fila.appendChild(await texto(`Width: ${textoDimension(spec.resizingHorizontal, spec.width, u, spec.widthVar)}`, 12));
   fila.appendChild(await texto(`Height: ${textoDimension(spec.resizingVertical, spec.height, u, spec.heightVar)}`, 12));
@@ -214,7 +215,7 @@ async function exhibitGrids(frame: SceneNode, grids: GridSpec[]): Promise<FrameN
 
 // Genera el output de Layout and Spacing: una fila artwork+exhibit por cada
 // contenedor con Auto Layout (raíz + anidados; mismo orden que extraerLayout).
-export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean): Promise<FrameNode> {
+export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
   const seccion = frameVertical("Layout and Spacing", 64);
@@ -224,7 +225,7 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
   spec.appendChild(seccion);
   seccion.appendChild(await texto("Layout and Spacing", 48));
 
-  const contenedores = recorrerAutoLayout(seleccionado as unknown as NodoLike) as unknown as FrameNode[];
+  const contenedores = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar).map((r) => r.nodo) as unknown as FrameNode[];
 
   // Con hideOuter, se omite la fila del raíz (solo si la selección misma es el
   // primer contenedor; recorrerAutoLayout devuelve los nodos reales).

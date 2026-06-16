@@ -74,7 +74,7 @@ export function compararVariante(defaultRaiz: NodoLike, opcionRaiz: NodoLike): E
     cambios.push({ elementoNombre: defaultRaiz.name, estado: "modificado", atributos: diffRaiz });
   }
 
-  const pares = emparejar(recorrer(defaultRaiz), recorrer(opcionRaiz));
+  const pares = emparejar(recorrer(defaultRaiz).map((r) => r.nodo), recorrer(opcionRaiz).map((r) => r.nodo));
 
   for (const par of pares) {
     if (par.default && par.opcion) {
