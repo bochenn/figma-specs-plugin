@@ -68,9 +68,12 @@ function buscarComponente(
   return undefined;
 }
 
-// Texto legible de un atributo cambiado: "valorOpcion (default: valorDefault)".
-function lineaAtributo(c: { clave: string; valorDefault?: string; valorOpcion?: string }): string {
-  return `${c.clave}: ${c.valorOpcion ?? "—"} (default: ${c.valorDefault ?? "—"})`;
+// Texto legible de un atributo cambiado: "valorOpcion (raw) (default: valorDefault (raw))".
+// El (raw) aparece solo cuando el valor es una variable/style con valor resuelto.
+function lineaAtributo(c: AtributoCambiado): string {
+  const op = `${c.valorOpcion ?? "—"}${c.rawValueOpcion ? ` (${c.rawValueOpcion})` : ""}`;
+  const def = `${c.valorDefault ?? "—"}${c.rawValueDefault ? ` (${c.rawValueDefault})` : ""}`;
+  return `${c.clave}: ${op} (default: ${def})`;
 }
 
 // Dibuja un cambio de atributo: pill (swatch + texto) si es color; texto plano si no.

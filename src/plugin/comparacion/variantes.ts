@@ -53,6 +53,8 @@ export function diffAtributos(attrsDefault: Atributo[], attrsOpcion: Atributo[])
     const aOpc = attrsOpcion.find((a) => a.clave === clave);
     if (aDef?.valor !== aOpc?.valor) {
       const cambio: AtributoCambiado = { clave, valorDefault: aDef?.valor, valorOpcion: aOpc?.valor };
+      if (aDef?.rawValue) cambio.rawValueDefault = aDef.rawValue;
+      if (aOpc?.rawValue) cambio.rawValueOpcion = aOpc.rawValue;
       const swatch = aOpc?.swatchHex ?? aDef?.swatchHex;
       if (swatch) cambio.swatchHex = swatch;
       cambios.push(cambio);
