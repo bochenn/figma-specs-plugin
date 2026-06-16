@@ -37,6 +37,20 @@ test("arma un LayoutSpec completo desde un nodo con Auto Layout", () => {
   });
 });
 
+test("layoutSpecDe con GRID setea direccion y datos de grilla", () => {
+  const raiz: NodoLike = {
+    id: "r", name: "Screen", type: "FRAME", layoutMode: "GRID",
+    gridColumnCount: 12, gridRowCount: 2, gridColumnGap: 20, gridRowGap: 8,
+    children: [],
+  };
+  const s = extraerLayout(raiz)[0];
+  assert.equal(s.direccion, "GRID");
+  assert.equal(s.gridColumnas, 12);
+  assert.equal(s.gridFilas, 2);
+  assert.equal(s.gridColumnGap, 20);
+  assert.equal(s.gridRowGap, 8);
+});
+
 test("extraerLayout con itemizar marca profundidad de la instancia interna", () => {
   const raiz: NodoLike = {
     id: "r", name: "card", type: "FRAME", layoutMode: "VERTICAL",

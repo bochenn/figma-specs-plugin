@@ -24,7 +24,11 @@ export interface NodoLike {
   // solo en instancias:
   mainComponentName?: string;
   // layout (solo en nodos con Auto Layout):
-  layoutMode?: "NONE" | "HORIZONTAL" | "VERTICAL";
+  layoutMode?: "NONE" | "HORIZONTAL" | "VERTICAL" | "GRID";
+  gridColumnCount?: number;
+  gridRowCount?: number;
+  gridColumnGap?: number;
+  gridRowGap?: number;
   primaryAxisAlignItems?: string;     // "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN"
   counterAxisAlignItems?: string;     // "MIN" | "CENTER" | "MAX" | "BASELINE"
   paddingLeft?: number;
@@ -171,7 +175,7 @@ export interface GridSpec {
 export interface LayoutSpec {
   elementoNombre: string;
   tipo: string;                  // FRAME, COMPONENT, etc.
-  direccion: "HORIZONTAL" | "VERTICAL";
+  direccion: "HORIZONTAL" | "VERTICAL" | "GRID";
   alineacionPrimaria: string;    // "Start" | "Center" | "End" | "Space between"
   alineacionContraria: string;
   resizingHorizontal: string;    // "Fill" | "Hug" | "Fixed"
@@ -190,6 +194,10 @@ export interface LayoutSpec {
   fill?: Atributo;
   stroke?: Atributo;
   profundidad?: number; // instancias atravesadas (ausente = 0)
+  gridColumnas?: number;
+  gridFilas?: number;
+  gridColumnGap?: number;
+  gridRowGap?: number;
 }
 
 export interface VarianteLayout {

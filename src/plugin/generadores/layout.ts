@@ -36,6 +36,16 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   fila.appendChild(await texto(`Height: ${textoDimension(spec.resizingVertical, spec.height, u, spec.heightVar)}`, 12));
   if (spec.fill) fila.appendChild(await texto(`Fill: ${lineaColor(spec.fill)}`, 12));
   if (spec.stroke) fila.appendChild(await texto(`Stroke: ${lineaColor(spec.stroke)}`, 12));
+  if (spec.direccion === "GRID") {
+    fila.appendChild(await texto("Direction: Grid", 12));
+    if (spec.gridColumnas !== undefined) fila.appendChild(await texto(`Columns: ${spec.gridColumnas}`, 12));
+    if (spec.gridFilas !== undefined) fila.appendChild(await texto(`Rows: ${spec.gridFilas}`, 12));
+    if (spec.gridColumnGap !== undefined) fila.appendChild(await texto(`Column gap: ${etiquetaSpacing(spec.gridColumnGap, u)}`, 12));
+    if (spec.gridRowGap !== undefined) fila.appendChild(await texto(`Row gap: ${etiquetaSpacing(spec.gridRowGap, u)}`, 12));
+    fila.appendChild(await texto(`Padding: ${textoPadding(spec.padding, u, spec.spacingVars)}`, 12));
+    if (spec.cornerRadius) fila.appendChild(await texto(`Corner radius: ${etiquetaSpacing(spec.cornerRadius, u)}`, 12));
+    return fila;
+  }
   const direccion = (spec.direccion === "HORIZONTAL" ? "Horizontal" : "Vertical") + (spec.wrap ? ", wrapping" : "");
   fila.appendChild(await texto(`Direction: ${direccion}`, 12));
   fila.appendChild(await texto(`Alignment: ${spec.alineacionPrimaria} / ${spec.alineacionContraria}`, 12));
@@ -140,6 +150,7 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec): Promise<Frame
   }));
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
   for (const r of rectsPadding(frameRect, spec.padding)) rectOverlay(r, VERDE, 0.35, artwork);
+  if (spec.direccion === "GRID") return artwork; // overlays 2D del grid → Rebanada C
   const gaps = rectsSpacing(hijosRects, spec.direccion);
   for (const r of gaps) rectOverlay(r, NARANJA, 0.5, artwork);
   for (const g of spec.grids) {
@@ -258,10 +269,6 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
 
   if (filas.length === 0) {
     seccion.appendChild(await texto("No se detectaron capas con Auto Layout.", 16));
-    // Diagnóstico temporal (H3): qué ve el plugin del nodo raíz.
-    const s = seleccionado as { type?: string; layoutMode?: string; children?: unknown[] };
-    const nGrids = Array.isArray(gridsRaizRaw) ? gridsRaizRaw.length : "n/a";
-    seccion.appendChild(await texto(`[debug] raíz: tipo=${s.type} layoutMode=${s.layoutMode ?? "—"} grids=${nGrids} hijos=${s.children?.length ?? "n/a"}`, 12));
   } else if (columnas > 1) {
     seccion.appendChild(enColumnas(filas, columnas));
   } else {

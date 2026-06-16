@@ -54,7 +54,7 @@ export async function generarComplete(
   const bloquesL: FrameNode[] = [];
   for (const v of layout) {
     const s = v.spec;
-    const dir = s.direccion === "HORIZONTAL" ? "Horizontal" : "Vertical";
+    const dir = s.direccion === "HORIZONTAL" ? "Horizontal" : s.direccion === "GRID" ? "Grid" : "Vertical";
     const sv = s.spacingVars;
     const bloque = frameVertical(v.variante, 4);
     bloque.appendChild(await texto(v.variante, 16));

@@ -4,7 +4,7 @@ import type { Recorrido } from "./recorrer.ts";
 const CONTENEDOR = ["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET"];
 
 function tieneAutoLayout(n: NodoLike): boolean {
-  return n.layoutMode === "HORIZONTAL" || n.layoutMode === "VERTICAL";
+  return n.layoutMode === "HORIZONTAL" || n.layoutMode === "VERTICAL" || n.layoutMode === "GRID";
 }
 
 // Nodos con Auto Layout y su profundidad (instancias atravesadas). Sin itemizar

@@ -29,7 +29,7 @@ export function layoutSpecDe(nodo: NodoLike, profundidad = 0): LayoutSpec {
   const spec: LayoutSpec = {
     elementoNombre: nodo.name,
     tipo: nodo.type,
-    direccion: nodo.layoutMode === "HORIZONTAL" ? "HORIZONTAL" : "VERTICAL",
+    direccion: nodo.layoutMode === "HORIZONTAL" ? "HORIZONTAL" : nodo.layoutMode === "GRID" ? "GRID" : "VERTICAL",
     alineacionPrimaria: alineacion(nodo.primaryAxisAlignItems),
     alineacionContraria: alineacion(nodo.counterAxisAlignItems),
     resizingHorizontal: resizing(nodo.layoutSizingHorizontal),
@@ -54,6 +54,12 @@ export function layoutSpecDe(nodo: NodoLike, profundidad = 0): LayoutSpec {
   if (fill) spec.fill = fill;
   if (stroke) spec.stroke = stroke;
   if (profundidad > 0) spec.profundidad = profundidad;
+  if (nodo.layoutMode === "GRID") {
+    if (typeof nodo.gridColumnCount === "number") spec.gridColumnas = nodo.gridColumnCount;
+    if (typeof nodo.gridRowCount === "number") spec.gridFilas = nodo.gridRowCount;
+    if (typeof nodo.gridColumnGap === "number") spec.gridColumnGap = nodo.gridColumnGap;
+    if (typeof nodo.gridRowGap === "number") spec.gridRowGap = nodo.gridRowGap;
+  }
   return spec;
 }
 
