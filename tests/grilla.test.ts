@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { gridSpecDe, rectsGrid, textoGrid } from "../src/plugin/utils/grilla.ts";
+import { gridSpecDe, rectsGrid, textoGrid, franjasGridAutolayout } from "../src/plugin/utils/grilla.ts";
 
 test("COLUMNS Stretch: reparte el ancho entre count con gutter y offset", () => {
   const frame = { x: 0, y: 0, width: 188, height: 100 };
@@ -70,4 +70,36 @@ test("textoGrid arma la línea del exhibit", () => {
     textoGrid({ patron: "ROWS", alineacion: "MIN", count: Infinity, sectionSize: 40, gutter: 0, offset: 0 }),
     "Rows ×Auto · alto 40 · Min",
   );
+});
+
+test("franjasGridAutolayout: reparte columnas en el área de contenido", () => {
+  const { columnas, filas } = franjasGridAutolayout(
+    { x: 0, y: 0, width: 800, height: 120 },
+    { left: 16, top: 16, right: 16, bottom: 16 },
+    12, 1, 20, 20,
+  );
+  assert.equal(columnas.length, 12);
+  assert.equal(columnas[0].x, 16);
+  assert.equal(Math.round(columnas[0].width), 46); // (768 - 11*20)/12 = 45.67
+  assert.equal(columnas[0].y, 16);
+  assert.equal(columnas[0].height, 88); // 120 - 32
+  assert.equal(Math.round(columnas[1].x), 82); // 16 + 45.67 + 20
+  assert.deepEqual(filas, []); // 1 fila → sin franjas de fila
+});
+
+test("franjasGridAutolayout: filas>1 genera franjas horizontales", () => {
+  const { filas } = franjasGridAutolayout(
+    { x: 0, y: 0, width: 100, height: 100 },
+    { left: 0, top: 0, right: 0, bottom: 0 },
+    1, 2, 0, 10,
+  );
+  assert.equal(filas.length, 2);
+  assert.equal(filas[0].y, 0);
+  assert.equal(filas[0].height, 45); // (100 - 10)/2
+  assert.equal(filas[1].y, 55);
+});
+
+test("franjasGridAutolayout: counts o tamaño inválido → vacío", () => {
+  const r = franjasGridAutolayout({ x: 0, y: 0, width: 10, height: 10 }, { left: 0, top: 0, right: 0, bottom: 0 }, 0, 0, 0, 0);
+  assert.deepEqual(r, { columnas: [], filas: [] });
 });

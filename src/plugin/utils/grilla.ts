@@ -1,6 +1,32 @@
 import type { Rect } from "./overlays.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
 
+export interface FranjasGrid { columnas: Rect[]; filas: Rect[]; }
+
+// Franjas de un Grid auto-layout dentro del área de contenido (frame − padding).
+// Reparte el ancho/alto entre los counts, restando los gaps.
+export function franjasGridAutolayout(
+  frame: Rect,
+  padding: { left: number; top: number; right: number; bottom: number },
+  columnas: number, filas: number, columnGap: number, rowGap: number,
+): FranjasGrid {
+  const cx = frame.x + padding.left;
+  const cy = frame.y + padding.top;
+  const cw = frame.width - padding.left - padding.right;
+  const ch = frame.height - padding.top - padding.bottom;
+  const cols: Rect[] = [];
+  const rows: Rect[] = [];
+  if (columnas > 1 && cw > 0) {
+    const w = (cw - (columnas - 1) * columnGap) / columnas;
+    if (w > 0) for (let i = 0; i < columnas; i++) cols.push({ x: cx + i * (w + columnGap), y: cy, width: w, height: ch });
+  }
+  if (filas > 1 && ch > 0) {
+    const h = (ch - (filas - 1) * rowGap) / filas;
+    if (h > 0) for (let i = 0; i < filas; i++) rows.push({ x: cx, y: cy + i * (h + rowGap), width: cw, height: h });
+  }
+  return { columnas: cols, filas: rows };
+}
+
 // Mapea un LayoutGrid crudo de Figma a GridSpec.
 export function gridSpecDe(g: { pattern: string; alignment?: string; gutterSize?: number; count?: number; sectionSize?: number; offset?: number }): GridSpec {
   if (g.pattern === "GRID") return { patron: "GRID", sectionSize: g.sectionSize };
