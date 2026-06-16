@@ -243,8 +243,11 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
   // hideOuter: el grid de la pantalla es información propia, no una anotación de
   // layout del contenedor exterior (esas son padding/spacing/resizing).
   const raizEnFilas = contenedores.length > 0 && (contenedores[0] as SceneNode) === seleccionado;
-  if (!raizEnFilas && "layoutGrids" in seleccionado && Array.isArray(seleccionado.layoutGrids)) {
-    const gridsRaiz = seleccionado.layoutGrids.map(gridSpecDe);
+  // Acceso directo a layoutGrids (no `"layoutGrids" in seleccionado`): el `in`
+  // sobre un nodo real de Figma no es confiable; acceder y chequear Array sí.
+  const gridsRaizRaw = (seleccionado as { layoutGrids?: ReadonlyArray<Parameters<typeof gridSpecDe>[0]> }).layoutGrids;
+  if (!raizEnFilas && Array.isArray(gridsRaizRaw)) {
+    const gridsRaiz = gridsRaizRaw.map(gridSpecDe);
     if (gridsRaiz.length > 0) {
       const fila = frameHorizontal(`Layout ${seleccionado.name}`, 48);
       fila.appendChild(await artworkGrids(seleccionado as FrameNode, gridsRaiz));
@@ -255,6 +258,10 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
 
   if (filas.length === 0) {
     seccion.appendChild(await texto("No se detectaron capas con Auto Layout.", 16));
+    // Diagnóstico temporal (H3): qué ve el plugin del nodo raíz.
+    const s = seleccionado as { type?: string; layoutMode?: string; children?: unknown[] };
+    const nGrids = Array.isArray(gridsRaizRaw) ? gridsRaizRaw.length : "n/a";
+    seccion.appendChild(await texto(`[debug] raíz: tipo=${s.type} layoutMode=${s.layoutMode ?? "—"} grids=${nGrids} hijos=${s.children?.length ?? "n/a"}`, 12));
   } else if (columnas > 1) {
     seccion.appendChild(enColumnas(filas, columnas));
   } else {
