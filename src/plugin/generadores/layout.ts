@@ -4,7 +4,7 @@ import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
-import { marcasLayout, estiloCota, iconoDireccion } from "../utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, textoDimension } from "../utils/marcadores-layout.ts";
 import { rectsGrid, textoGrid, gridSpecDe } from "../utils/grilla.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
 
@@ -21,17 +21,27 @@ const NARANJA_TEXTO: RGB = { r: 0.85, g: 0.4, b: 0 };
 const MARGEN = 56;
 const RESPIRO = 16; // borde derecho e inferior
 
+// Texto de un atributo de color para el exhibit: "valor (raw)" o "valor".
+function lineaColor(attr: { valor: string; rawValue?: string }): string {
+  return attr.rawValue ? `${attr.valor} (${attr.rawValue})` : attr.valor;
+}
+
 // Construye el exhibit (bloque de texto) de una capa con Auto Layout.
 async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const fila = frameVertical(spec.elementoNombre, 4);
   fila.appendChild(await texto(`${spec.elementoNombre} · ${spec.tipo}`, 16));
+  const u = unidadActual();
+  fila.appendChild(await texto(`Width: ${textoDimension(spec.resizingHorizontal, spec.width, u, spec.widthVar)}`, 12));
+  fila.appendChild(await texto(`Height: ${textoDimension(spec.resizingVertical, spec.height, u, spec.heightVar)}`, 12));
+  if (spec.fill) fila.appendChild(await texto(`Fill: ${lineaColor(spec.fill)}`, 12));
+  if (spec.stroke) fila.appendChild(await texto(`Stroke: ${lineaColor(spec.stroke)}`, 12));
   const direccion = (spec.direccion === "HORIZONTAL" ? "Horizontal" : "Vertical") + (spec.wrap ? ", wrapping" : "");
   fila.appendChild(await texto(`Direction: ${direccion}`, 12));
   fila.appendChild(await texto(`Alignment: ${spec.alineacionPrimaria} / ${spec.alineacionContraria}`, 12));
-  fila.appendChild(await texto(`Resizing: ${spec.resizingHorizontal} × ${spec.resizingVertical}`, 12));
   const sv = spec.spacingVars;
-  fila.appendChild(await texto(`Padding: ${textoPadding(spec.padding, unidadActual(), sv)}`, 12));
-  fila.appendChild(await texto(`Item spacing: ${etiquetaSpacing(spec.itemSpacing, unidadActual(), sv.itemSpacing)}`, 12));
+  fila.appendChild(await texto(`Padding: ${textoPadding(spec.padding, u, sv)}`, 12));
+  fila.appendChild(await texto(`Item spacing: ${etiquetaSpacing(spec.itemSpacing, u, sv.itemSpacing)}`, 12));
+  if (spec.cornerRadius) fila.appendChild(await texto(`Corner radius: ${etiquetaSpacing(spec.cornerRadius, u)}`, 12));
   for (const g of spec.grids) fila.appendChild(await texto(`Grid: ${textoGrid(g)}`, 12));
   return fila;
 }
