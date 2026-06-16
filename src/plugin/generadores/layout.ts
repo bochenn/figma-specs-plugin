@@ -215,7 +215,7 @@ async function exhibitGrids(frame: SceneNode, grids: GridSpec[]): Promise<FrameN
 
 // Genera el output de Layout and Spacing: una fila artwork+exhibit por cada
 // contenedor con Auto Layout (raíz + anidados; mismo orden que extraerLayout).
-export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean): Promise<FrameNode> {
+export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
   const seccion = frameVertical("Layout and Spacing", 64);
@@ -225,7 +225,7 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
   spec.appendChild(seccion);
   seccion.appendChild(await texto("Layout and Spacing", 48));
 
-  const contenedores = recorrerAutoLayout(seleccionado as unknown as NodoLike) as unknown as FrameNode[];
+  const contenedores = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar).map((r) => r.nodo) as unknown as FrameNode[];
 
   // Con hideOuter, se omite la fila del raíz (solo si la selección misma es el
   // primer contenedor; recorrerAutoLayout devuelve los nodos reales).
