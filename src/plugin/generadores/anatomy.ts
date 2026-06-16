@@ -4,6 +4,7 @@ import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado } from "
 import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
+import { prefijoProfundidad } from "../utils/jerarquia.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
 
@@ -27,8 +28,9 @@ async function filaAtributo(attr: Atributo): Promise<SceneNode> {
 
 // Construye la entrada de un elemento en la lista de contenido.
 async function entradaLista(indice: number, el: ElementoAnatomy): Promise<FrameNode> {
+  const pref = prefijoProfundidad(el.profundidad ?? 0);
   const fila = frameVertical(`${indice}. ${el.nombre}`, 4);
-  fila.appendChild(await texto(`${indice}. ${el.nombre} · ${el.tipo}`, 16));
+  fila.appendChild(await texto(`${indice}. ${pref}${el.nombre} · ${el.tipo}`, 16));
   if (el.dependeDe) {
     fila.appendChild(await texto(`Depends on: ${el.dependeDe}`, 12));
   }

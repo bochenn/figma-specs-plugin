@@ -1,4 +1,5 @@
 import type { ElementoAnatomy } from "../modelo/tipos.ts";
+import { prefijoProfundidad } from "./jerarquia.ts";
 
 export const HEADERS_ANATOMY = ["#", "Name", "Type", "Attributes"];
 
@@ -9,5 +10,6 @@ export function filaAnatomy(numero: number, elemento: ElementoAnatomy): string[]
   const attrs = elemento.atributos
     .map((a) => (a.rawValue ? `${a.clave}: ${a.valor} (${a.rawValue})` : `${a.clave}: ${a.valor}`))
     .join(", ");
-  return [String(numero), elemento.nombre, elemento.tipo, attrs];
+  const nombre = prefijoProfundidad(elemento.profundidad ?? 0) + elemento.nombre;
+  return [String(numero), nombre, elemento.tipo, attrs];
 }
