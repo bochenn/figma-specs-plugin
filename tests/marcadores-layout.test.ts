@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto, separarColisiones } from "../src/plugin/utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto, separarColisiones, carrilDeMarca } from "../src/plugin/utils/marcadores-layout.ts";
 import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 
 test("marcasLayout: cada padding va a su lado con su valor", () => {
@@ -128,4 +128,16 @@ test("separarColisiones: respeta el orden original aunque entren desordenados", 
   const r = separarColisiones([100, 0], [10, 10], 4);
   assert.equal(r[1], 0);   // el de centro menor no se mueve
   assert.equal(r[0], 100); // el de centro mayor no solapa
+});
+
+test("carrilDeMarca: padding top arriba; bottom/left/right abajo", () => {
+  assert.equal(carrilDeMarca("top", "padding"), "top");
+  assert.equal(carrilDeMarca("bottom", "padding"), "bottom");
+  assert.equal(carrilDeMarca("left", "padding"), "bottom");
+  assert.equal(carrilDeMarca("right", "padding"), "bottom");
+});
+
+test("carrilDeMarca: gap horizontal arriba, gap vertical a la izquierda", () => {
+  assert.equal(carrilDeMarca("top", "spacing"), "top");
+  assert.equal(carrilDeMarca("left", "spacing"), "left");
 });

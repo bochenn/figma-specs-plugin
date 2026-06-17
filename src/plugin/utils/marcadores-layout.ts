@@ -122,3 +122,12 @@ export function separarColisiones(centros: number[], tamanos: number[], sep: num
   }
   return out;
 }
+
+// Carril externo donde va el badge de una marca: padding-top y gaps horizontales
+// arriba; gaps verticales a la izquierda; el resto de paddings (bottom/left/right)
+// en la fila de abajo.
+export function carrilDeMarca(lado: "top" | "bottom" | "left" | "right", tipo: "padding" | "spacing"): "top" | "bottom" | "left" {
+  if (tipo === "spacing") return lado === "top" ? "top" : "left";
+  if (lado === "top") return "top";
+  return "bottom";
+}
