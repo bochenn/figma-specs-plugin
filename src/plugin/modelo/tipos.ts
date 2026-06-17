@@ -29,6 +29,8 @@ export interface NodoLike {
   gridRowCount?: number;
   gridColumnGap?: number;
   gridRowGap?: number;
+  gridColumnGapVar?: string;
+  gridRowGapVar?: string;
   primaryAxisAlignItems?: string;     // "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN"
   counterAxisAlignItems?: string;     // "MIN" | "CENTER" | "MAX" | "BASELINE"
   paddingLeft?: number;

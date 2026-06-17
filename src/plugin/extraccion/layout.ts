@@ -68,6 +68,8 @@ export function layoutSpecDe(nodo: NodoLike, profundidad = 0): LayoutSpec {
     if (typeof nodo.gridRowCount === "number") spec.gridFilas = nodo.gridRowCount;
     if (typeof nodo.gridColumnGap === "number") spec.gridColumnGap = nodo.gridColumnGap;
     if (typeof nodo.gridRowGap === "number") spec.gridRowGap = nodo.gridRowGap;
+    if (nodo.gridColumnGapVar) spec.gridColumnGapVar = nodo.gridColumnGapVar;
+    if (nodo.gridRowGapVar) spec.gridRowGapVar = nodo.gridRowGapVar;
   }
   const ts = textStyleDe(nodo);
   if (ts) spec.textStyle = ts;
