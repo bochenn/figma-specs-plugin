@@ -173,7 +173,7 @@ async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNod
   const porLado: Record<string, { c: FrameNode; centro: number }[]> = { top: [], bottom: [], left: [], right: [] };
   for (const m of marcas) {
     const color = m.tipo === "padding" ? CHIP_PADDING : CHIP_GAP;
-    const c = await chip(m.valor, color, artwork);
+    const c = await cota(m.valor, color, artwork);
     porLado[m.lado].push({ c, centro: m.centro });
   }
   for (const lado of lados) {
@@ -195,13 +195,19 @@ async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNod
 }
 
 
-// Chip de medida: frame con fondo de color y texto blanco; el caller lo posiciona.
-async function chip(valor: string, color: RGB, artwork: FrameNode): Promise<FrameNode> {
+// Aclara un color mezclándolo con blanco (t en [0,1]).
+function aclarar(c: RGB, t: number): RGB {
+  return { r: c.r + (1 - c.r) * t, g: c.g + (1 - c.g) * t, b: c.b + (1 - c.b) * t };
+}
+
+// Cota simple: pill de color con el valor en blanco. El caller la posiciona.
+async function cota(valor: string, color: RGB, artwork: FrameNode): Promise<FrameNode> {
   const c = figma.createFrame();
-  c.name = "Chip";
+  c.name = "cota";
   c.layoutMode = "HORIZONTAL";
   c.primaryAxisSizingMode = "AUTO";
   c.counterAxisSizingMode = "AUTO";
+  c.counterAxisAlignItems = "CENTER";
   c.paddingTop = c.paddingBottom = 1;
   c.paddingLeft = c.paddingRight = 4;
   c.cornerRadius = 4;
@@ -209,6 +215,41 @@ async function chip(valor: string, color: RGB, artwork: FrameNode): Promise<Fram
   const t = await texto(valor, 11);
   t.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
   c.appendChild(t);
+  artwork.appendChild(c);
+  return c;
+}
+
+// Cota de dos partes: pill exterior con sub-pill `value` (nombre de variable) +
+// el valor numérico, ambos en blanco. Estilo cota.pdf.
+async function cotaConNombre(nombre: string, valor: string, color: RGB, artwork: FrameNode): Promise<FrameNode> {
+  const c = figma.createFrame();
+  c.name = "cota";
+  c.layoutMode = "HORIZONTAL";
+  c.primaryAxisSizingMode = "AUTO";
+  c.counterAxisSizingMode = "AUTO";
+  c.counterAxisAlignItems = "CENTER";
+  c.itemSpacing = 4;
+  c.paddingTop = c.paddingBottom = 2;
+  c.paddingLeft = 2;
+  c.paddingRight = 4;
+  c.cornerRadius = 4;
+  c.fills = [{ type: "SOLID", color }];
+  const sub = figma.createFrame();
+  sub.name = "value";
+  sub.layoutMode = "HORIZONTAL";
+  sub.primaryAxisSizingMode = "AUTO";
+  sub.counterAxisSizingMode = "AUTO";
+  sub.paddingTop = sub.paddingBottom = 0;
+  sub.paddingLeft = sub.paddingRight = 2;
+  sub.cornerRadius = 2;
+  sub.fills = [{ type: "SOLID", color: aclarar(color, 0.35) }];
+  const tn = await texto(nombre, 11);
+  tn.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
+  sub.appendChild(tn);
+  c.appendChild(sub);
+  const tv = await texto(valor, 11);
+  tv.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
+  c.appendChild(tv);
   artwork.appendChild(c);
   return c;
 }
@@ -264,14 +305,14 @@ async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpe
   cotaH.x = MARGEN;
   cotaH.y = MARGEN - 44;
   artwork.appendChild(cotaH);
-  const tW = await chip(etiquetaSpacing(spec.width, u), CHIP_DIM, artwork);
+  const tW = await cota(etiquetaSpacing(spec.width, u), CHIP_DIM, artwork);
   tW.x = MARGEN + clon.width / 2 - tW.width / 2;
   tW.y = MARGEN - 44 - 12;
   const cotaV = figma.createNodeFromSvg(svgCotaV(estiloCota(spec.resizingVertical), clon.height));
   cotaV.x = MARGEN - 44;
   cotaV.y = MARGEN;
   artwork.appendChild(cotaV);
-  const tH = await chip(etiquetaSpacing(spec.height, u), CHIP_DIM, artwork);
+  const tH = await cota(etiquetaSpacing(spec.height, u), CHIP_DIM, artwork);
   tH.x = MARGEN - 44 - tH.width - 2;
   tH.y = MARGEN + clon.height / 2 - tH.height / 2;
 }
@@ -283,14 +324,14 @@ async function dibujarCotaHijo(artwork: FrameNode, hijo: Rect): Promise<void> {
   cw.x = hijo.x;
   cw.y = hijo.y - 14;
   artwork.appendChild(cw);
-  const tw = await chip(etiquetaSpacing(hijo.width, u), CHIP_DIM, artwork);
+  const tw = await cota(etiquetaSpacing(hijo.width, u), CHIP_DIM, artwork);
   tw.x = hijo.x + hijo.width / 2 - tw.width / 2;
   tw.y = hijo.y - 14 - 12;
   const chh = figma.createNodeFromSvg(svgCotaV("fixed", hijo.height));
   chh.x = hijo.x - 14;
   chh.y = hijo.y;
   artwork.appendChild(chh);
-  const th = await chip(etiquetaSpacing(hijo.height, u), CHIP_DIM, artwork);
+  const th = await cota(etiquetaSpacing(hijo.height, u), CHIP_DIM, artwork);
   th.x = hijo.x - 14 - th.width - 2;
   th.y = hijo.y + hijo.height / 2 - th.height / 2;
 }
