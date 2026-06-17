@@ -4,10 +4,11 @@ import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
-import { marcasLayout, estiloCota, iconoDireccion, valorDim, valorColor, valorSpacing, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, iconoAlineacion, valorDim, valorColor, valorSpacing, separarColisiones, carrilDeMarca, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
 import { rectsGrid, textoGrid, gridSpecDe, franjasGridAutolayout } from "../utils/grilla.ts";
 import { prefijoProfundidad } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
+import { nodoIcono } from "./iconos.ts";
 
 const AZUL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
 const VERDE: RGB = { r: 0.1, g: 0.7, b: 0.3 };
@@ -25,26 +26,8 @@ const GAP_BANDA: RGB = { r: 1, g: 0.7, b: 0.85 };
 // 80px: la cota vertical (44) + el número de la medida (hasta ~3 dígitos) deben
 // entrar sin cortarse contra el borde izquierdo.
 const MARGEN = 96;
+const MARGEN_IZQ = 160; // margen izquierdo ancho: aloja la cota de alto + breadcrumb del artwork
 const RESPIRO = 16; // borde derecho e inferior
-
-// Íconos 12×12 (gris) por propiedad del panel.
-const G_ICONO = "#666666";
-const ICONOS_PROP: Record<string, string> = {
-  width: `<line x1="1" y1="6" x2="11" y2="6" stroke="${G_ICONO}"/><line x1="1" y1="2" x2="1" y2="10" stroke="${G_ICONO}"/><line x1="11" y1="2" x2="11" y2="10" stroke="${G_ICONO}"/>`,
-  height: `<line x1="6" y1="1" x2="6" y2="11" stroke="${G_ICONO}"/><line x1="2" y1="1" x2="10" y2="1" stroke="${G_ICONO}"/><line x1="2" y1="11" x2="10" y2="11" stroke="${G_ICONO}"/>`,
-  direction: `<path d="M2 6 H10 M7 3 L10 6 L7 9" stroke="${G_ICONO}" fill="none"/>`,
-  fill: `<rect x="2" y="2" width="8" height="8" fill="${G_ICONO}"/>`,
-  stroke: `<rect x="2" y="2" width="8" height="8" stroke="${G_ICONO}" fill="none"/>`,
-  align: `<line x1="2" y1="3" x2="10" y2="3" stroke="${G_ICONO}"/><line x1="2" y1="6" x2="7" y2="6" stroke="${G_ICONO}"/><line x1="2" y1="9" x2="9" y2="9" stroke="${G_ICONO}"/>`,
-  padding: `<rect x="1" y="1" width="10" height="10" stroke="${G_ICONO}" fill="none"/><rect x="4" y="4" width="4" height="4" stroke="${G_ICONO}" fill="none"/>`,
-  gap: `<rect x="1" y="3" width="3" height="6" fill="${G_ICONO}"/><rect x="8" y="3" width="3" height="6" fill="${G_ICONO}"/>`,
-  corner: `<path d="M2 10 V5 A3 3 0 0 1 5 2 H10" stroke="${G_ICONO}" fill="none"/>`,
-  columns: `<rect x="1" y="2" width="2" height="8" fill="${G_ICONO}"/><rect x="5" y="2" width="2" height="8" fill="${G_ICONO}"/><rect x="9" y="2" width="2" height="8" fill="${G_ICONO}"/>`,
-  rows: `<rect x="2" y="1" width="8" height="2" fill="${G_ICONO}"/><rect x="2" y="5" width="8" height="2" fill="${G_ICONO}"/><rect x="2" y="9" width="8" height="2" fill="${G_ICONO}"/>`,
-};
-function svgIconoProp(key: string): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">${ICONOS_PROP[key]}</svg>`;
-}
 
 // Chip gris para una variable/style en el panel (nombre completo, texto oscuro).
 async function chipVariable(nombre: string): Promise<FrameNode> {
@@ -80,11 +63,29 @@ async function filaPropiedad(iconoKey: string, label: string, partes: ParteValor
   izq.primaryAxisSizingMode = "FIXED";
   izq.resize(150, 16);
   izq.counterAxisSizingMode = "AUTO";
-  izq.appendChild(figma.createNodeFromSvg(svgIconoProp(iconoKey)));
+  izq.appendChild(nodoIcono(iconoKey));
   izq.appendChild(await texto(label, 12));
   fila.appendChild(izq);
   fila.appendChild(await valorConChips(partes));
   return fila;
+}
+
+const ANCHO_BREADCRUMB = 160;
+const GRIS_ANCESTRO: RGB = { r: 0.6, g: 0.6, b: 0.6 };
+
+// Columna de jerarquía: un texto por ancestro (raíz→elemento), indentado por
+// nivel. Los ancestros van en gris; el último (el elemento de la fila) en el
+// color de texto normal, para resaltarlo. Ancho fijo para alinear los artworks.
+async function breadcrumb(camino: string[]): Promise<FrameNode> {
+  const col = frameVertical("Hierarchy", 4);
+  col.counterAxisSizingMode = "FIXED";
+  col.resize(ANCHO_BREADCRUMB, col.height);
+  for (let i = 0; i < camino.length; i++) {
+    const t = await texto("  ".repeat(i) + camino[i], 12);
+    if (i < camino.length - 1) t.fills = [{ type: "SOLID", color: GRIS_ANCESTRO }];
+    col.appendChild(t);
+  }
+  return col;
 }
 
 // Construye el exhibit (bloque de texto) de una capa con Auto Layout.
@@ -104,23 +105,27 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const partesPadding: ParteValor[] = padUniforme ? valorSpacing(p.left, u, sv.paddingLeft) : [{ texto: textoPadding(p, u, sv) }];
 
   if (spec.direccion === "GRID") {
-    fila.appendChild(await filaPropiedad("direction", "Direction", [{ texto: "Grid" }]));
+    fila.appendChild(await filaPropiedad("dir-grid", "Direction", [{ texto: "Grid" }]));
     if (spec.gridColumnas !== undefined) fila.appendChild(await filaPropiedad("columns", "Columns", [{ texto: String(spec.gridColumnas) }]));
     if (spec.gridFilas !== undefined) fila.appendChild(await filaPropiedad("rows", "Rows", [{ texto: String(spec.gridFilas) }]));
-    if (spec.gridColumnGap !== undefined) fila.appendChild(await filaPropiedad("gap", "Column gap", [{ texto: etiquetaSpacing(spec.gridColumnGap, u) }]));
-    if (spec.gridRowGap !== undefined) fila.appendChild(await filaPropiedad("gap", "Row gap", [{ texto: etiquetaSpacing(spec.gridRowGap, u) }]));
+    if (spec.gridColumnGap !== undefined) fila.appendChild(await filaPropiedad("spacing-h", "Column gap", valorSpacing(spec.gridColumnGap, u, spec.gridColumnGapVar)));
+    if (spec.gridRowGap !== undefined) fila.appendChild(await filaPropiedad("spacing-v", "Row gap", valorSpacing(spec.gridRowGap, u, spec.gridRowGapVar)));
     fila.appendChild(await filaPropiedad("padding", "Padding", partesPadding));
     if (spec.cornerRadius) fila.appendChild(await filaPropiedad("corner", "Corner radius", [{ texto: etiquetaSpacing(spec.cornerRadius, u) }]));
+    if (spec.textStyle) fila.appendChild(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
     return fila;
   }
 
+  const dirKey = spec.direccion === "HORIZONTAL" ? "dir-horizontal" : "dir-vertical";
   const direccion = (spec.direccion === "HORIZONTAL" ? "Horizontal" : "Vertical") + (spec.wrap ? ", wrapping" : "");
-  fila.appendChild(await filaPropiedad("direction", "Direction", [{ texto: direccion }]));
-  fila.appendChild(await filaPropiedad("align", "Alignment", [{ texto: `${spec.alineacionPrimaria} / ${spec.alineacionContraria}` }]));
+  const gapKey = spec.direccion === "HORIZONTAL" ? "spacing-h" : "spacing-v";
+  fila.appendChild(await filaPropiedad(dirKey, "Direction", [{ texto: direccion }]));
+  fila.appendChild(await filaPropiedad(iconoAlineacion(spec.direccion, spec.alineacionContraria), "Alignment", [{ texto: `${spec.alineacionPrimaria} / ${spec.alineacionContraria}` }]));
   fila.appendChild(await filaPropiedad("padding", "Padding", partesPadding));
-  fila.appendChild(await filaPropiedad("gap", "Item spacing", valorSpacing(spec.itemSpacing, u, sv.itemSpacing)));
+  fila.appendChild(await filaPropiedad(gapKey, "Item spacing", valorSpacing(spec.itemSpacing, u, sv.itemSpacing)));
   if (spec.cornerRadius) fila.appendChild(await filaPropiedad("corner", "Corner radius", [{ texto: etiquetaSpacing(spec.cornerRadius, u) }]));
   for (const g of spec.grids) fila.appendChild(await filaPropiedad("columns", "Grid", [{ texto: textoGrid(g) }]));
+  if (spec.textStyle) fila.appendChild(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
   return fila;
 }
 
@@ -147,26 +152,64 @@ function bandaPunteada(r: Rect, colorFill: RGB, colorStroke: RGB, artwork: Frame
   artwork.appendChild(rect);
 }
 
-// Posiciona un chip de marca en su lado del clon.
-async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNode): Promise<void> {
+const SEP_CHIP = 4;     // separación mínima entre cotas del mismo carril
+const FILA_TOP = 24;    // distancia de la fila superior sobre el borde del elemento
+const FILA_BOT = 8;     // distancia de la fila inferior bajo el borde
+const COL_IZQ = 8;      // distancia de la columna izquierda al borde
+
+// Ubica los badges de padding/gap en carriles externos (fuera del elemento):
+// fila arriba (padding-top + gaps horizontales), fila abajo (padding bottom/left/
+// right), columna izquierda (gaps verticales). Devuelve el x mínimo a la izquierda.
+async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNode): Promise<number> {
+  const top: { c: FrameNode; centro: number }[] = [];
+  const bottom: { c: FrameNode; centro: number }[] = [];
+  const left: { c: FrameNode; centro: number }[] = [];
   for (const m of marcas) {
     const color = m.tipo === "padding" ? CHIP_PADDING : CHIP_GAP;
-    const c = await chip(m.valor, color, artwork);
-    if (m.lado === "top") { c.x = m.centro - c.width / 2; c.y = MARGEN - 18; }
-    else if (m.lado === "bottom") { c.x = m.centro - c.width / 2; c.y = MARGEN + clon.height + 6; }
-    else if (m.lado === "left") { c.x = MARGEN - 16 - c.width; c.y = m.centro - c.height / 2; }
-    else { c.x = MARGEN + clon.width + 16; c.y = m.centro - c.height / 2; }
+    const c = m.nombre ? await cotaConNombre(m.nombre, m.valor, color, artwork) : await cota(m.valor, color, artwork);
+    const carril = carrilDeMarca(m.lado, m.tipo);
+    if (carril === "top") top.push({ c, centro: m.centro });
+    else if (carril === "left") left.push({ c, centro: m.centro });
+    else {
+      const centro = m.tipo === "padding" && m.lado === "left" ? clon.x
+        : m.tipo === "padding" && m.lado === "right" ? clon.x + clon.width
+        : m.centro;
+      bottom.push({ c, centro });
+    }
   }
+  const filas: [{ c: FrameNode; centro: number }[], number][] = [[top, clon.y - FILA_TOP], [bottom, clon.y + clon.height + FILA_BOT]];
+  for (const [grupo, y] of filas) {
+    if (grupo.length === 0) continue;
+    const ajustados = separarColisiones(grupo.map((g) => g.centro), grupo.map((g) => g.c.width), SEP_CHIP);
+    for (let i = 0; i < grupo.length; i++) { grupo[i].c.x = ajustados[i] - grupo[i].c.width / 2; grupo[i].c.y = y; }
+  }
+  let minLeftX = clon.x;
+  if (left.length > 0) {
+    const ajustados = separarColisiones(left.map((g) => g.centro), left.map((g) => g.c.height), SEP_CHIP);
+    for (let i = 0; i < left.length; i++) {
+      const c = left[i].c;
+      c.x = clon.x - COL_IZQ - c.width;
+      c.y = ajustados[i] - c.height / 2;
+      minLeftX = Math.min(minLeftX, c.x);
+    }
+  }
+  return minLeftX;
 }
 
 
-// Chip de medida: frame con fondo de color y texto blanco; el caller lo posiciona.
-async function chip(valor: string, color: RGB, artwork: FrameNode): Promise<FrameNode> {
+// Aclara un color mezclándolo con blanco (t en [0,1]).
+function aclarar(c: RGB, t: number): RGB {
+  return { r: c.r + (1 - c.r) * t, g: c.g + (1 - c.g) * t, b: c.b + (1 - c.b) * t };
+}
+
+// Cota simple: pill de color con el valor en blanco. El caller la posiciona.
+async function cota(valor: string, color: RGB, artwork: FrameNode): Promise<FrameNode> {
   const c = figma.createFrame();
-  c.name = "Chip";
+  c.name = "cota";
   c.layoutMode = "HORIZONTAL";
   c.primaryAxisSizingMode = "AUTO";
   c.counterAxisSizingMode = "AUTO";
+  c.counterAxisAlignItems = "CENTER";
   c.paddingTop = c.paddingBottom = 1;
   c.paddingLeft = c.paddingRight = 4;
   c.cornerRadius = 4;
@@ -178,35 +221,106 @@ async function chip(valor: string, color: RGB, artwork: FrameNode): Promise<Fram
   return c;
 }
 
+// Cota de dos partes: pill exterior con sub-pill `value` (nombre de variable) +
+// el valor numérico, ambos en blanco. Estilo cota.pdf.
+async function cotaConNombre(nombre: string, valor: string, color: RGB, artwork: FrameNode): Promise<FrameNode> {
+  const c = figma.createFrame();
+  c.name = "cota";
+  c.layoutMode = "HORIZONTAL";
+  c.primaryAxisSizingMode = "AUTO";
+  c.counterAxisSizingMode = "AUTO";
+  c.counterAxisAlignItems = "CENTER";
+  c.itemSpacing = 4;
+  c.paddingTop = c.paddingBottom = 2;
+  c.paddingLeft = 2;
+  c.paddingRight = 4;
+  c.cornerRadius = 4;
+  c.fills = [{ type: "SOLID", color }];
+  const sub = figma.createFrame();
+  sub.name = "value";
+  sub.layoutMode = "HORIZONTAL";
+  sub.primaryAxisSizingMode = "AUTO";
+  sub.counterAxisSizingMode = "AUTO";
+  sub.paddingTop = sub.paddingBottom = 0;
+  sub.paddingLeft = sub.paddingRight = 2;
+  sub.cornerRadius = 2;
+  sub.fills = [{ type: "SOLID", color: aclarar(color, 0.35) }];
+  const tn = await texto(nombre, 11);
+  tn.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
+  sub.appendChild(tn);
+  c.appendChild(sub);
+  const tv = await texto(valor, 11);
+  tv.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
+  c.appendChild(tv);
+  artwork.appendChild(c);
+  return c;
+}
+
 const AZUL_HEX = "#F24026"; // las cotas son de dimensión → rojo (igual que el chip CHIP_DIM)
 const GRIS_HEX = "#444444";
 
 // Cota horizontal de `largo` px; las puntas codifican el resizing.
-function svgCotaH(estilo: "fixed" | "fill" | "hug", largo: number): string {
+function svgCotaH(estilo: "fixed" | "fill" | "hug", largo: number, color = AZUL_HEX): string {
   const L = largo;
-  const base = `<line x1="0" y1="6" x2="${L}" y2="6" stroke="${AZUL_HEX}"/>`;
-  const topes = `<line x1="0.5" y1="0" x2="0.5" y2="12" stroke="${AZUL_HEX}"/><line x1="${L - 0.5}" y1="0" x2="${L - 0.5}" y2="12" stroke="${AZUL_HEX}"/>`;
+  const base = `<line x1="0" y1="6" x2="${L}" y2="6" stroke="${color}"/>`;
+  const topes = `<line x1="0.5" y1="0" x2="0.5" y2="12" stroke="${color}"/><line x1="${L - 0.5}" y1="0" x2="${L - 0.5}" y2="12" stroke="${color}"/>`;
   let puntas = topes; // fixed
   if (estilo === "fill") {
-    puntas = `<path d="M6 1 L1 6 L6 11" stroke="${AZUL_HEX}" fill="none"/><path d="M${L - 6} 1 L${L - 1} 6 L${L - 6} 11" stroke="${AZUL_HEX}" fill="none"/>`;
+    puntas = `<path d="M6 1 L1 6 L6 11" stroke="${color}" fill="none"/><path d="M${L - 6} 1 L${L - 1} 6 L${L - 6} 11" stroke="${color}" fill="none"/>`;
   } else if (estilo === "hug") {
-    puntas = `${topes}<path d="M2 1 L7 6 L2 11" stroke="${AZUL_HEX}" fill="none"/><path d="M${L - 2} 1 L${L - 7} 6 L${L - 2} 11" stroke="${AZUL_HEX}" fill="none"/>`;
+    puntas = `${topes}<path d="M2 1 L7 6 L2 11" stroke="${color}" fill="none"/><path d="M${L - 2} 1 L${L - 7} 6 L${L - 2} 11" stroke="${color}" fill="none"/>`;
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="12">${base}${puntas}</svg>`;
 }
 
 // Cota vertical de `largo` px (misma idea, ejes intercambiados).
-function svgCotaV(estilo: "fixed" | "fill" | "hug", largo: number): string {
+function svgCotaV(estilo: "fixed" | "fill" | "hug", largo: number, color = AZUL_HEX): string {
   const L = largo;
-  const base = `<line x1="6" y1="0" x2="6" y2="${L}" stroke="${AZUL_HEX}"/>`;
-  const topes = `<line x1="0" y1="0.5" x2="12" y2="0.5" stroke="${AZUL_HEX}"/><line x1="0" y1="${L - 0.5}" x2="12" y2="${L - 0.5}" stroke="${AZUL_HEX}"/>`;
+  const base = `<line x1="6" y1="0" x2="6" y2="${L}" stroke="${color}"/>`;
+  const topes = `<line x1="0" y1="0.5" x2="12" y2="0.5" stroke="${color}"/><line x1="0" y1="${L - 0.5}" x2="12" y2="${L - 0.5}" stroke="${color}"/>`;
   let puntas = topes; // fixed
   if (estilo === "fill") {
-    puntas = `<path d="M1 6 L6 1 L11 6" stroke="${AZUL_HEX}" fill="none"/><path d="M1 ${L - 6} L6 ${L - 1} L11 ${L - 6}" stroke="${AZUL_HEX}" fill="none"/>`;
+    puntas = `<path d="M1 6 L6 1 L11 6" stroke="${color}" fill="none"/><path d="M1 ${L - 6} L6 ${L - 1} L11 ${L - 6}" stroke="${color}" fill="none"/>`;
   } else if (estilo === "hug") {
-    puntas = `${topes}<path d="M1 2 L6 7 L11 2" stroke="${AZUL_HEX}" fill="none"/><path d="M1 ${L - 2} L6 ${L - 7} L11 ${L - 2}" stroke="${AZUL_HEX}" fill="none"/>`;
+    puntas = `${topes}<path d="M1 2 L6 7 L11 2" stroke="${color}" fill="none"/><path d="M1 ${L - 2} L6 ${L - 7} L11 ${L - 2}" stroke="${color}" fill="none"/>`;
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="${L}">${base}${puntas}</svg>`;
+}
+
+const LINEA_PADDING = "#0D80FF"; // azul, acorde a CHIP_PADDING
+const LINEA_GAP = "#E63380";     // rosa, acorde a CHIP_GAP
+
+// Línea de cota vertical centrada en `xCentro`, desde `y`, de `largo` px.
+function lineaV(artwork: FrameNode, xCentro: number, y: number, largo: number, color: string): void {
+  if (largo <= 0) return;
+  const n = figma.createNodeFromSvg(svgCotaV("fixed", largo, color));
+  n.x = xCentro - 6;
+  n.y = y;
+  artwork.appendChild(n);
+}
+
+// Línea de cota horizontal centrada en `yCentro`, desde `x`, de `largo` px.
+function lineaH(artwork: FrameNode, x: number, yCentro: number, largo: number, color: string): void {
+  if (largo <= 0) return;
+  const n = figma.createNodeFromSvg(svgCotaH("fixed", largo, color));
+  n.x = x;
+  n.y = yCentro - 6;
+  artwork.appendChild(n);
+}
+
+// Dibuja una línea de cota sobre cada banda de padding (azul) y cada gap (rosa).
+function dibujarLineasMedida(artwork: FrameNode, clon: FrameNode, spec: LayoutSpec, gaps: Rect[]): void {
+  const cx = clon.x + clon.width / 2;
+  const cy = clon.y + clon.height / 2;
+  const p = spec.padding;
+  lineaV(artwork, cx, clon.y, p.top, LINEA_PADDING);
+  lineaV(artwork, cx, clon.y + clon.height - p.bottom, p.bottom, LINEA_PADDING);
+  lineaH(artwork, clon.x, cy, p.left, LINEA_PADDING);
+  lineaH(artwork, clon.x + clon.width - p.right, cy, p.right, LINEA_PADDING);
+  for (const g of gaps) {
+    if (spec.direccion === "VERTICAL") lineaV(artwork, g.x + g.width / 2, g.y, g.height, LINEA_GAP);
+    else lineaH(artwork, g.x, g.y + g.height / 2, g.width, LINEA_GAP);
+  }
 }
 
 // Íconos de dirección (24x24): flecha → / ↓, variante con grilla si hay wrap.
@@ -221,24 +335,25 @@ function svgIcono(nombre: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">${ICONOS[nombre]}</svg>`;
 }
 
-// Cotas azules de W/H con su valor numérico (resizing en las puntas, medida en
-// el texto). Aplica a cualquier contenedor (H/V y GRID).
-async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpec): Promise<void> {
+// Cotas de W/H (rojo) con su valor. La de alto se ubica a la izquierda de
+// `minLeftX` (lo más a la izquierda que llegaron las cotas de ese lado).
+async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpec, minLeftX: number): Promise<void> {
   const u = unidadActual();
   const cotaH = figma.createNodeFromSvg(svgCotaH(estiloCota(spec.resizingHorizontal), clon.width));
-  cotaH.x = MARGEN;
-  cotaH.y = MARGEN - 44;
+  cotaH.x = clon.x;
+  cotaH.y = clon.y - 44;
   artwork.appendChild(cotaH);
-  const tW = await chip(etiquetaSpacing(spec.width, u), CHIP_DIM, artwork);
-  tW.x = MARGEN + clon.width / 2 - tW.width / 2;
-  tW.y = MARGEN - 44 - 12;
+  const tW = await cota(etiquetaSpacing(spec.width, u), CHIP_DIM, artwork);
+  tW.x = clon.x + clon.width / 2 - tW.width / 2;
+  tW.y = clon.y - 44 - 12;
+  const xLinea = Math.min(clon.x - 44, minLeftX - 28);
   const cotaV = figma.createNodeFromSvg(svgCotaV(estiloCota(spec.resizingVertical), clon.height));
-  cotaV.x = MARGEN - 44;
-  cotaV.y = MARGEN;
+  cotaV.x = xLinea;
+  cotaV.y = clon.y;
   artwork.appendChild(cotaV);
-  const tH = await chip(etiquetaSpacing(spec.height, u), CHIP_DIM, artwork);
-  tH.x = MARGEN - 44 - tH.width - 2;
-  tH.y = MARGEN + clon.height / 2 - tH.height / 2;
+  const tH = await cota(etiquetaSpacing(spec.height, u), CHIP_DIM, artwork);
+  tH.x = xLinea - tH.width - 2;
+  tH.y = clon.y + clon.height / 2 - tH.height / 2;
 }
 
 // Cotas de ancho (arriba) y alto (izquierda) de un hijo directo, con su número.
@@ -248,14 +363,14 @@ async function dibujarCotaHijo(artwork: FrameNode, hijo: Rect): Promise<void> {
   cw.x = hijo.x;
   cw.y = hijo.y - 14;
   artwork.appendChild(cw);
-  const tw = await chip(etiquetaSpacing(hijo.width, u), CHIP_DIM, artwork);
+  const tw = await cota(etiquetaSpacing(hijo.width, u), CHIP_DIM, artwork);
   tw.x = hijo.x + hijo.width / 2 - tw.width / 2;
   tw.y = hijo.y - 14 - 12;
   const chh = figma.createNodeFromSvg(svgCotaV("fixed", hijo.height));
   chh.x = hijo.x - 14;
   chh.y = hijo.y;
   artwork.appendChild(chh);
-  const th = await chip(etiquetaSpacing(hijo.height, u), CHIP_DIM, artwork);
+  const th = await cota(etiquetaSpacing(hijo.height, u), CHIP_DIM, artwork);
   th.x = hijo.x - 14 - th.width - 2;
   th.y = hijo.y + hijo.height / 2 - th.height / 2;
 }
@@ -272,13 +387,13 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
   artwork.fills = fillTematizado(varsTema().fondoArtwork);
   const clon = contenedor.clone();
   artwork.appendChild(clon);
-  clon.x = MARGEN;
+  clon.x = MARGEN_IZQ;
   clon.y = MARGEN;
-  artwork.resize(clon.width + 2 * MARGEN, clon.height + 2 * MARGEN);
+  artwork.resize(clon.width + MARGEN_IZQ + MARGEN, clon.height + 2 * MARGEN);
 
-  const frameRect: Rect = { x: MARGEN, y: MARGEN, width: clon.width, height: clon.height };
+  const frameRect: Rect = { x: MARGEN_IZQ, y: MARGEN, width: clon.width, height: clon.height };
   const hijosRects: Rect[] = contenedor.children.map((c) => ({
-    x: MARGEN + c.x, y: MARGEN + c.y, width: c.width, height: c.height,
+    x: MARGEN_IZQ + c.x, y: MARGEN + c.y, width: c.width, height: c.height,
   }));
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
   if (medirHijos) for (const h of hijosRects) await dibujarCotaHijo(artwork, h);
@@ -287,8 +402,9 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
     for (const r of columnas) bandaPunteada(r, ROJO, ROJO, artwork);
     for (const r of filas) bandaPunteada(r, ROJO, ROJO, artwork);
-    await dibujarCotas(artwork, clon, spec);
-    await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, [], "HORIZONTAL", spec.spacingAuto, spec.spacingVars), clon);
+    dibujarLineasMedida(artwork, clon, spec, []);
+    const minLeftX = await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, [], "HORIZONTAL", spec.spacingAuto, spec.spacingVars), clon);
+    await dibujarCotas(artwork, clon, spec, minLeftX);
     return artwork;
   }
   const gaps = rectsSpacing(hijosRects, spec.direccion);
@@ -297,9 +413,10 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
     for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
   }
 
-  // Cotas de W/H (rojo) y chips de padding/gap distribuidos en los 4 lados.
-  await dibujarCotas(artwork, clon, spec);
-  await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto, spec.spacingVars), clon);
+  dibujarLineasMedida(artwork, clon, spec, gaps);
+  // Cotas de padding/gap (reubicadas) + cotas de W/H (rojo) despejadas.
+  const minLeftX = await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto, spec.spacingVars), clon);
+  await dibujarCotas(artwork, clon, spec, minLeftX);
 
   // Ícono de dirección, arriba a la izquierda del artwork.
   const icono = figma.createNodeFromSvg(svgIcono(iconoDireccion(spec.direccion, spec.wrap)));
@@ -353,9 +470,11 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
 // Construye solo la sección Layout and Spacing (sin Specifications ni título de nodo).
 export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<FrameNode> {
   const seccion = frameVertical("Layout and Spacing", 64);
+  seccion.clipsContent = false; // los chips/cotas asoman del margen del artwork
   seccion.appendChild(await texto("Layout and Spacing", 48));
 
-  const contenedores = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar).map((r) => r.nodo) as unknown as FrameNode[];
+  const recorridos = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar);
+  const contenedores = recorridos.map((r) => r.nodo) as unknown as FrameNode[];
 
   // Con hideOuter, se omite la fila del raíz (solo si la selección misma es el
   // primer contenedor; recorrerAutoLayout devuelve los nodos reales).
@@ -365,6 +484,7 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   for (let i = inicio; i < n; i++) {
     const fila = frameHorizontal(`Layout ${specs[i].elementoNombre}`, 48);
     fila.clipsContent = false; // los chips/cotas del artwork pueden asomar del margen
+    fila.appendChild(await breadcrumb(recorridos[i].camino ?? [specs[i].elementoNombre]));
     fila.appendChild(await artworkDe(contenedores[i], specs[i], medirHijos));
     fila.appendChild(await exhibit(specs[i]));
     filas.push(fila);
@@ -382,6 +502,7 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
     if (gridsRaiz.length > 0) {
       const fila = frameHorizontal(`Layout ${seleccionado.name}`, 48);
       fila.clipsContent = false;
+      fila.appendChild(await breadcrumb([seleccionado.name]));
       fila.appendChild(await artworkGrids(seleccionado as FrameNode, gridsRaiz));
       fila.appendChild(await exhibitGrids(seleccionado, gridsRaiz));
       filas.unshift(fila);
@@ -391,7 +512,9 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   if (filas.length === 0) {
     seccion.appendChild(await texto("No se detectaron capas con Auto Layout.", 16));
   } else if (columnas > 1) {
-    seccion.appendChild(enColumnas(filas, columnas));
+    const cont = enColumnas(filas, columnas);
+    cont.clipsContent = false;
+    seccion.appendChild(cont);
   } else {
     for (const f of filas) seccion.appendChild(f);
   }

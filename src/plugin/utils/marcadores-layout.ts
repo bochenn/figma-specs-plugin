@@ -39,6 +39,7 @@ export interface Marca {
   desde: number;   // rango de la banda (para el dedupe de wrap)
   hasta: number;
   valor: string;
+  nombre?: string; // nombreCorto de la variable, si la hay
   tipo: "padding" | "spacing";
 }
 
@@ -71,19 +72,20 @@ export function marcasLayout(
   spacingVars: { paddingLeft?: string; paddingTop?: string; paddingRight?: string; paddingBottom?: string; itemSpacing?: string } = {},
 ): Marca[] {
   const u = unidadActual();
-  const marca = (px: number, nombreVar?: string) =>
-    nombreVar ? `${nombreCorto(nombreVar)} ${formatearEspaciado(px, u)}` : formatearEspaciado(px, u);
   const cx = frame.x + frame.width / 2;
   const cy = frame.y + frame.height / 2;
+  const valorDe = (px: number) => formatearEspaciado(px, u);
+  const nombreDe = (nombreVar?: string) => (nombreVar ? { nombre: nombreCorto(nombreVar) } : {});
   const out: Marca[] = [];
-  if (padding.left > 0) out.push({ lado: "left", centro: cy, desde: frame.y, hasta: frame.y + frame.height, valor: marca(padding.left, spacingVars.paddingLeft), tipo: "padding" });
-  if (padding.right > 0) out.push({ lado: "right", centro: cy, desde: frame.y, hasta: frame.y + frame.height, valor: marca(padding.right, spacingVars.paddingRight), tipo: "padding" });
-  if (padding.top > 0) out.push({ lado: "top", centro: cx, desde: frame.x, hasta: frame.x + frame.width, valor: marca(padding.top, spacingVars.paddingTop), tipo: "padding" });
-  if (padding.bottom > 0) out.push({ lado: "bottom", centro: cx, desde: frame.x, hasta: frame.x + frame.width, valor: marca(padding.bottom, spacingVars.paddingBottom), tipo: "padding" });
+  if (padding.left > 0) out.push({ lado: "left", centro: cy, desde: frame.y, hasta: frame.y + frame.height, valor: valorDe(padding.left), ...nombreDe(spacingVars.paddingLeft), tipo: "padding" });
+  if (padding.right > 0) out.push({ lado: "right", centro: cy, desde: frame.y, hasta: frame.y + frame.height, valor: valorDe(padding.right), ...nombreDe(spacingVars.paddingRight), tipo: "padding" });
+  if (padding.top > 0) out.push({ lado: "top", centro: cx, desde: frame.x, hasta: frame.x + frame.width, valor: valorDe(padding.top), ...nombreDe(spacingVars.paddingTop), tipo: "padding" });
+  if (padding.bottom > 0) out.push({ lado: "bottom", centro: cx, desde: frame.x, hasta: frame.x + frame.width, valor: valorDe(padding.bottom), ...nombreDe(spacingVars.paddingBottom), tipo: "padding" });
   const spacing: Marca[] = [];
   for (const g of gaps) {
-    if (direccion === "HORIZONTAL") spacing.push({ lado: "top", centro: g.x + g.width / 2, desde: g.x, hasta: g.x + g.width, valor: spacingAuto ? "Auto" : marca(g.width, spacingVars.itemSpacing), tipo: "spacing" });
-    else spacing.push({ lado: "left", centro: g.y + g.height / 2, desde: g.y, hasta: g.y + g.height, valor: spacingAuto ? "Auto" : marca(g.height, spacingVars.itemSpacing), tipo: "spacing" });
+    const auto = spacingAuto;
+    if (direccion === "HORIZONTAL") spacing.push({ lado: "top", centro: g.x + g.width / 2, desde: g.x, hasta: g.x + g.width, valor: auto ? "Auto" : valorDe(g.width), ...(auto ? {} : nombreDe(spacingVars.itemSpacing)), tipo: "spacing" });
+    else spacing.push({ lado: "left", centro: g.y + g.height / 2, desde: g.y, hasta: g.y + g.height, valor: auto ? "Auto" : valorDe(g.height), ...(auto ? {} : nombreDe(spacingVars.itemSpacing)), tipo: "spacing" });
   }
   return [...out, ...sinPisadas(spacing)];
 }
@@ -103,4 +105,43 @@ export function iconoDireccion(
 ): "flecha-h" | "flecha-v" | "grilla-h" | "grilla-v" {
   if (wrap) return direccion === "HORIZONTAL" ? "grilla-h" : "grilla-v";
   return direccion === "HORIZONTAL" ? "flecha-h" : "flecha-v";
+}
+
+// Dado centros y tamaños a lo largo de un eje, devuelve nuevos centros que no se
+// solapan, manteniendo el orden y dejando una separación mínima `sep`. Recorre de
+// menor a mayor y empuja hacia el lado positivo el que se solape con el anterior.
+export function separarColisiones(centros: number[], tamanos: number[], sep: number): number[] {
+  const orden = centros.map((_, i) => i).sort((a, b) => centros[a] - centros[b]);
+  const out = centros.slice();
+  let limite = -Infinity;
+  for (const i of orden) {
+    let inicio = centros[i] - tamanos[i] / 2;
+    if (inicio < limite + sep) inicio = limite + sep;
+    out[i] = inicio + tamanos[i] / 2;
+    limite = inicio + tamanos[i];
+  }
+  return out;
+}
+
+// Carril externo donde va el badge de una marca: padding-top y gaps horizontales
+// arriba; gaps verticales a la izquierda; el resto de paddings (bottom/left/right)
+// en la fila de abajo.
+export function carrilDeMarca(lado: "top" | "bottom" | "left" | "right", tipo: "padding" | "spacing"): "top" | "bottom" | "left" {
+  if (tipo === "spacing") return lado === "top" ? "top" : "left";
+  if (lado === "top") return "top";
+  return "bottom";
+}
+
+// Ícono de la fila Alignment: depende de la dirección y la alineación del eje
+// contrario (los 6 íconos de autolayoutgrid + baseline en horizontal).
+export function iconoAlineacion(direccion: string, alineacionContraria: string): string {
+  if (direccion === "HORIZONTAL") {
+    if (alineacionContraria === "Center") return "align-h-center";
+    if (alineacionContraria === "End") return "align-h-bottom";
+    if (alineacionContraria === "Baseline") return "align-baseline";
+    return "align-h-top";
+  }
+  if (alineacionContraria === "Center") return "align-v-center";
+  if (alineacionContraria === "End") return "align-v-right";
+  return "align-v-left";
 }

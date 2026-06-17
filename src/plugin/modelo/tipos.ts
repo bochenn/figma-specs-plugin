@@ -29,6 +29,8 @@ export interface NodoLike {
   gridRowCount?: number;
   gridColumnGap?: number;
   gridRowGap?: number;
+  gridColumnGapVar?: string;
+  gridRowGapVar?: string;
   primaryAxisAlignItems?: string;     // "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN"
   counterAxisAlignItems?: string;     // "MIN" | "CENTER" | "MAX" | "BASELINE"
   paddingLeft?: number;
@@ -191,6 +193,9 @@ export interface LayoutSpec {
   widthVar?: string;
   heightVar?: string;
   cornerRadius?: number;
+  textStyle?: { nombre?: string; resumen?: string };
+  gridColumnGapVar?: string;
+  gridRowGapVar?: string;
   fill?: Atributo;
   stroke?: Atributo;
   profundidad?: number; // instancias atravesadas (ausente = 0)

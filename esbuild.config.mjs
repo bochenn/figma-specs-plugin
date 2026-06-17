@@ -27,6 +27,7 @@ async function buildPlugin() {
     outfile: "dist/code.js",
     target: "es2017",
     format: "iife",
+    loader: { ".svg": "text" },
   });
 }
 
@@ -60,6 +61,7 @@ if (test) {
     outfile: "dist/code.js",
     target: "es2017",
     format: "iife",
+    loader: { ".svg": "text" },
   });
   await ctxPlugin.watch();
   await buildUI();

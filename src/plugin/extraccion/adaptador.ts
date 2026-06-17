@@ -60,6 +60,10 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
       base.gridRowCount = g.gridRowCount;
       base.gridColumnGap = g.gridColumnGap;
       base.gridRowGap = g.gridRowGap;
+      const colVar = bvLayout["gridColumnGap"];
+      if (colVar) { const n = nombreVariable(colVar.id); if (n) base.gridColumnGapVar = n; }
+      const rowVar = bvLayout["gridRowGap"];
+      if (rowVar) { const n = nombreVariable(rowVar.id); if (n) base.gridRowGapVar = n; }
     }
   }
   if ("layoutGrids" in nodo && Array.isArray(nodo.layoutGrids)) {

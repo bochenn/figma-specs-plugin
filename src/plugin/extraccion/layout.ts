@@ -22,6 +22,15 @@ export function resizing(valor: string | undefined): string {
   }
 }
 
+// Estilo de texto del primer hijo TEXT directo (para mostrarlo en el exhibit).
+export function textStyleDe(nodo: NodoLike): { nombre?: string; resumen?: string } | undefined {
+  const txt = (nodo.children ?? []).find((c) => c.type === "TEXT");
+  if (!txt) return undefined;
+  if (txt.textStyleName) return { nombre: txt.textStyleName };
+  if (txt.fontFamily) return { resumen: `${txt.fontFamily} ${txt.fontStyle ?? ""} · ${txt.fontSize ?? ""}`.replace(/\s+/g, " ").trim() };
+  return undefined;
+}
+
 // Construye el LayoutSpec de un solo nodo con Auto Layout.
 export function layoutSpecDe(nodo: NodoLike, profundidad = 0): LayoutSpec {
   const fill = colorAtributo("fill", { hex: hexSolido(nodo.fills), variableName: nodo.fillVariableName, styleName: nodo.fillStyleName });
@@ -59,7 +68,11 @@ export function layoutSpecDe(nodo: NodoLike, profundidad = 0): LayoutSpec {
     if (typeof nodo.gridRowCount === "number") spec.gridFilas = nodo.gridRowCount;
     if (typeof nodo.gridColumnGap === "number") spec.gridColumnGap = nodo.gridColumnGap;
     if (typeof nodo.gridRowGap === "number") spec.gridRowGap = nodo.gridRowGap;
+    if (nodo.gridColumnGapVar) spec.gridColumnGapVar = nodo.gridColumnGapVar;
+    if (nodo.gridRowGapVar) spec.gridRowGapVar = nodo.gridRowGapVar;
   }
+  const ts = textStyleDe(nodo);
+  if (ts) spec.textStyle = ts;
   return spec;
 }
 

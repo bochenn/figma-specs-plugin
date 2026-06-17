@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto } from "../src/plugin/utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto, separarColisiones, carrilDeMarca, iconoAlineacion } from "../src/plugin/utils/marcadores-layout.ts";
 import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 
 test("marcasLayout: cada padding va a su lado con su valor", () => {
@@ -83,9 +83,11 @@ test("textoDimension: respeta rem", () => {
   assert.equal(textoDimension("Fixed", 16, "rem"), "Fixed 1rem");
 });
 
-test("marcasLayout con spacingVars → 'nombreCorto valor'", () => {
+test("marcasLayout con spacingVars → nombre y valor separados", () => {
   const marcas = marcasLayout({ x: 0, y: 0, width: 200, height: 100 }, { left: 16, top: 0, right: 0, bottom: 0 }, [], "HORIZONTAL", false, { paddingLeft: "space/padding-1x" });
-  assert.equal(marcas.find((m) => m.lado === "left").valor, "padding-1x 16");
+  const m = marcas.find((x) => x.lado === "left");
+  assert.equal(m.nombre, "padding-1x");
+  assert.equal(m.valor, "16");
 });
 
 test("nombreCorto: último segmento tras la barra", () => {
@@ -110,4 +112,45 @@ test("valorSpacing: con variable → chip + (valor)", () => {
 });
 test("valorSpacing: sin variable → solo texto", () => {
   assert.deepEqual(valorSpacing(8, "px"), [{ texto: "8" }]);
+});
+
+test("separarColisiones: sin solape deja los centros igual", () => {
+  assert.deepEqual(separarColisiones([0, 100], [10, 10], 4), [0, 100]);
+});
+
+test("separarColisiones: dos centros iguales se separan tamaño+sep", () => {
+  const r = separarColisiones([50, 50], [10, 10], 4);
+  assert.equal(r[0], 50);
+  assert.equal(r[1], 64); // 50→55 (borde), +4 sep = 59 inicio, +5 mitad = 64
+});
+
+test("separarColisiones: respeta el orden original aunque entren desordenados", () => {
+  const r = separarColisiones([100, 0], [10, 10], 4);
+  assert.equal(r[1], 0);   // el de centro menor no se mueve
+  assert.equal(r[0], 100); // el de centro mayor no solapa
+});
+
+test("carrilDeMarca: padding top arriba; bottom/left/right abajo", () => {
+  assert.equal(carrilDeMarca("top", "padding"), "top");
+  assert.equal(carrilDeMarca("bottom", "padding"), "bottom");
+  assert.equal(carrilDeMarca("left", "padding"), "bottom");
+  assert.equal(carrilDeMarca("right", "padding"), "bottom");
+});
+
+test("carrilDeMarca: gap horizontal arriba, gap vertical a la izquierda", () => {
+  assert.equal(carrilDeMarca("top", "spacing"), "top");
+  assert.equal(carrilDeMarca("left", "spacing"), "left");
+});
+
+test("iconoAlineacion: vertical mapea Start/Center/End a left/center/right", () => {
+  assert.equal(iconoAlineacion("VERTICAL", "Start"), "align-v-left");
+  assert.equal(iconoAlineacion("VERTICAL", "Center"), "align-v-center");
+  assert.equal(iconoAlineacion("VERTICAL", "End"), "align-v-right");
+});
+
+test("iconoAlineacion: horizontal mapea a top/center/bottom y baseline", () => {
+  assert.equal(iconoAlineacion("HORIZONTAL", "Start"), "align-h-top");
+  assert.equal(iconoAlineacion("HORIZONTAL", "Center"), "align-h-center");
+  assert.equal(iconoAlineacion("HORIZONTAL", "End"), "align-h-bottom");
+  assert.equal(iconoAlineacion("HORIZONTAL", "Baseline"), "align-baseline");
 });
