@@ -264,31 +264,67 @@ const AZUL_HEX = "#F24026"; // las cotas son de dimensión → rojo (igual que e
 const GRIS_HEX = "#444444";
 
 // Cota horizontal de `largo` px; las puntas codifican el resizing.
-function svgCotaH(estilo: "fixed" | "fill" | "hug", largo: number): string {
+function svgCotaH(estilo: "fixed" | "fill" | "hug", largo: number, color = AZUL_HEX): string {
   const L = largo;
-  const base = `<line x1="0" y1="6" x2="${L}" y2="6" stroke="${AZUL_HEX}"/>`;
-  const topes = `<line x1="0.5" y1="0" x2="0.5" y2="12" stroke="${AZUL_HEX}"/><line x1="${L - 0.5}" y1="0" x2="${L - 0.5}" y2="12" stroke="${AZUL_HEX}"/>`;
+  const base = `<line x1="0" y1="6" x2="${L}" y2="6" stroke="${color}"/>`;
+  const topes = `<line x1="0.5" y1="0" x2="0.5" y2="12" stroke="${color}"/><line x1="${L - 0.5}" y1="0" x2="${L - 0.5}" y2="12" stroke="${color}"/>`;
   let puntas = topes; // fixed
   if (estilo === "fill") {
-    puntas = `<path d="M6 1 L1 6 L6 11" stroke="${AZUL_HEX}" fill="none"/><path d="M${L - 6} 1 L${L - 1} 6 L${L - 6} 11" stroke="${AZUL_HEX}" fill="none"/>`;
+    puntas = `<path d="M6 1 L1 6 L6 11" stroke="${color}" fill="none"/><path d="M${L - 6} 1 L${L - 1} 6 L${L - 6} 11" stroke="${color}" fill="none"/>`;
   } else if (estilo === "hug") {
-    puntas = `${topes}<path d="M2 1 L7 6 L2 11" stroke="${AZUL_HEX}" fill="none"/><path d="M${L - 2} 1 L${L - 7} 6 L${L - 2} 11" stroke="${AZUL_HEX}" fill="none"/>`;
+    puntas = `${topes}<path d="M2 1 L7 6 L2 11" stroke="${color}" fill="none"/><path d="M${L - 2} 1 L${L - 7} 6 L${L - 2} 11" stroke="${color}" fill="none"/>`;
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="12">${base}${puntas}</svg>`;
 }
 
 // Cota vertical de `largo` px (misma idea, ejes intercambiados).
-function svgCotaV(estilo: "fixed" | "fill" | "hug", largo: number): string {
+function svgCotaV(estilo: "fixed" | "fill" | "hug", largo: number, color = AZUL_HEX): string {
   const L = largo;
-  const base = `<line x1="6" y1="0" x2="6" y2="${L}" stroke="${AZUL_HEX}"/>`;
-  const topes = `<line x1="0" y1="0.5" x2="12" y2="0.5" stroke="${AZUL_HEX}"/><line x1="0" y1="${L - 0.5}" x2="12" y2="${L - 0.5}" stroke="${AZUL_HEX}"/>`;
+  const base = `<line x1="6" y1="0" x2="6" y2="${L}" stroke="${color}"/>`;
+  const topes = `<line x1="0" y1="0.5" x2="12" y2="0.5" stroke="${color}"/><line x1="0" y1="${L - 0.5}" x2="12" y2="${L - 0.5}" stroke="${color}"/>`;
   let puntas = topes; // fixed
   if (estilo === "fill") {
-    puntas = `<path d="M1 6 L6 1 L11 6" stroke="${AZUL_HEX}" fill="none"/><path d="M1 ${L - 6} L6 ${L - 1} L11 ${L - 6}" stroke="${AZUL_HEX}" fill="none"/>`;
+    puntas = `<path d="M1 6 L6 1 L11 6" stroke="${color}" fill="none"/><path d="M1 ${L - 6} L6 ${L - 1} L11 ${L - 6}" stroke="${color}" fill="none"/>`;
   } else if (estilo === "hug") {
-    puntas = `${topes}<path d="M1 2 L6 7 L11 2" stroke="${AZUL_HEX}" fill="none"/><path d="M1 ${L - 2} L6 ${L - 7} L11 ${L - 2}" stroke="${AZUL_HEX}" fill="none"/>`;
+    puntas = `${topes}<path d="M1 2 L6 7 L11 2" stroke="${color}" fill="none"/><path d="M1 ${L - 2} L6 ${L - 7} L11 ${L - 2}" stroke="${color}" fill="none"/>`;
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="${L}">${base}${puntas}</svg>`;
+}
+
+const LINEA_PADDING = "#0D80FF"; // azul, acorde a CHIP_PADDING
+const LINEA_GAP = "#E63380";     // rosa, acorde a CHIP_GAP
+
+// Línea de cota vertical centrada en `xCentro`, desde `y`, de `largo` px.
+function lineaV(artwork: FrameNode, xCentro: number, y: number, largo: number, color: string): void {
+  if (largo <= 0) return;
+  const n = figma.createNodeFromSvg(svgCotaV("fixed", largo, color));
+  n.x = xCentro - 6;
+  n.y = y;
+  artwork.appendChild(n);
+}
+
+// Línea de cota horizontal centrada en `yCentro`, desde `x`, de `largo` px.
+function lineaH(artwork: FrameNode, x: number, yCentro: number, largo: number, color: string): void {
+  if (largo <= 0) return;
+  const n = figma.createNodeFromSvg(svgCotaH("fixed", largo, color));
+  n.x = x;
+  n.y = yCentro - 6;
+  artwork.appendChild(n);
+}
+
+// Dibuja una línea de cota sobre cada banda de padding (azul) y cada gap (rosa).
+function dibujarLineasMedida(artwork: FrameNode, clon: FrameNode, spec: LayoutSpec, gaps: Rect[]): void {
+  const cx = clon.x + clon.width / 2;
+  const cy = clon.y + clon.height / 2;
+  const p = spec.padding;
+  lineaV(artwork, cx, clon.y, p.top, LINEA_PADDING);
+  lineaV(artwork, cx, clon.y + clon.height - p.bottom, p.bottom, LINEA_PADDING);
+  lineaH(artwork, clon.x, cy, p.left, LINEA_PADDING);
+  lineaH(artwork, clon.x + clon.width - p.right, cy, p.right, LINEA_PADDING);
+  for (const g of gaps) {
+    if (spec.direccion === "VERTICAL") lineaV(artwork, g.x + g.width / 2, g.y, g.height, LINEA_GAP);
+    else lineaH(artwork, g.x, g.y + g.height / 2, g.width, LINEA_GAP);
+  }
 }
 
 // Íconos de dirección (24x24): flecha → / ↓, variante con grilla si hay wrap.
@@ -370,6 +406,7 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
     for (const r of columnas) bandaPunteada(r, ROJO, ROJO, artwork);
     for (const r of filas) bandaPunteada(r, ROJO, ROJO, artwork);
+    dibujarLineasMedida(artwork, clon, spec, []);
     const minLeftX = await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, [], "HORIZONTAL", spec.spacingAuto, spec.spacingVars), clon);
     await dibujarCotas(artwork, clon, spec, minLeftX);
     return artwork;
@@ -380,6 +417,7 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
     for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
   }
 
+  dibujarLineasMedida(artwork, clon, spec, gaps);
   // Cotas de padding/gap (reubicadas) + cotas de W/H (rojo) despejadas.
   const minLeftX = await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto, spec.spacingVars), clon);
   await dibujarCotas(artwork, clon, spec, minLeftX);
