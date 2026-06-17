@@ -213,14 +213,14 @@ async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpe
   cotaH.x = MARGEN;
   cotaH.y = MARGEN - 44;
   artwork.appendChild(cotaH);
-  const tW = await chip(etiquetaSpacing(spec.width, u, spec.widthVar), CHIP_DIM, artwork);
+  const tW = await chip(etiquetaSpacing(spec.width, u), CHIP_DIM, artwork);
   tW.x = MARGEN + clon.width / 2 - tW.width / 2;
   tW.y = MARGEN - 44 - 12;
   const cotaV = figma.createNodeFromSvg(svgCotaV(estiloCota(spec.resizingVertical), clon.height));
   cotaV.x = MARGEN - 44;
   cotaV.y = MARGEN;
   artwork.appendChild(cotaV);
-  const tH = await chip(etiquetaSpacing(spec.height, u, spec.heightVar), CHIP_DIM, artwork);
+  const tH = await chip(etiquetaSpacing(spec.height, u), CHIP_DIM, artwork);
   tH.x = MARGEN - 44 - tH.width - 2;
   tH.y = MARGEN + clon.height / 2 - tH.height / 2;
 }
@@ -282,7 +282,8 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
 
   // Marcas numéricas: eje X arriba, eje Y a la izquierda, con ticks en los
   // bordes de cada banda.
-  const { ejeX, ejeY } = marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto, spec.spacingVars);
+  // Chips del artwork en valor compacto (el nombre de variable va en el panel).
+  const { ejeX, ejeY } = marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto);
   for (const m of ejeX) {
     const color = m.tipo === "padding" ? CHIP_PADDING : CHIP_GAP;
     linea(m.desde, MARGEN - 12, 1, 12, color, artwork);
@@ -361,6 +362,7 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
   const n = Math.min(contenedores.length, specs.length);
   for (let i = inicio; i < n; i++) {
     const fila = frameHorizontal(`Layout ${specs[i].elementoNombre}`, 48);
+    fila.clipsContent = false; // los chips/cotas del artwork pueden asomar del margen
     fila.appendChild(await artworkDe(contenedores[i], specs[i], medirHijos));
     fila.appendChild(await exhibit(specs[i]));
     filas.push(fila);
@@ -377,6 +379,7 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
     const gridsRaiz = gridsRaizRaw.map(gridSpecDe);
     if (gridsRaiz.length > 0) {
       const fila = frameHorizontal(`Layout ${seleccionado.name}`, 48);
+      fila.clipsContent = false;
       fila.appendChild(await artworkGrids(seleccionado as FrameNode, gridsRaiz));
       fila.appendChild(await exhibitGrids(seleccionado, gridsRaiz));
       filas.unshift(fila);
