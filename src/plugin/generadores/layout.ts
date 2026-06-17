@@ -111,7 +111,7 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
     if (spec.gridColumnGap !== undefined) fila.appendChild(await filaPropiedad("spacing-h", "Column gap", valorSpacing(spec.gridColumnGap, u, spec.gridColumnGapVar)));
     if (spec.gridRowGap !== undefined) fila.appendChild(await filaPropiedad("spacing-v", "Row gap", valorSpacing(spec.gridRowGap, u, spec.gridRowGapVar)));
     fila.appendChild(await filaPropiedad("padding", "Padding", partesPadding));
-    if (spec.cornerRadius) fila.appendChild(await filaPropiedad("corner", "Corner radius", [{ texto: etiquetaSpacing(spec.cornerRadius, u) }]));
+    if (spec.cornerRadius) fila.appendChild(await filaPropiedad("corner", "Corner radius", valorSpacing(spec.cornerRadius, u, spec.cornerRadiusVar)));
     if (spec.textStyle) fila.appendChild(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
     return fila;
   }
@@ -123,7 +123,7 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   fila.appendChild(await filaPropiedad(iconoAlineacion(spec.direccion, spec.alineacionContraria), "Alignment", [{ texto: `${spec.alineacionPrimaria} / ${spec.alineacionContraria}` }]));
   fila.appendChild(await filaPropiedad("padding", "Padding", partesPadding));
   fila.appendChild(await filaPropiedad(gapKey, "Item spacing", valorSpacing(spec.itemSpacing, u, sv.itemSpacing)));
-  if (spec.cornerRadius) fila.appendChild(await filaPropiedad("corner", "Corner radius", [{ texto: etiquetaSpacing(spec.cornerRadius, u) }]));
+  if (spec.cornerRadius) fila.appendChild(await filaPropiedad("corner", "Corner radius", valorSpacing(spec.cornerRadius, u, spec.cornerRadiusVar)));
   for (const g of spec.grids) fila.appendChild(await filaPropiedad("columns", "Grid", [{ texto: textoGrid(g) }]));
   if (spec.textStyle) fila.appendChild(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
   return fila;

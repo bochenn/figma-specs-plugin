@@ -106,6 +106,7 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
       strokes?: readonly VariableAlias[];
       width?: VariableAlias;
       height?: VariableAlias;
+      topLeftRadius?: VariableAlias;
     };
     if (bv.fills && bv.fills.length > 0) {
       const nombre = nombreVariable(bv.fills[0].id);
@@ -122,6 +123,11 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
     if (bv.height) {
       const nombre = nombreVariable(bv.height.id);
       if (nombre) base.heightVariableName = nombre;
+    }
+    // El radio uniforme se ata por esquina; topLeftRadius representa al conjunto.
+    if (bv.topLeftRadius) {
+      const nombre = nombreVariable(bv.topLeftRadius.id);
+      if (nombre) base.cornerRadiusVar = nombre;
     }
   }
   if ("children" in nodo) {
