@@ -4,10 +4,11 @@ import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
-import { marcasLayout, estiloCota, iconoDireccion, valorDim, valorColor, valorSpacing, separarColisiones, carrilDeMarca, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, iconoAlineacion, valorDim, valorColor, valorSpacing, separarColisiones, carrilDeMarca, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
 import { rectsGrid, textoGrid, gridSpecDe, franjasGridAutolayout } from "../utils/grilla.ts";
 import { prefijoProfundidad } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
+import { nodoIcono } from "./iconos.ts";
 
 const AZUL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
 const VERDE: RGB = { r: 0.1, g: 0.7, b: 0.3 };
@@ -27,25 +28,6 @@ const GAP_BANDA: RGB = { r: 1, g: 0.7, b: 0.85 };
 const MARGEN = 96;
 const MARGEN_IZQ = 160; // margen izquierdo ancho: aloja la cota de alto + breadcrumb del artwork
 const RESPIRO = 16; // borde derecho e inferior
-
-// Íconos 12×12 (gris) por propiedad del panel.
-const G_ICONO = "#666666";
-const ICONOS_PROP: Record<string, string> = {
-  width: `<line x1="1" y1="6" x2="11" y2="6" stroke="${G_ICONO}"/><line x1="1" y1="2" x2="1" y2="10" stroke="${G_ICONO}"/><line x1="11" y1="2" x2="11" y2="10" stroke="${G_ICONO}"/>`,
-  height: `<line x1="6" y1="1" x2="6" y2="11" stroke="${G_ICONO}"/><line x1="2" y1="1" x2="10" y2="1" stroke="${G_ICONO}"/><line x1="2" y1="11" x2="10" y2="11" stroke="${G_ICONO}"/>`,
-  direction: `<path d="M2 6 H10 M7 3 L10 6 L7 9" stroke="${G_ICONO}" fill="none"/>`,
-  fill: `<rect x="2" y="2" width="8" height="8" fill="${G_ICONO}"/>`,
-  stroke: `<rect x="2" y="2" width="8" height="8" stroke="${G_ICONO}" fill="none"/>`,
-  align: `<line x1="2" y1="3" x2="10" y2="3" stroke="${G_ICONO}"/><line x1="2" y1="6" x2="7" y2="6" stroke="${G_ICONO}"/><line x1="2" y1="9" x2="9" y2="9" stroke="${G_ICONO}"/>`,
-  padding: `<rect x="1" y="1" width="10" height="10" stroke="${G_ICONO}" fill="none"/><rect x="4" y="4" width="4" height="4" stroke="${G_ICONO}" fill="none"/>`,
-  gap: `<rect x="1" y="3" width="3" height="6" fill="${G_ICONO}"/><rect x="8" y="3" width="3" height="6" fill="${G_ICONO}"/>`,
-  corner: `<path d="M2 10 V5 A3 3 0 0 1 5 2 H10" stroke="${G_ICONO}" fill="none"/>`,
-  columns: `<rect x="1" y="2" width="2" height="8" fill="${G_ICONO}"/><rect x="5" y="2" width="2" height="8" fill="${G_ICONO}"/><rect x="9" y="2" width="2" height="8" fill="${G_ICONO}"/>`,
-  rows: `<rect x="2" y="1" width="8" height="2" fill="${G_ICONO}"/><rect x="2" y="5" width="8" height="2" fill="${G_ICONO}"/><rect x="2" y="9" width="8" height="2" fill="${G_ICONO}"/>`,
-};
-function svgIconoProp(key: string): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">${ICONOS_PROP[key]}</svg>`;
-}
 
 // Chip gris para una variable/style en el panel (nombre completo, texto oscuro).
 async function chipVariable(nombre: string): Promise<FrameNode> {
@@ -81,7 +63,7 @@ async function filaPropiedad(iconoKey: string, label: string, partes: ParteValor
   izq.primaryAxisSizingMode = "FIXED";
   izq.resize(150, 16);
   izq.counterAxisSizingMode = "AUTO";
-  izq.appendChild(figma.createNodeFromSvg(svgIconoProp(iconoKey)));
+  izq.appendChild(nodoIcono(iconoKey));
   izq.appendChild(await texto(label, 12));
   fila.appendChild(izq);
   fila.appendChild(await valorConChips(partes));
@@ -123,23 +105,27 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const partesPadding: ParteValor[] = padUniforme ? valorSpacing(p.left, u, sv.paddingLeft) : [{ texto: textoPadding(p, u, sv) }];
 
   if (spec.direccion === "GRID") {
-    fila.appendChild(await filaPropiedad("direction", "Direction", [{ texto: "Grid" }]));
+    fila.appendChild(await filaPropiedad("dir-grid", "Direction", [{ texto: "Grid" }]));
     if (spec.gridColumnas !== undefined) fila.appendChild(await filaPropiedad("columns", "Columns", [{ texto: String(spec.gridColumnas) }]));
     if (spec.gridFilas !== undefined) fila.appendChild(await filaPropiedad("rows", "Rows", [{ texto: String(spec.gridFilas) }]));
-    if (spec.gridColumnGap !== undefined) fila.appendChild(await filaPropiedad("gap", "Column gap", [{ texto: etiquetaSpacing(spec.gridColumnGap, u) }]));
-    if (spec.gridRowGap !== undefined) fila.appendChild(await filaPropiedad("gap", "Row gap", [{ texto: etiquetaSpacing(spec.gridRowGap, u) }]));
+    if (spec.gridColumnGap !== undefined) fila.appendChild(await filaPropiedad("spacing-h", "Column gap", valorSpacing(spec.gridColumnGap, u, spec.gridColumnGapVar)));
+    if (spec.gridRowGap !== undefined) fila.appendChild(await filaPropiedad("spacing-v", "Row gap", valorSpacing(spec.gridRowGap, u, spec.gridRowGapVar)));
     fila.appendChild(await filaPropiedad("padding", "Padding", partesPadding));
     if (spec.cornerRadius) fila.appendChild(await filaPropiedad("corner", "Corner radius", [{ texto: etiquetaSpacing(spec.cornerRadius, u) }]));
+    if (spec.textStyle) fila.appendChild(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
     return fila;
   }
 
+  const dirKey = spec.direccion === "HORIZONTAL" ? "dir-horizontal" : "dir-vertical";
   const direccion = (spec.direccion === "HORIZONTAL" ? "Horizontal" : "Vertical") + (spec.wrap ? ", wrapping" : "");
-  fila.appendChild(await filaPropiedad("direction", "Direction", [{ texto: direccion }]));
-  fila.appendChild(await filaPropiedad("align", "Alignment", [{ texto: `${spec.alineacionPrimaria} / ${spec.alineacionContraria}` }]));
+  const gapKey = spec.direccion === "HORIZONTAL" ? "spacing-h" : "spacing-v";
+  fila.appendChild(await filaPropiedad(dirKey, "Direction", [{ texto: direccion }]));
+  fila.appendChild(await filaPropiedad(iconoAlineacion(spec.direccion, spec.alineacionContraria), "Alignment", [{ texto: `${spec.alineacionPrimaria} / ${spec.alineacionContraria}` }]));
   fila.appendChild(await filaPropiedad("padding", "Padding", partesPadding));
-  fila.appendChild(await filaPropiedad("gap", "Item spacing", valorSpacing(spec.itemSpacing, u, sv.itemSpacing)));
+  fila.appendChild(await filaPropiedad(gapKey, "Item spacing", valorSpacing(spec.itemSpacing, u, sv.itemSpacing)));
   if (spec.cornerRadius) fila.appendChild(await filaPropiedad("corner", "Corner radius", [{ texto: etiquetaSpacing(spec.cornerRadius, u) }]));
   for (const g of spec.grids) fila.appendChild(await filaPropiedad("columns", "Grid", [{ texto: textoGrid(g) }]));
+  if (spec.textStyle) fila.appendChild(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
   return fila;
 }
 
