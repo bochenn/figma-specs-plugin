@@ -87,6 +87,24 @@ async function filaPropiedad(iconoKey: string, label: string, partes: ParteValor
   return fila;
 }
 
+const ANCHO_BREADCRUMB = 160;
+const GRIS_ANCESTRO: RGB = { r: 0.6, g: 0.6, b: 0.6 };
+
+// Columna de jerarquía: un texto por ancestro (raíz→elemento), indentado por
+// nivel. Los ancestros van en gris; el último (el elemento de la fila) en el
+// color de texto normal, para resaltarlo. Ancho fijo para alinear los artworks.
+async function breadcrumb(camino: string[]): Promise<FrameNode> {
+  const col = frameVertical("Hierarchy", 4);
+  col.counterAxisSizingMode = "FIXED";
+  col.resize(ANCHO_BREADCRUMB, col.height);
+  for (let i = 0; i < camino.length; i++) {
+    const t = await texto("  ".repeat(i) + camino[i], 12);
+    if (i < camino.length - 1) t.fills = [{ type: "SOLID", color: GRIS_ANCESTRO }];
+    col.appendChild(t);
+  }
+  return col;
+}
+
 // Construye el exhibit (bloque de texto) de una capa con Auto Layout.
 async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const fila = frameVertical(spec.elementoNombre, 6);
@@ -355,7 +373,8 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   const seccion = frameVertical("Layout and Spacing", 64);
   seccion.appendChild(await texto("Layout and Spacing", 48));
 
-  const contenedores = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar).map((r) => r.nodo) as unknown as FrameNode[];
+  const recorridos = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar);
+  const contenedores = recorridos.map((r) => r.nodo) as unknown as FrameNode[];
 
   // Con hideOuter, se omite la fila del raíz (solo si la selección misma es el
   // primer contenedor; recorrerAutoLayout devuelve los nodos reales).
@@ -365,6 +384,7 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   for (let i = inicio; i < n; i++) {
     const fila = frameHorizontal(`Layout ${specs[i].elementoNombre}`, 48);
     fila.clipsContent = false; // los chips/cotas del artwork pueden asomar del margen
+    fila.appendChild(await breadcrumb(recorridos[i].camino ?? [specs[i].elementoNombre]));
     fila.appendChild(await artworkDe(contenedores[i], specs[i], medirHijos));
     fila.appendChild(await exhibit(specs[i]));
     filas.push(fila);
@@ -382,6 +402,7 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
     if (gridsRaiz.length > 0) {
       const fila = frameHorizontal(`Layout ${seleccionado.name}`, 48);
       fila.clipsContent = false;
+      fila.appendChild(await breadcrumb([seleccionado.name]));
       fila.appendChild(await artworkGrids(seleccionado as FrameNode, gridsRaiz));
       fila.appendChild(await exhibitGrids(seleccionado, gridsRaiz));
       filas.unshift(fila);
