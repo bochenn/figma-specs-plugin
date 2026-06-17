@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing } from "../src/plugin/utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto } from "../src/plugin/utils/marcadores-layout.ts";
 import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 
 test("padding asimétrico + gap horizontal → marcas en ambos ejes", () => {
@@ -105,11 +105,16 @@ test("textoDimension: respeta rem", () => {
   assert.equal(textoDimension("Fixed", 16, "rem"), "Fixed 1rem");
 });
 
-test("marcasLayout incluye el nombre de variable del padding cuando se pasa spacingVars", () => {
+test("marcasLayout con spacingVars → chip 'nombreCorto valor'", () => {
   const frame = { x: 0, y: 0, width: 200, height: 100 };
   const padding = { left: 16, top: 0, right: 0, bottom: 0 };
   const { ejeX } = marcasLayout(frame, padding, [], "HORIZONTAL", false, { paddingLeft: "space/padding-1x" });
-  assert.equal(ejeX[0].valor, "space/padding-1x (16)");
+  assert.equal(ejeX[0].valor, "padding-1x 16");
+});
+
+test("nombreCorto: último segmento tras la barra", () => {
+  assert.equal(nombreCorto("space/padding-1x"), "padding-1x");
+  assert.equal(nombreCorto("simple"), "simple");
 });
 
 test("marcasLayout sin spacingVars → solo el número (compatibilidad)", () => {
