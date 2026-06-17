@@ -24,7 +24,7 @@ const GAP_BANDA: RGB = { r: 1, g: 0.7, b: 0.85 };
 // Margen del artwork reservado para las anotaciones (arriba e izquierda).
 // 80px: la cota vertical (44) + el número de la medida (hasta ~3 dígitos) deben
 // entrar sin cortarse contra el borde izquierdo.
-const MARGEN = 80;
+const MARGEN = 96;
 const RESPIRO = 16; // borde derecho e inferior
 
 // Íconos 12×12 (gris) por propiedad del panel.
@@ -134,6 +134,19 @@ function rectOverlay(r: Rect, color: RGB, opacity: number, artwork: FrameNode): 
   artwork.appendChild(rect);
 }
 
+// Banda overlay con fill claro + borde punteado del color (dimensiones del PRD).
+function bandaPunteada(r: Rect, color: RGB, artwork: FrameNode): void {
+  const rect = figma.createRectangle();
+  rect.x = r.x;
+  rect.y = r.y;
+  rect.resize(Math.max(r.width, 0.01), Math.max(r.height, 0.01));
+  rect.fills = [{ type: "SOLID", color, opacity: 0.12 }];
+  rect.strokes = [{ type: "SOLID", color }];
+  rect.strokeWeight = 1;
+  rect.dashPattern = [3, 3];
+  artwork.appendChild(rect);
+}
+
 // Línea fina (rect de 1px) para ticks de las marcas.
 function linea(x: number, y: number, w: number, h: number, color: RGB, artwork: FrameNode): void {
   const r = figma.createRectangle();
@@ -162,7 +175,7 @@ async function chip(valor: string, color: RGB, artwork: FrameNode): Promise<Fram
   return c;
 }
 
-const AZUL_HEX = "#0D66D9";
+const AZUL_HEX = "#F24026"; // las cotas son de dimensión → rojo (igual que el chip CHIP_DIM)
 const GRIS_HEX = "#444444";
 
 // Cota horizontal de `largo` px; las puntas codifican el resizing.
@@ -266,24 +279,24 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
   }));
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
   if (medirHijos) for (const h of hijosRects) await dibujarCotaHijo(artwork, h);
-  for (const r of rectsPadding(frameRect, spec.padding)) rectOverlay(r, PADDING_BANDA, 0.30, artwork);
+  for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, PADDING_BANDA, artwork);
   if (spec.direccion === "GRID") {
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
-    for (const r of columnas) rectOverlay(r, ROJO, 0.12, artwork);
-    for (const r of filas) rectOverlay(r, ROJO, 0.12, artwork);
+    for (const r of columnas) bandaPunteada(r, ROJO, artwork);
+    for (const r of filas) bandaPunteada(r, ROJO, artwork);
     await dibujarCotas(artwork, clon, spec);
     return artwork;
   }
   const gaps = rectsSpacing(hijosRects, spec.direccion);
-  for (const r of gaps) rectOverlay(r, GAP_BANDA, 0.45, artwork);
+  for (const r of gaps) bandaPunteada(r, GAP_BANDA, artwork);
   for (const g of spec.grids) {
-    for (const r of rectsGrid(frameRect, g)) rectOverlay(r, ROJO, 0.12, artwork);
+    for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, artwork);
   }
 
   // Marcas numéricas: eje X arriba, eje Y a la izquierda, con ticks en los
   // bordes de cada banda.
-  // Chips del artwork en valor compacto (el nombre de variable va en el panel).
-  const { ejeX, ejeY } = marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto);
+  // Chips del artwork: nombre corto + valor (el nombre completo va en el panel).
+  const { ejeX, ejeY } = marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto, spec.spacingVars);
   for (const m of ejeX) {
     const color = m.tipo === "padding" ? CHIP_PADDING : CHIP_GAP;
     linea(m.desde, MARGEN - 12, 1, 12, color, artwork);
@@ -328,7 +341,7 @@ async function artworkGrids(frame: FrameNode, grids: GridSpec[]): Promise<FrameN
   artwork.resize(clon.width + RESPIRO, clon.height + RESPIRO);
   const frameRect: Rect = { x: 0, y: 0, width: clon.width, height: clon.height };
   for (const g of grids) {
-    for (const r of rectsGrid(frameRect, g)) rectOverlay(r, ROJO, 0.12, artwork);
+    for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, artwork);
   }
   return artwork;
 }
