@@ -48,11 +48,15 @@ const ICONOS_UI3: Record<string, string> = {
 const GRIS_ICONO = "#666666";
 
 // Crea el nodo del ícono normalizado a 24px y recoloreado al gris del panel.
+// Los íconos UI3 vienen en negro (fill="black") o azul de acento (#007BE5); se
+// recolorean al gris del panel manteniendo white/none y las opacidades.
 export function nodoIcono(key: string): SceneNode {
   const raw = ICONOS_UI3[key] ?? ICONOS_UI3.width;
   const svg = raw
     .replace(/width="\d+"/, 'width="24"')
     .replace(/height="\d+"/, 'height="24"')
-    .split("#171717").join(GRIS_ICONO);
+    .split("black").join(GRIS_ICONO)
+    .split("#171717").join(GRIS_ICONO)
+    .split("#007BE5").join(GRIS_ICONO);
   return figma.createNodeFromSvg(svg);
 }
