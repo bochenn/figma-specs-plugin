@@ -1,11 +1,36 @@
 import type { Rect } from "./overlays.ts";
-import type { Unidad } from "../modelo/tipos.ts";
-import { unidadActual, etiquetaSpacing } from "./espaciado.ts";
+import type { Unidad, Atributo } from "../modelo/tipos.ts";
+import { unidadActual, etiquetaSpacing, formatearEspaciado } from "./espaciado.ts";
 
 // "<resizing> <dim>" con la dimensión formateada (variable + valor si la hay):
 // "Fixed sizing/card-width (240)", "Hug 88", "Fixed 1rem".
 export function textoDimension(resizing: string, px: number, unidad: Unidad, nombreVar?: string): string {
   return `${resizing} ${etiquetaSpacing(px, unidad, nombreVar)}`;
+}
+
+// Una parte del valor de una propiedad en el panel: texto plano o chip de variable.
+export type ParteValor = { texto: string } | { chip: string };
+
+// Width/Height: con variable → modo + chip(nombre); sin variable → "modo valor".
+export function valorDim(resizing: string, px: number, unidad: Unidad, nombreVar?: string): ParteValor[] {
+  if (nombreVar) return [{ texto: resizing }, { chip: nombreVar }];
+  return [{ texto: `${resizing} ${formatearEspaciado(px, unidad)}` }];
+}
+
+// Fill/Stroke: variable/style → chip(nombre) + (rawValue); hardcoded → texto(valor).
+export function valorColor(attr: Atributo): ParteValor[] {
+  if (attr.formato !== "HARDCODED") {
+    const partes: ParteValor[] = [{ chip: attr.valor }];
+    if (attr.rawValue) partes.push({ texto: `(${attr.rawValue})` });
+    return partes;
+  }
+  return [{ texto: attr.valor }];
+}
+
+// Padding/Gap: con variable → chip(nombre) + (valor); sin variable → texto(valor).
+export function valorSpacing(px: number, unidad: Unidad, nombreVar?: string): ParteValor[] {
+  if (nombreVar) return [{ chip: nombreVar }, { texto: `(${formatearEspaciado(px, unidad)})` }];
+  return [{ texto: formatearEspaciado(px, unidad) }];
 }
 
 export interface MarcaX {

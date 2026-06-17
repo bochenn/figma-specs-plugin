@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { marcasLayout, estiloCota, iconoDireccion, textoDimension } from "../src/plugin/utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing } from "../src/plugin/utils/marcadores-layout.ts";
 import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 
 test("padding asimétrico + gap horizontal → marcas en ambos ejes", () => {
@@ -116,4 +116,23 @@ test("marcasLayout sin spacingVars → solo el número (compatibilidad)", () => 
   const frame = { x: 0, y: 0, width: 200, height: 100 };
   const { ejeX } = marcasLayout(frame, { left: 16, top: 0, right: 0, bottom: 0 }, [], "HORIZONTAL", false);
   assert.equal(ejeX[0].valor, "16");
+});
+
+test("valorDim: con variable → resizing + chip", () => {
+  assert.deepEqual(valorDim("Fixed", 240, "px", "sizing/card-width"), [{ texto: "Fixed" }, { chip: "sizing/card-width" }]);
+});
+test("valorDim: sin variable → resizing + valor en texto", () => {
+  assert.deepEqual(valorDim("Hug", 88, "px"), [{ texto: "Hug 88" }]);
+});
+test("valorColor: variable/style → chip + (raw)", () => {
+  assert.deepEqual(valorColor({ clave: "fill", valor: "color/surface", formato: "VARIABLE", rawValue: "#FFFFFF" }), [{ chip: "color/surface" }, { texto: "(#FFFFFF)" }]);
+});
+test("valorColor: hardcoded → solo texto", () => {
+  assert.deepEqual(valorColor({ clave: "fill", valor: "#000000", formato: "HARDCODED" }), [{ texto: "#000000" }]);
+});
+test("valorSpacing: con variable → chip + (valor)", () => {
+  assert.deepEqual(valorSpacing(16, "px", "space/padding-1x"), [{ chip: "space/padding-1x" }, { texto: "(16)" }]);
+});
+test("valorSpacing: sin variable → solo texto", () => {
+  assert.deepEqual(valorSpacing(8, "px"), [{ texto: "8" }]);
 });
