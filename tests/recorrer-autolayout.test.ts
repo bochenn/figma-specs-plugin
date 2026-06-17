@@ -46,3 +46,25 @@ test("con itemizar entra en la instancia con Auto Layout (profundidad +1)", () =
   };
   assert.deepEqual(recorrerAutoLayout(raiz, true).map((r) => [r.nodo.id, r.profundidad]), [["r", 0], ["i", 1], ["x", 1]]);
 });
+
+test("camino: raíz sola trae su nombre", () => {
+  const raiz: NodoLike = { id: "r", name: "Root", type: "FRAME", layoutMode: "VERTICAL", children: [] };
+  assert.deepEqual(recorrerAutoLayout(raiz)[0].camino, ["Root"]);
+});
+
+test("camino: hijo anidado incluye el ancestro aunque no tenga Auto Layout", () => {
+  const raiz: NodoLike = {
+    id: "r", name: "Root", type: "FRAME", layoutMode: "NONE",
+    children: [{ id: "h", name: "Inner", type: "FRAME", layoutMode: "HORIZONTAL", children: [] }],
+  };
+  assert.deepEqual(recorrerAutoLayout(raiz)[0].camino, ["Root", "Inner"]);
+});
+
+test("camino: con itemizar acumula la instancia y su contenido", () => {
+  const raiz: NodoLike = {
+    id: "r", name: "screen", type: "FRAME", layoutMode: "VERTICAL",
+    children: [{ id: "i", name: "card", type: "INSTANCE", layoutMode: "HORIZONTAL",
+      children: [{ id: "x", name: "tag", type: "FRAME", layoutMode: "VERTICAL", children: [] }] }],
+  };
+  assert.deepEqual(recorrerAutoLayout(raiz, true).map((r) => r.camino), [["screen"], ["screen", "card"], ["screen", "card", "tag"]]);
+});
