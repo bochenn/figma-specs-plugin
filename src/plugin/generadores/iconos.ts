@@ -11,7 +11,7 @@ import iconSpacingV from "../../../resources/figma-UI3/icon.24.al.spacing-vertic
 import iconCorner from "../../../resources/figma-UI3/icon.24.corners.svg";
 import iconColumns from "../../../resources/figma-UI3/icon.24.grid-column.svg";
 import iconRows from "../../../resources/figma-UI3/icon.24.grid-row.svg";
-import iconText from "../../../resources/figma-UI3/icon.24.prop-text.svg";
+import iconText from "../../../resources/figma-UI3/icon.24.shape.text.small.svg";
 import iconAlignVLeft from "../../../resources/figma-UI3/icon.16.autolayoutgrid.vertical.left.svg";
 import iconAlignVCenter from "../../../resources/figma-UI3/icon.16.autolayoutgrid.vertical.center.svg";
 import iconAlignVRight from "../../../resources/figma-UI3/icon.16.autolayoutgrid.vertical.right.svg";
@@ -52,9 +52,12 @@ const GRIS_ICONO = "#666666";
 // recolorean al gris del panel manteniendo white/none y las opacidades.
 export function nodoIcono(key: string): SceneNode {
   const raw = ICONOS_UI3[key] ?? ICONOS_UI3.width;
+  // Se quita el `style` inline porque puede traer un override en P3
+  // (`fill:color(display-p3 ...)`) que pisa al atributo `fill` recoloreado.
   const svg = raw
     .replace(/width="\d+"/, 'width="24"')
     .replace(/height="\d+"/, 'height="24"')
+    .replace(/\s*style="[^"]*"/g, "")
     .split("black").join(GRIS_ICONO)
     .split("#171717").join(GRIS_ICONO)
     .split("#007BE5").join(GRIS_ICONO);
