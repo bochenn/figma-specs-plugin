@@ -4,7 +4,7 @@ import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
-import { marcasLayout, estiloCota, iconoDireccion, valorDim, valorColor, valorSpacing, separarColisiones, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, valorDim, valorColor, valorSpacing, separarColisiones, carrilDeMarca, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
 import { rectsGrid, textoGrid, gridSpecDe, franjasGridAutolayout } from "../utils/grilla.ts";
 import { prefijoProfundidad } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
@@ -166,35 +166,45 @@ function bandaPunteada(r: Rect, colorFill: RGB, colorStroke: RGB, artwork: Frame
   artwork.appendChild(rect);
 }
 
-const SEP_CHIP = 4; // separación mínima entre cotas del mismo lado
+const SEP_CHIP = 4;     // separación mínima entre cotas del mismo carril
+const FILA_TOP = 24;    // distancia de la fila superior sobre el borde del elemento
+const FILA_BOT = 8;     // distancia de la fila inferior bajo el borde
+const COL_IZQ = 8;      // distancia de la columna izquierda al borde
 
-// Posiciona las cotas de marca. Los paddings horizontales (left/right) van a la
-// fila de abajo para liberar el lado izquierdo (donde va la cota de alto).
-// Devuelve el x mínimo alcanzado por las cotas de la izquierda.
+// Ubica los badges de padding/gap en carriles externos (fuera del elemento):
+// fila arriba (padding-top + gaps horizontales), fila abajo (padding bottom/left/
+// right), columna izquierda (gaps verticales). Devuelve el x mínimo a la izquierda.
 async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNode): Promise<number> {
-  const grupos: Record<string, { c: FrameNode; centro: number }[]> = { top: [], bottom: [], left: [], right: [] };
+  const top: { c: FrameNode; centro: number }[] = [];
+  const bottom: { c: FrameNode; centro: number }[] = [];
+  const left: { c: FrameNode; centro: number }[] = [];
   for (const m of marcas) {
     const color = m.tipo === "padding" ? CHIP_PADDING : CHIP_GAP;
     const c = m.nombre ? await cotaConNombre(m.nombre, m.valor, color, artwork) : await cota(m.valor, color, artwork);
-    if (m.tipo === "padding" && m.lado === "left") grupos.bottom.push({ c, centro: clon.x });
-    else if (m.tipo === "padding" && m.lado === "right") grupos.bottom.push({ c, centro: clon.x + clon.width });
-    else grupos[m.lado].push({ c, centro: m.centro });
+    const carril = carrilDeMarca(m.lado, m.tipo);
+    if (carril === "top") top.push({ c, centro: m.centro });
+    else if (carril === "left") left.push({ c, centro: m.centro });
+    else {
+      const centro = m.tipo === "padding" && m.lado === "left" ? clon.x
+        : m.tipo === "padding" && m.lado === "right" ? clon.x + clon.width
+        : m.centro;
+      bottom.push({ c, centro });
+    }
+  }
+  const filas: [{ c: FrameNode; centro: number }[], number][] = [[top, clon.y - FILA_TOP], [bottom, clon.y + clon.height + FILA_BOT]];
+  for (const [grupo, y] of filas) {
+    if (grupo.length === 0) continue;
+    const ajustados = separarColisiones(grupo.map((g) => g.centro), grupo.map((g) => g.c.width), SEP_CHIP);
+    for (let i = 0; i < grupo.length; i++) { grupo[i].c.x = ajustados[i] - grupo[i].c.width / 2; grupo[i].c.y = y; }
   }
   let minLeftX = clon.x;
-  for (const lado of ["top", "bottom", "left", "right"] as const) {
-    const grupo = grupos[lado];
-    if (grupo.length === 0) continue;
-    const ejeX = lado === "top" || lado === "bottom";
-    const centros = grupo.map((g) => g.centro);
-    const tamanos = grupo.map((g) => (ejeX ? g.c.width : g.c.height));
-    const ajustados = separarColisiones(centros, tamanos, SEP_CHIP);
-    for (let i = 0; i < grupo.length; i++) {
-      const c = grupo[i].c;
-      const p = ajustados[i];
-      if (lado === "top") { c.x = p - c.width / 2; c.y = clon.y - 18; }
-      else if (lado === "bottom") { c.x = p - c.width / 2; c.y = clon.y + clon.height + 8; }
-      else if (lado === "left") { c.x = clon.x - 8 - c.width; c.y = p - c.height / 2; minLeftX = Math.min(minLeftX, c.x); }
-      else { c.x = clon.x + clon.width + 8; c.y = p - c.height / 2; }
+  if (left.length > 0) {
+    const ajustados = separarColisiones(left.map((g) => g.centro), left.map((g) => g.c.height), SEP_CHIP);
+    for (let i = 0; i < left.length; i++) {
+      const c = left[i].c;
+      c.x = clon.x - COL_IZQ - c.width;
+      c.y = ajustados[i] - c.height / 2;
+      minLeftX = Math.min(minLeftX, c.x);
     }
   }
   return minLeftX;
