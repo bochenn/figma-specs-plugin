@@ -191,6 +191,9 @@ export interface LayoutSpec {
   widthVar?: string;
   heightVar?: string;
   cornerRadius?: number;
+  textStyle?: { nombre?: string; resumen?: string };
+  gridColumnGapVar?: string;
+  gridRowGapVar?: string;
   fill?: Atributo;
   stroke?: Atributo;
   profundidad?: number; // instancias atravesadas (ausente = 0)
