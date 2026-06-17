@@ -131,3 +131,17 @@ export function carrilDeMarca(lado: "top" | "bottom" | "left" | "right", tipo: "
   if (lado === "top") return "top";
   return "bottom";
 }
+
+// Ícono de la fila Alignment: depende de la dirección y la alineación del eje
+// contrario (los 6 íconos de autolayoutgrid + baseline en horizontal).
+export function iconoAlineacion(direccion: string, alineacionContraria: string): string {
+  if (direccion === "HORIZONTAL") {
+    if (alineacionContraria === "Center") return "align-h-center";
+    if (alineacionContraria === "End") return "align-h-bottom";
+    if (alineacionContraria === "Baseline") return "align-baseline";
+    return "align-h-top";
+  }
+  if (alineacionContraria === "Center") return "align-v-center";
+  if (alineacionContraria === "End") return "align-v-right";
+  return "align-v-left";
+}

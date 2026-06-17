@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto, separarColisiones, carrilDeMarca } from "../src/plugin/utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto, separarColisiones, carrilDeMarca, iconoAlineacion } from "../src/plugin/utils/marcadores-layout.ts";
 import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 
 test("marcasLayout: cada padding va a su lado con su valor", () => {
@@ -140,4 +140,17 @@ test("carrilDeMarca: padding top arriba; bottom/left/right abajo", () => {
 test("carrilDeMarca: gap horizontal arriba, gap vertical a la izquierda", () => {
   assert.equal(carrilDeMarca("top", "spacing"), "top");
   assert.equal(carrilDeMarca("left", "spacing"), "left");
+});
+
+test("iconoAlineacion: vertical mapea Start/Center/End a left/center/right", () => {
+  assert.equal(iconoAlineacion("VERTICAL", "Start"), "align-v-left");
+  assert.equal(iconoAlineacion("VERTICAL", "Center"), "align-v-center");
+  assert.equal(iconoAlineacion("VERTICAL", "End"), "align-v-right");
+});
+
+test("iconoAlineacion: horizontal mapea a top/center/bottom y baseline", () => {
+  assert.equal(iconoAlineacion("HORIZONTAL", "Start"), "align-h-top");
+  assert.equal(iconoAlineacion("HORIZONTAL", "Center"), "align-h-center");
+  assert.equal(iconoAlineacion("HORIZONTAL", "End"), "align-h-bottom");
+  assert.equal(iconoAlineacion("HORIZONTAL", "Baseline"), "align-baseline");
 });
