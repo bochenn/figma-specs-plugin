@@ -83,9 +83,11 @@ test("textoDimension: respeta rem", () => {
   assert.equal(textoDimension("Fixed", 16, "rem"), "Fixed 1rem");
 });
 
-test("marcasLayout con spacingVars → 'nombreCorto valor'", () => {
+test("marcasLayout con spacingVars → nombre y valor separados", () => {
   const marcas = marcasLayout({ x: 0, y: 0, width: 200, height: 100 }, { left: 16, top: 0, right: 0, bottom: 0 }, [], "HORIZONTAL", false, { paddingLeft: "space/padding-1x" });
-  assert.equal(marcas.find((m) => m.lado === "left").valor, "padding-1x 16");
+  const m = marcas.find((x) => x.lado === "left");
+  assert.equal(m.nombre, "padding-1x");
+  assert.equal(m.valor, "16");
 });
 
 test("nombreCorto: último segmento tras la barra", () => {

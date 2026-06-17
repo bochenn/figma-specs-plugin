@@ -39,6 +39,7 @@ export interface Marca {
   desde: number;   // rango de la banda (para el dedupe de wrap)
   hasta: number;
   valor: string;
+  nombre?: string; // nombreCorto de la variable, si la hay
   tipo: "padding" | "spacing";
 }
 
@@ -71,19 +72,20 @@ export function marcasLayout(
   spacingVars: { paddingLeft?: string; paddingTop?: string; paddingRight?: string; paddingBottom?: string; itemSpacing?: string } = {},
 ): Marca[] {
   const u = unidadActual();
-  const marca = (px: number, nombreVar?: string) =>
-    nombreVar ? `${nombreCorto(nombreVar)} ${formatearEspaciado(px, u)}` : formatearEspaciado(px, u);
   const cx = frame.x + frame.width / 2;
   const cy = frame.y + frame.height / 2;
+  const valorDe = (px: number) => formatearEspaciado(px, u);
+  const nombreDe = (nombreVar?: string) => (nombreVar ? { nombre: nombreCorto(nombreVar) } : {});
   const out: Marca[] = [];
-  if (padding.left > 0) out.push({ lado: "left", centro: cy, desde: frame.y, hasta: frame.y + frame.height, valor: marca(padding.left, spacingVars.paddingLeft), tipo: "padding" });
-  if (padding.right > 0) out.push({ lado: "right", centro: cy, desde: frame.y, hasta: frame.y + frame.height, valor: marca(padding.right, spacingVars.paddingRight), tipo: "padding" });
-  if (padding.top > 0) out.push({ lado: "top", centro: cx, desde: frame.x, hasta: frame.x + frame.width, valor: marca(padding.top, spacingVars.paddingTop), tipo: "padding" });
-  if (padding.bottom > 0) out.push({ lado: "bottom", centro: cx, desde: frame.x, hasta: frame.x + frame.width, valor: marca(padding.bottom, spacingVars.paddingBottom), tipo: "padding" });
+  if (padding.left > 0) out.push({ lado: "left", centro: cy, desde: frame.y, hasta: frame.y + frame.height, valor: valorDe(padding.left), ...nombreDe(spacingVars.paddingLeft), tipo: "padding" });
+  if (padding.right > 0) out.push({ lado: "right", centro: cy, desde: frame.y, hasta: frame.y + frame.height, valor: valorDe(padding.right), ...nombreDe(spacingVars.paddingRight), tipo: "padding" });
+  if (padding.top > 0) out.push({ lado: "top", centro: cx, desde: frame.x, hasta: frame.x + frame.width, valor: valorDe(padding.top), ...nombreDe(spacingVars.paddingTop), tipo: "padding" });
+  if (padding.bottom > 0) out.push({ lado: "bottom", centro: cx, desde: frame.x, hasta: frame.x + frame.width, valor: valorDe(padding.bottom), ...nombreDe(spacingVars.paddingBottom), tipo: "padding" });
   const spacing: Marca[] = [];
   for (const g of gaps) {
-    if (direccion === "HORIZONTAL") spacing.push({ lado: "top", centro: g.x + g.width / 2, desde: g.x, hasta: g.x + g.width, valor: spacingAuto ? "Auto" : marca(g.width, spacingVars.itemSpacing), tipo: "spacing" });
-    else spacing.push({ lado: "left", centro: g.y + g.height / 2, desde: g.y, hasta: g.y + g.height, valor: spacingAuto ? "Auto" : marca(g.height, spacingVars.itemSpacing), tipo: "spacing" });
+    const auto = spacingAuto;
+    if (direccion === "HORIZONTAL") spacing.push({ lado: "top", centro: g.x + g.width / 2, desde: g.x, hasta: g.x + g.width, valor: auto ? "Auto" : valorDe(g.width), ...(auto ? {} : nombreDe(spacingVars.itemSpacing)), tipo: "spacing" });
+    else spacing.push({ lado: "left", centro: g.y + g.height / 2, desde: g.y, hasta: g.y + g.height, valor: auto ? "Auto" : valorDe(g.height), ...(auto ? {} : nombreDe(spacingVars.itemSpacing)), tipo: "spacing" });
   }
   return [...out, ...sinPisadas(spacing)];
 }
