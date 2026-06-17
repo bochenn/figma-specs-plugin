@@ -95,8 +95,8 @@ test("nombreCorto: último segmento tras la barra", () => {
   assert.equal(nombreCorto("simple"), "simple");
 });
 
-test("valorDim: con variable → resizing + chip", () => {
-  assert.deepEqual(valorDim("Fixed", 240, "px", "sizing/card-width"), [{ texto: "Fixed" }, { chip: "sizing/card-width" }]);
+test("valorDim: con variable → resizing + chip + (valor)", () => {
+  assert.deepEqual(valorDim("Fixed", 240, "px", "sizing/card-width"), [{ texto: "Fixed" }, { chip: "sizing/card-width" }, { texto: "(240)" }]);
 });
 test("valorDim: sin variable → resizing + valor en texto", () => {
   assert.deepEqual(valorDim("Hug", 88, "px"), [{ texto: "Hug 88" }]);

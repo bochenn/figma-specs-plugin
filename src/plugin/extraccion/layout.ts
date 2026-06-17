@@ -60,6 +60,7 @@ export function layoutSpecDe(nodo: NodoLike, profundidad = 0): LayoutSpec {
   if (nodo.widthVariableName) spec.widthVar = nodo.widthVariableName;
   if (nodo.heightVariableName) spec.heightVar = nodo.heightVariableName;
   if (typeof nodo.cornerRadius === "number" && nodo.cornerRadius > 0) spec.cornerRadius = nodo.cornerRadius;
+  if (nodo.cornerRadiusVar) spec.cornerRadiusVar = nodo.cornerRadiusVar;
   if (fill) spec.fill = fill;
   if (stroke) spec.stroke = stroke;
   if (profundidad > 0) spec.profundidad = profundidad;

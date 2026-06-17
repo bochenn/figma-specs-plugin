@@ -11,9 +11,9 @@ export function textoDimension(resizing: string, px: number, unidad: Unidad, nom
 // Una parte del valor de una propiedad en el panel: texto plano o chip de variable.
 export type ParteValor = { texto: string } | { chip: string };
 
-// Width/Height: con variable → modo + chip(nombre); sin variable → "modo valor".
+// Width/Height: con variable → modo + chip(nombre) + (valor); sin variable → "modo valor".
 export function valorDim(resizing: string, px: number, unidad: Unidad, nombreVar?: string): ParteValor[] {
-  if (nombreVar) return [{ texto: resizing }, { chip: nombreVar }];
+  if (nombreVar) return [{ texto: resizing }, { chip: nombreVar }, { texto: `(${formatearEspaciado(px, unidad)})` }];
   return [{ texto: `${resizing} ${formatearEspaciado(px, unidad)}` }];
 }
 

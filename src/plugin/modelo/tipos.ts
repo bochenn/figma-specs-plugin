@@ -58,6 +58,7 @@ export interface NodoLike {
   widthVariableName?: string;    // variable atada al ancho
   heightVariableName?: string;   // variable atada al alto
   cornerRadius?: number;         // radio de esquina (uniforme)
+  cornerRadiusVar?: string;      // variable atada al radio de esquina
 }
 
 export interface Atributo {
@@ -193,6 +194,7 @@ export interface LayoutSpec {
   widthVar?: string;
   heightVar?: string;
   cornerRadius?: number;
+  cornerRadiusVar?: string;
   textStyle?: { nombre?: string; resumen?: string };
   gridColumnGapVar?: string;
   gridRowGapVar?: string;
