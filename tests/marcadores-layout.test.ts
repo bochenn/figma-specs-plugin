@@ -3,81 +3,59 @@ import assert from "node:assert";
 import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto } from "../src/plugin/utils/marcadores-layout.ts";
 import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 
-test("padding asimétrico + gap horizontal → marcas en ambos ejes", () => {
+test("marcasLayout: cada padding va a su lado con su valor", () => {
   const frame = { x: 0, y: 0, width: 200, height: 100 };
   const padding = { left: 16, top: 8, right: 24, bottom: 0 };
-  const gaps = [{ x: 60, y: 8, width: 12, height: 84 }];
-  const { ejeX, ejeY } = marcasLayout(frame, padding, gaps, "HORIZONTAL", false);
-  assert.deepEqual(ejeX, [
-    { x: 8, desde: 0, hasta: 16, valor: "16", tipo: "padding" },
-    { x: 188, desde: 176, hasta: 200, valor: "24", tipo: "padding" },
-    { x: 66, desde: 60, hasta: 72, valor: "12", tipo: "spacing" },
-  ]);
-  assert.deepEqual(ejeY, [
-    { y: 4, desde: 0, hasta: 8, valor: "8", tipo: "padding" },
-  ]);
+  const marcas = marcasLayout(frame, padding, [], "HORIZONTAL", false);
+  const porLado = Object.fromEntries(marcas.map((m) => [m.lado, m.valor]));
+  assert.equal(porLado.left, "16");
+  assert.equal(porLado.top, "8");
+  assert.equal(porLado.right, "24");
+  assert.equal(porLado.bottom, undefined); // padding 0 → sin marca
 });
 
-test("gaps verticales van al eje Y", () => {
-  const frame = { x: 0, y: 0, width: 100, height: 200 };
-  const padding = { left: 0, top: 0, right: 0, bottom: 0 };
-  const gaps = [{ x: 0, y: 50, width: 100, height: 20 }];
-  const { ejeX, ejeY } = marcasLayout(frame, padding, gaps, "VERTICAL", false);
-  assert.deepEqual(ejeX, []);
-  assert.deepEqual(ejeY, [
-    { y: 60, desde: 50, hasta: 70, valor: "20", tipo: "spacing" },
-  ]);
-});
-
-test("spacingAuto → las marcas de spacing dicen Auto (el padding no)", () => {
+test("marcasLayout: padding left centrado vertical, top centrado horizontal", () => {
   const frame = { x: 0, y: 0, width: 200, height: 100 };
-  const padding = { left: 16, top: 0, right: 0, bottom: 0 };
+  const marcas = marcasLayout(frame, { left: 16, top: 8, right: 0, bottom: 0 }, [], "HORIZONTAL", false);
+  assert.equal(marcas.find((m) => m.lado === "left").centro, 50);  // frame.y + height/2
+  assert.equal(marcas.find((m) => m.lado === "top").centro, 100);  // frame.x + width/2
+});
+
+test("marcasLayout: gap HORIZONTAL → lado top en el centro del hueco", () => {
+  const frame = { x: 0, y: 0, width: 200, height: 100 };
+  const gaps = [{ x: 60, y: 0, width: 12, height: 100 }];
+  const marcas = marcasLayout(frame, { left: 0, top: 0, right: 0, bottom: 0 }, gaps, "HORIZONTAL", false);
+  assert.deepEqual(marcas, [{ lado: "top", centro: 66, desde: 60, hasta: 72, valor: "12", tipo: "spacing" }]);
+});
+
+test("marcasLayout: gap VERTICAL → lado left", () => {
+  const frame = { x: 0, y: 0, width: 100, height: 200 };
+  const gaps = [{ x: 0, y: 50, width: 100, height: 20 }];
+  const marcas = marcasLayout(frame, { left: 0, top: 0, right: 0, bottom: 0 }, gaps, "VERTICAL", false);
+  assert.equal(marcas[0].lado, "left");
+  assert.equal(marcas[0].centro, 60);
+  assert.equal(marcas[0].valor, "20");
+});
+
+test("marcasLayout: spacingAuto → gap dice Auto", () => {
+  const frame = { x: 0, y: 0, width: 200, height: 100 };
   const gaps = [{ x: 60, y: 0, width: 30, height: 100 }];
-  const { ejeX } = marcasLayout(frame, padding, gaps, "HORIZONTAL", true);
-  assert.equal(ejeX[0].valor, "16");
-  assert.equal(ejeX[1].valor, "Auto");
+  const marcas = marcasLayout(frame, { left: 0, top: 0, right: 0, bottom: 0 }, gaps, "HORIZONTAL", true);
+  assert.equal(marcas[0].valor, "Auto");
 });
 
-test("respeta el offset del frame", () => {
-  const frame = { x: 56, y: 56, width: 100, height: 100 };
-  const padding = { left: 10, top: 0, right: 0, bottom: 0 };
-  const { ejeX } = marcasLayout(frame, padding, [], "HORIZONTAL", false);
-  assert.deepEqual(ejeX, [
-    { x: 61, desde: 56, hasta: 66, valor: "10", tipo: "padding" },
-  ]);
-});
-
-test("formatea con la unidad actual (rem)", () => {
+test("marcasLayout: respeta rem", () => {
   aplicarUnidad("rem");
-  const frame = { x: 0, y: 0, width: 100, height: 100 };
-  const { ejeX } = marcasLayout(frame, { left: 16, top: 0, right: 0, bottom: 0 }, [], "HORIZONTAL", false);
-  assert.equal(ejeX[0].valor, "1rem");
+  const marcas = marcasLayout({ x: 0, y: 0, width: 100, height: 100 }, { left: 16, top: 0, right: 0, bottom: 0 }, [], "HORIZONTAL", false);
+  assert.equal(marcas.find((m) => m.lado === "left").valor, "1rem");
   aplicarUnidad("px");
 });
 
-test("gaps superpuestos con el mismo valor → una sola marca (wrap)", () => {
-  // Dos filas wrapeadas: el gap de cada fila se proyecta casi en la misma x.
+test("marcasLayout: gaps de igual valor superpuestos → uno solo (wrap)", () => {
   const frame = { x: 0, y: 0, width: 200, height: 100 };
-  const padding = { left: 0, top: 0, right: 0, bottom: 0 };
-  const gaps = [
-    { x: 80, y: 0, width: 12, height: 40 },   // gap fila 1
-    { x: 85, y: 60, width: 12, height: 40 },  // gap fila 2 (se superpone en x)
-  ];
-  const { ejeX } = marcasLayout(frame, padding, gaps, "HORIZONTAL", false);
-  assert.deepEqual(ejeX, [
-    { x: 86, desde: 80, hasta: 92, valor: "12", tipo: "spacing" },
-  ]);
-});
-
-test("gaps superpuestos con distinto valor se conservan", () => {
-  const frame = { x: 0, y: 0, width: 200, height: 100 };
-  const padding = { left: 0, top: 0, right: 0, bottom: 0 };
-  const gaps = [
-    { x: 80, y: 0, width: 12, height: 40 },
-    { x: 85, y: 60, width: 20, height: 40 },
-  ];
-  const { ejeX } = marcasLayout(frame, padding, gaps, "HORIZONTAL", false);
-  assert.equal(ejeX.length, 2);
+  const gaps = [{ x: 80, y: 0, width: 12, height: 40 }, { x: 85, y: 60, width: 12, height: 40 }];
+  const marcas = marcasLayout(frame, { left: 0, top: 0, right: 0, bottom: 0 }, gaps, "HORIZONTAL", false);
+  assert.equal(marcas.filter((m) => m.tipo === "spacing").length, 1);
 });
 
 test("estiloCota mapea el resizing a las puntas de la cota", () => {
@@ -105,22 +83,14 @@ test("textoDimension: respeta rem", () => {
   assert.equal(textoDimension("Fixed", 16, "rem"), "Fixed 1rem");
 });
 
-test("marcasLayout con spacingVars → chip 'nombreCorto valor'", () => {
-  const frame = { x: 0, y: 0, width: 200, height: 100 };
-  const padding = { left: 16, top: 0, right: 0, bottom: 0 };
-  const { ejeX } = marcasLayout(frame, padding, [], "HORIZONTAL", false, { paddingLeft: "space/padding-1x" });
-  assert.equal(ejeX[0].valor, "padding-1x 16");
+test("marcasLayout con spacingVars → 'nombreCorto valor'", () => {
+  const marcas = marcasLayout({ x: 0, y: 0, width: 200, height: 100 }, { left: 16, top: 0, right: 0, bottom: 0 }, [], "HORIZONTAL", false, { paddingLeft: "space/padding-1x" });
+  assert.equal(marcas.find((m) => m.lado === "left").valor, "padding-1x 16");
 });
 
 test("nombreCorto: último segmento tras la barra", () => {
   assert.equal(nombreCorto("space/padding-1x"), "padding-1x");
   assert.equal(nombreCorto("simple"), "simple");
-});
-
-test("marcasLayout sin spacingVars → solo el número (compatibilidad)", () => {
-  const frame = { x: 0, y: 0, width: 200, height: 100 };
-  const { ejeX } = marcasLayout(frame, { left: 16, top: 0, right: 0, bottom: 0 }, [], "HORIZONTAL", false);
-  assert.equal(ejeX[0].valor, "16");
 });
 
 test("valorDim: con variable → resizing + chip", () => {

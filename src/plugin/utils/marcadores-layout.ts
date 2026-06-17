@@ -33,17 +33,10 @@ export function valorSpacing(px: number, unidad: Unidad, nombreVar?: string): Pa
   return [{ texto: formatearEspaciado(px, unidad) }];
 }
 
-export interface MarcaX {
-  x: number;       // centro de la banda (donde va el texto)
-  desde: number;   // borde izquierdo de la banda (para los ticks)
-  hasta: number;   // borde derecho
-  valor: string;
-  tipo: "padding" | "spacing";
-}
-
-export interface MarcaY {
-  y: number;
-  desde: number;
+export interface Marca {
+  lado: "top" | "bottom" | "left" | "right";
+  centro: number;  // posición sobre ese lado (x para top/bottom, y para left/right)
+  desde: number;   // rango de la banda (para el dedupe de wrap)
   hasta: number;
   valor: string;
   tipo: "padding" | "spacing";
@@ -65,11 +58,10 @@ export function nombreCorto(nombre: string): string {
   return nombre.split("/").pop() ?? nombre;
 }
 
-// Marcas numéricas de un contenedor: las bandas verticales (padding left/right,
-// gaps de dirección HORIZONTAL) se anotan arriba del artwork (eje X); las
-// horizontales (padding top/bottom, gaps de dirección VERTICAL), a la izquierda
-// (eje Y). Bandas de grosor 0 no generan marca. Con spacingAuto, las marcas de
-// spacing dicen "Auto" (el padding conserva su número).
+// Marcas de un contenedor, distribuidas en los 4 lados del clon: cada padding
+// va a su lado (left/right/top/bottom); los gaps a top (HORIZONTAL) o left
+// (VERTICAL). Bandas de grosor 0 no generan marca. Con spacingAuto, los gaps
+// dicen "Auto". `valor` = "nombreCorto número" si hay variable, o el número.
 export function marcasLayout(
   frame: Rect,
   padding: { left: number; top: number; right: number; bottom: number },
@@ -77,35 +69,23 @@ export function marcasLayout(
   direccion: "HORIZONTAL" | "VERTICAL",
   spacingAuto: boolean,
   spacingVars: { paddingLeft?: string; paddingTop?: string; paddingRight?: string; paddingBottom?: string; itemSpacing?: string } = {},
-): { ejeX: MarcaX[]; ejeY: MarcaY[] } {
+): Marca[] {
   const u = unidadActual();
-  // "nombreCorto valor" si hay variable; solo el valor si no.
   const marca = (px: number, nombreVar?: string) =>
     nombreVar ? `${nombreCorto(nombreVar)} ${formatearEspaciado(px, u)}` : formatearEspaciado(px, u);
-  const ejeX: MarcaX[] = [];
-  const ejeY: MarcaY[] = [];
-  if (padding.left > 0) {
-    ejeX.push({ x: frame.x + padding.left / 2, desde: frame.x, hasta: frame.x + padding.left, valor: marca(padding.left, spacingVars.paddingLeft), tipo: "padding" });
-  }
-  if (padding.right > 0) {
-    const desde = frame.x + frame.width - padding.right;
-    ejeX.push({ x: desde + padding.right / 2, desde, hasta: frame.x + frame.width, valor: marca(padding.right, spacingVars.paddingRight), tipo: "padding" });
-  }
-  if (padding.top > 0) {
-    ejeY.push({ y: frame.y + padding.top / 2, desde: frame.y, hasta: frame.y + padding.top, valor: marca(padding.top, spacingVars.paddingTop), tipo: "padding" });
-  }
-  if (padding.bottom > 0) {
-    const desde = frame.y + frame.height - padding.bottom;
-    ejeY.push({ y: desde + padding.bottom / 2, desde, hasta: frame.y + frame.height, valor: marca(padding.bottom, spacingVars.paddingBottom), tipo: "padding" });
-  }
+  const cx = frame.x + frame.width / 2;
+  const cy = frame.y + frame.height / 2;
+  const out: Marca[] = [];
+  if (padding.left > 0) out.push({ lado: "left", centro: cy, desde: frame.y, hasta: frame.y + frame.height, valor: marca(padding.left, spacingVars.paddingLeft), tipo: "padding" });
+  if (padding.right > 0) out.push({ lado: "right", centro: cy, desde: frame.y, hasta: frame.y + frame.height, valor: marca(padding.right, spacingVars.paddingRight), tipo: "padding" });
+  if (padding.top > 0) out.push({ lado: "top", centro: cx, desde: frame.x, hasta: frame.x + frame.width, valor: marca(padding.top, spacingVars.paddingTop), tipo: "padding" });
+  if (padding.bottom > 0) out.push({ lado: "bottom", centro: cx, desde: frame.x, hasta: frame.x + frame.width, valor: marca(padding.bottom, spacingVars.paddingBottom), tipo: "padding" });
+  const spacing: Marca[] = [];
   for (const g of gaps) {
-    if (direccion === "HORIZONTAL") {
-      ejeX.push({ x: g.x + g.width / 2, desde: g.x, hasta: g.x + g.width, valor: spacingAuto ? "Auto" : marca(g.width, spacingVars.itemSpacing), tipo: "spacing" });
-    } else {
-      ejeY.push({ y: g.y + g.height / 2, desde: g.y, hasta: g.y + g.height, valor: spacingAuto ? "Auto" : marca(g.height, spacingVars.itemSpacing), tipo: "spacing" });
-    }
+    if (direccion === "HORIZONTAL") spacing.push({ lado: "top", centro: g.x + g.width / 2, desde: g.x, hasta: g.x + g.width, valor: spacingAuto ? "Auto" : marca(g.width, spacingVars.itemSpacing), tipo: "spacing" });
+    else spacing.push({ lado: "left", centro: g.y + g.height / 2, desde: g.y, hasta: g.y + g.height, valor: spacingAuto ? "Auto" : marca(g.height, spacingVars.itemSpacing), tipo: "spacing" });
   }
-  return { ejeX: sinPisadas(ejeX), ejeY: sinPisadas(ejeY) };
+  return [...out, ...sinPisadas(spacing)];
 }
 
 // Estilo de puntas de la cota azul según el resizing del eje:
