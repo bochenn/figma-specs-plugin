@@ -25,6 +25,7 @@ const GAP_BANDA: RGB = { r: 1, g: 0.7, b: 0.85 };
 // 80px: la cota vertical (44) + el número de la medida (hasta ~3 dígitos) deben
 // entrar sin cortarse contra el borde izquierdo.
 const MARGEN = 96;
+const MARGEN_IZQ = 160; // margen izquierdo ancho: aloja la cota de alto + breadcrumb del artwork
 const RESPIRO = 16; // borde derecho e inferior
 
 // Íconos 12×12 (gris) por propiedad del panel.
@@ -165,19 +166,23 @@ function bandaPunteada(r: Rect, colorFill: RGB, colorStroke: RGB, artwork: Frame
   artwork.appendChild(rect);
 }
 
-const SEP_CHIP = 4; // separación mínima entre chips del mismo lado
+const SEP_CHIP = 4; // separación mínima entre cotas del mismo lado
 
-// Posiciona los chips de marca por lado, separando los que se solaparían.
-async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNode): Promise<void> {
-  const lados = ["top", "bottom", "left", "right"] as const;
-  const porLado: Record<string, { c: FrameNode; centro: number }[]> = { top: [], bottom: [], left: [], right: [] };
+// Posiciona las cotas de marca. Los paddings horizontales (left/right) van a la
+// fila de abajo para liberar el lado izquierdo (donde va la cota de alto).
+// Devuelve el x mínimo alcanzado por las cotas de la izquierda.
+async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNode): Promise<number> {
+  const grupos: Record<string, { c: FrameNode; centro: number }[]> = { top: [], bottom: [], left: [], right: [] };
   for (const m of marcas) {
     const color = m.tipo === "padding" ? CHIP_PADDING : CHIP_GAP;
-    const c = await cota(m.valor, color, artwork);
-    porLado[m.lado].push({ c, centro: m.centro });
+    const c = m.nombre ? await cotaConNombre(m.nombre, m.valor, color, artwork) : await cota(m.valor, color, artwork);
+    if (m.tipo === "padding" && m.lado === "left") grupos.bottom.push({ c, centro: clon.x });
+    else if (m.tipo === "padding" && m.lado === "right") grupos.bottom.push({ c, centro: clon.x + clon.width });
+    else grupos[m.lado].push({ c, centro: m.centro });
   }
-  for (const lado of lados) {
-    const grupo = porLado[lado];
+  let minLeftX = clon.x;
+  for (const lado of ["top", "bottom", "left", "right"] as const) {
+    const grupo = grupos[lado];
     if (grupo.length === 0) continue;
     const ejeX = lado === "top" || lado === "bottom";
     const centros = grupo.map((g) => g.centro);
@@ -186,12 +191,13 @@ async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNod
     for (let i = 0; i < grupo.length; i++) {
       const c = grupo[i].c;
       const p = ajustados[i];
-      if (lado === "top") { c.x = p - c.width / 2; c.y = MARGEN - 18; }
-      else if (lado === "bottom") { c.x = p - c.width / 2; c.y = MARGEN + clon.height + 6; }
-      else if (lado === "left") { c.x = MARGEN - 16 - c.width; c.y = p - c.height / 2; }
-      else { c.x = MARGEN + clon.width + 16; c.y = p - c.height / 2; }
+      if (lado === "top") { c.x = p - c.width / 2; c.y = clon.y - 18; }
+      else if (lado === "bottom") { c.x = p - c.width / 2; c.y = clon.y + clon.height + 8; }
+      else if (lado === "left") { c.x = clon.x - 8 - c.width; c.y = p - c.height / 2; minLeftX = Math.min(minLeftX, c.x); }
+      else { c.x = clon.x + clon.width + 8; c.y = p - c.height / 2; }
     }
   }
+  return minLeftX;
 }
 
 
@@ -297,24 +303,25 @@ function svgIcono(nombre: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">${ICONOS[nombre]}</svg>`;
 }
 
-// Cotas azules de W/H con su valor numérico (resizing en las puntas, medida en
-// el texto). Aplica a cualquier contenedor (H/V y GRID).
-async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpec): Promise<void> {
+// Cotas de W/H (rojo) con su valor. La de alto se ubica a la izquierda de
+// `minLeftX` (lo más a la izquierda que llegaron las cotas de ese lado).
+async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpec, minLeftX: number): Promise<void> {
   const u = unidadActual();
   const cotaH = figma.createNodeFromSvg(svgCotaH(estiloCota(spec.resizingHorizontal), clon.width));
-  cotaH.x = MARGEN;
-  cotaH.y = MARGEN - 44;
+  cotaH.x = clon.x;
+  cotaH.y = clon.y - 44;
   artwork.appendChild(cotaH);
   const tW = await cota(etiquetaSpacing(spec.width, u), CHIP_DIM, artwork);
-  tW.x = MARGEN + clon.width / 2 - tW.width / 2;
-  tW.y = MARGEN - 44 - 12;
+  tW.x = clon.x + clon.width / 2 - tW.width / 2;
+  tW.y = clon.y - 44 - 12;
+  const xLinea = Math.min(clon.x - 44, minLeftX - 28);
   const cotaV = figma.createNodeFromSvg(svgCotaV(estiloCota(spec.resizingVertical), clon.height));
-  cotaV.x = MARGEN - 44;
-  cotaV.y = MARGEN;
+  cotaV.x = xLinea;
+  cotaV.y = clon.y;
   artwork.appendChild(cotaV);
   const tH = await cota(etiquetaSpacing(spec.height, u), CHIP_DIM, artwork);
-  tH.x = MARGEN - 44 - tH.width - 2;
-  tH.y = MARGEN + clon.height / 2 - tH.height / 2;
+  tH.x = xLinea - tH.width - 2;
+  tH.y = clon.y + clon.height / 2 - tH.height / 2;
 }
 
 // Cotas de ancho (arriba) y alto (izquierda) de un hijo directo, con su número.
@@ -348,13 +355,13 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
   artwork.fills = fillTematizado(varsTema().fondoArtwork);
   const clon = contenedor.clone();
   artwork.appendChild(clon);
-  clon.x = MARGEN;
+  clon.x = MARGEN_IZQ;
   clon.y = MARGEN;
-  artwork.resize(clon.width + 2 * MARGEN, clon.height + 2 * MARGEN);
+  artwork.resize(clon.width + MARGEN_IZQ + MARGEN, clon.height + 2 * MARGEN);
 
-  const frameRect: Rect = { x: MARGEN, y: MARGEN, width: clon.width, height: clon.height };
+  const frameRect: Rect = { x: MARGEN_IZQ, y: MARGEN, width: clon.width, height: clon.height };
   const hijosRects: Rect[] = contenedor.children.map((c) => ({
-    x: MARGEN + c.x, y: MARGEN + c.y, width: c.width, height: c.height,
+    x: MARGEN_IZQ + c.x, y: MARGEN + c.y, width: c.width, height: c.height,
   }));
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
   if (medirHijos) for (const h of hijosRects) await dibujarCotaHijo(artwork, h);
@@ -363,8 +370,8 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
     for (const r of columnas) bandaPunteada(r, ROJO, ROJO, artwork);
     for (const r of filas) bandaPunteada(r, ROJO, ROJO, artwork);
-    await dibujarCotas(artwork, clon, spec);
-    await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, [], "HORIZONTAL", spec.spacingAuto, spec.spacingVars), clon);
+    const minLeftX = await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, [], "HORIZONTAL", spec.spacingAuto, spec.spacingVars), clon);
+    await dibujarCotas(artwork, clon, spec, minLeftX);
     return artwork;
   }
   const gaps = rectsSpacing(hijosRects, spec.direccion);
@@ -373,9 +380,9 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
     for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
   }
 
-  // Cotas de W/H (rojo) y chips de padding/gap distribuidos en los 4 lados.
-  await dibujarCotas(artwork, clon, spec);
-  await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto, spec.spacingVars), clon);
+  // Cotas de padding/gap (reubicadas) + cotas de W/H (rojo) despejadas.
+  const minLeftX = await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto, spec.spacingVars), clon);
+  await dibujarCotas(artwork, clon, spec, minLeftX);
 
   // Ícono de dirección, arriba a la izquierda del artwork.
   const icono = figma.createNodeFromSvg(svgIcono(iconoDireccion(spec.direccion, spec.wrap)));
