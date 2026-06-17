@@ -66,10 +66,14 @@ async function marcador(numero: number, x: number, y: number): Promise<FrameNode
 // Construye el [Nombre] Spec (heading + sección Anatomy con lista + artwork).
 async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
-  const seccion = frameVertical("Anatomy", 64);
-
   spec.appendChild(await texto(seleccionado.name, 64));
-  spec.appendChild(seccion);
+  spec.appendChild(await seccionDeAnatomy(seleccionado, elementos, tabla));
+  return spec;
+}
+
+// Construye solo la sección Anatomy (sin Specifications ni título de nodo).
+export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
+  const seccion = frameVertical("Anatomy", 64);
   seccion.appendChild(await texto("Anatomy", 48));
 
   // Display horizontal: lista a la izquierda, artwork a la derecha.
@@ -117,7 +121,7 @@ async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy
     artwork.appendChild(await marcador(i + 1, pos.x, pos.y));
   }
 
-  return spec;
+  return seccion;
 }
 
 // Genera el spec de Anatomy de un solo ítem. Devuelve el frame Specifications.

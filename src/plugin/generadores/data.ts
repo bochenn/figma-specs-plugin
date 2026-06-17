@@ -8,11 +8,16 @@ const ANCHO_JSON = 600;
 export async function generarData(nombre: string, json: AnatomyJson): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${nombre} Spec`, 48);
-  const seccion = frameVertical("Data (JSON)", 64);
-
   specifications.appendChild(spec);
   spec.appendChild(await texto(nombre, 64));
-  spec.appendChild(seccion);
+  spec.appendChild(await seccionDeData(nombre, json));
+  figma.currentPage.appendChild(specifications);
+  return specifications;
+}
+
+// Construye solo la sección Data (JSON) (sin Specifications ni título de nodo).
+export async function seccionDeData(nombre: string, json: AnatomyJson): Promise<FrameNode> {
+  const seccion = frameVertical("Data (JSON)", 64);
   seccion.appendChild(await texto("Data (JSON)", 48));
 
   const jsonNode = await texto(JSON.stringify(json, null, 2), 14);
@@ -21,6 +26,5 @@ export async function generarData(nombre: string, json: AnatomyJson): Promise<Fr
   jsonNode.resize(ANCHO_JSON, jsonNode.height);
   seccion.appendChild(jsonNode);
 
-  figma.currentPage.appendChild(specifications);
-  return specifications;
+  return seccion;
 }

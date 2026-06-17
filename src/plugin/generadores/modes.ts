@@ -60,11 +60,16 @@ async function subseccionColeccion(seleccionado: SceneNode, coleccion: Coleccion
 export async function generarModes(seleccionado: SceneNode, colecciones: ColeccionModes[], columnas: number): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
-  const seccion = frameVertical("Modes", 64);
-
   specifications.appendChild(spec);
   spec.appendChild(await texto(seleccionado.name, 64));
-  spec.appendChild(seccion);
+  spec.appendChild(await seccionDeModes(seleccionado, colecciones, columnas));
+  figma.currentPage.appendChild(specifications);
+  return specifications;
+}
+
+// Construye solo la sección Modes (sin Specifications ni título de nodo).
+export async function seccionDeModes(seleccionado: SceneNode, colecciones: ColeccionModes[], columnas: number): Promise<FrameNode> {
+  const seccion = frameVertical("Modes", 64);
   seccion.appendChild(await texto("Modes", 48));
 
   if (colecciones.length === 0) {
@@ -74,6 +79,5 @@ export async function generarModes(seleccionado: SceneNode, colecciones: Colecci
     seccion.appendChild(await subseccionColeccion(seleccionado, c, columnas));
   }
 
-  figma.currentPage.appendChild(specifications);
-  return specifications;
+  return seccion;
 }
