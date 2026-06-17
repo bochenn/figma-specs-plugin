@@ -13,6 +13,7 @@
         --on-brand: var(--figma-color-text-onbrand, #fff);
       }
       * { box-sizing: border-box; }
+      html, body { height: 100%; }
       body {
         margin: 0;
         font-family: Inter, "Helvetica Neue", sans-serif;
@@ -20,7 +21,12 @@
         line-height: 1.4;
         color: var(--text);
         background: var(--bg);
+        display: flex;
+        flex-direction: column;
       }
+      /* Área scrolleable: ocupa el alto disponible; el footer queda fijo abajo. */
+      .scroll { flex: 1 1 auto; overflow-y: auto; }
+      .footer { flex-shrink: 0; border-top: 1px solid var(--border); }
       .seccion {
         padding: 12px 16px;
         border-bottom: 1px solid var(--border);
@@ -77,6 +83,7 @@
     </style>
   </head>
   <body>
+    <div class="scroll">
     <div class="seccion">
       <div class="titulo">Specs</div>
       <div class="specs">
@@ -133,12 +140,14 @@
         </div>
       </div>
     </div>
-
-    <div class="seccion">
-      <button id="crear" class="cta">Create spec</button>
     </div>
 
-    <p class="estado" id="estado"></p>
+    <div class="footer">
+      <div class="seccion">
+        <button id="crear" class="cta">Create spec</button>
+      </div>
+      <p class="estado" id="estado"></p>
+    </div>
     <script src="ui.js"></script>
   </body>
 </html>
