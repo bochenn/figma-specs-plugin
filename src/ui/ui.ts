@@ -13,18 +13,12 @@ const mostrarRawCheck = document.getElementById("mostrarRaw") as HTMLInputElemen
 const formatoRawSelect = document.getElementById("formatoRaw") as HTMLSelectElement;
 const preferenciaSelect = document.getElementById("preferencia") as HTMLSelectElement;
 
-function generar(seccion: "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway" | "complete"): void {
-  parent.postMessage({ pluginMessage: { tipo: "generar", seccion, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, hideOuter: hideOuterCheck.checked, itemizar: itemizarCheck.checked, medirHijos: medirHijosCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value, unidad: unidadSelect.value, formatoTipo: formatoTipoSelect.value, formatoRaw: formatoRawSelect.value, mostrarRaw: mostrarRawCheck.checked, preferencia: preferenciaSelect.value } }, "*");
-}
+const SECCIONES = ["anatomy", "properties", "layout", "data", "styling", "modes", "twoway", "complete"] as const;
 
-(document.getElementById("anatomy") as HTMLButtonElement).onclick = () => generar("anatomy");
-(document.getElementById("properties") as HTMLButtonElement).onclick = () => generar("properties");
-(document.getElementById("layout") as HTMLButtonElement).onclick = () => generar("layout");
-(document.getElementById("data") as HTMLButtonElement).onclick = () => generar("data");
-(document.getElementById("styling") as HTMLButtonElement).onclick = () => generar("styling");
-(document.getElementById("modes") as HTMLButtonElement).onclick = () => generar("modes");
-(document.getElementById("twoway") as HTMLButtonElement).onclick = () => generar("twoway");
-(document.getElementById("complete") as HTMLButtonElement).onclick = () => generar("complete");
+(document.getElementById("crear") as HTMLButtonElement).onclick = () => {
+  const secciones = SECCIONES.filter((s) => (document.getElementById(`sec-${s}`) as HTMLInputElement).checked);
+  parent.postMessage({ pluginMessage: { tipo: "generar", secciones, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, hideOuter: hideOuterCheck.checked, itemizar: itemizarCheck.checked, medirHijos: medirHijosCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value, unidad: unidadSelect.value, formatoTipo: formatoTipoSelect.value, formatoRaw: formatoRawSelect.value, mostrarRaw: mostrarRawCheck.checked, preferencia: preferenciaSelect.value } }, "*");
+};
 
 window.onmessage = (event: MessageEvent) => {
   const msg = event.data.pluginMessage;
