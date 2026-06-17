@@ -145,10 +145,19 @@ async function specDeProperties(
   columnas: number,
 ): Promise<FrameNode> {
   const spec = frameVertical(`${componentSet.name} Spec`, 48);
-  const seccion = frameVertical("Properties", 64);
-
   spec.appendChild(await texto(componentSet.name, 64));
-  spec.appendChild(seccion);
+  spec.appendChild(await seccionDeProperties(componentSet, propiedades, defaultProps, columnas));
+  return spec;
+}
+
+// Construye solo la sección Properties (sin Specifications ni título de nodo).
+export async function seccionDeProperties(
+  componentSet: ComponentSetNode,
+  propiedades: PropiedadSpec[],
+  defaultProps: Record<string, string>,
+  columnas: number,
+): Promise<FrameNode> {
+  const seccion = frameVertical("Properties", 64);
   seccion.appendChild(await texto("Properties", 48));
 
   if (propiedades.length === 0) {
@@ -181,7 +190,7 @@ async function specDeProperties(
     }
   }
 
-  return spec;
+  return seccion;
 }
 
 // Genera el output de Properties. Devuelve el frame Specifications creado.
@@ -230,11 +239,21 @@ export async function generarDosWay(
 ): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${componentSet.name} Spec`, 48);
-  const seccion = frameVertical("Two-Way", 64);
-
   specifications.appendChild(spec);
   spec.appendChild(await texto(componentSet.name, 64));
-  spec.appendChild(seccion);
+  spec.appendChild(await seccionDeDosWay(componentSet, dosway, defaultProps, columnas));
+  figma.currentPage.appendChild(specifications);
+  return specifications;
+}
+
+// Construye solo la sección Two-Way (sin Specifications ni título de nodo).
+export async function seccionDeDosWay(
+  componentSet: ComponentSetNode,
+  dosway: DosWaySpec,
+  defaultProps: Record<string, string>,
+  columnas: number,
+): Promise<FrameNode> {
+  const seccion = frameVertical("Two-Way", 64);
   seccion.appendChild(await texto("Two-Way", 48));
   seccion.appendChild(await texto(`${dosway.prop1} × ${dosway.prop2}`, 24));
 
@@ -251,7 +270,5 @@ export async function generarDosWay(
   } else {
     for (const b of bloques) seccion.appendChild(b);
   }
-
-  figma.currentPage.appendChild(specifications);
-  return specifications;
+  return seccion;
 }

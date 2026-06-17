@@ -87,7 +87,7 @@ export type Preferencia = "VARIABLE" | "STYLE";
 
 export type FormatoTipo = "Plain" | "CSS";
 
-export type MensajeUI = { tipo: "generar"; seccion: Seccion; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; hideOuter?: boolean; itemizar?: boolean; medirHijos?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo; formatoRaw?: FormatoColor; mostrarRaw?: boolean; preferencia?: Preferencia };
+export type MensajeUI = { tipo: "generar"; secciones: Seccion[]; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; hideOuter?: boolean; itemizar?: boolean; medirHijos?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo; formatoRaw?: FormatoColor; mostrarRaw?: boolean; preferencia?: Preferencia };
 
 export type MensajePlugin =
   | { tipo: "resultado"; ok: true }

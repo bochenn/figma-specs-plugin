@@ -69,17 +69,21 @@ async function tabla(titulo: string, filas: FilaInventario[], vacio: string): Pr
 export async function generarStyling(nombre: string, filas: FilaInventario[]): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${nombre} Spec`, 48);
-  const seccion = frameVertical("Styling Inventory", 64);
-
   specifications.appendChild(spec);
   spec.appendChild(await texto(nombre, 64));
-  spec.appendChild(seccion);
+  spec.appendChild(await seccionDeStyling(nombre, filas));
+  figma.currentPage.appendChild(specifications);
+  return specifications;
+}
+
+// Construye solo la sección Styling Inventory (sin Specifications ni título de nodo).
+export async function seccionDeStyling(nombre: string, filas: FilaInventario[]): Promise<FrameNode> {
+  const seccion = frameVertical("Styling Inventory", 64);
   seccion.appendChild(await texto("Styling Inventory", 48));
 
   seccion.appendChild(await tabla("Variables", filas.filter((f) => f.tabla === "variable"), "Sin variables"));
   seccion.appendChild(await tabla("Color styles", filas.filter((f) => f.tabla === "color"), "Sin color styles"));
   seccion.appendChild(await tabla("Text styles", filas.filter((f) => f.tabla === "text"), "Sin text styles"));
 
-  figma.currentPage.appendChild(specifications);
-  return specifications;
+  return seccion;
 }

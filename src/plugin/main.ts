@@ -1,31 +1,31 @@
-import type { MensajeUI, MensajePlugin, SetNorm } from "./modelo/tipos.ts";
+import type { MensajeUI, MensajePlugin, SetNorm, Seccion } from "./modelo/tipos.ts";
 import { aNodoLike } from "./extraccion/adaptador.ts";
 import { asegurarVariablesTema, varsTema } from "./utils/variables-tema.ts";
-import { fillTematizado } from "./generadores/frames.ts";
+import { fillTematizado, frameVertical, texto } from "./generadores/frames.ts";
 import { clampColumnas } from "./utils/columnas.ts";
 import { aplicarFormatoColor } from "./utils/color.ts";
 import { aplicarFormatoRaw, aplicarMostrarRaw, aplicarPreferencia } from "./utils/valores.ts";
 import { aplicarUnidad } from "./utils/espaciado.ts";
 import { aplicarFormatoTipo } from "./utils/tipografia.ts";
 import { extraerAnatomy } from "./extraccion/anatomy.ts";
-import { generarAnatomy, generarAnatomyConNested } from "./generadores/anatomy.ts";
+import { seccionDeAnatomy } from "./generadores/anatomy.ts";
 import { resolverComponentSet } from "./extraccion/resolver.ts";
 import { extraerProperties } from "./extraccion/properties.ts";
-import { generarProperties, generarPropertiesConNested } from "./generadores/properties.ts";
+import { seccionDeProperties } from "./generadores/properties.ts";
 import { extraerLayout } from "./extraccion/layout.ts";
-import { generarLayout } from "./generadores/layout.ts";
+import { seccionDeLayout } from "./generadores/layout.ts";
 import { serializarAnatomy } from "./serializacion/anatomy-json.ts";
-import { generarData } from "./generadores/data.ts";
+import { seccionDeData } from "./generadores/data.ts";
 import { recolectarEstilos } from "./inventario/recolectar.ts";
 import { agruparInventario } from "./inventario/agrupar.ts";
-import { generarStyling } from "./generadores/styling.ts";
+import { seccionDeStyling } from "./generadores/styling.ts";
 import { recolectarModes } from "./variables/recolectar-modes.ts";
 import { agruparModes } from "./variables/modes.ts";
-import { generarModes } from "./generadores/modes.ts";
+import { seccionDeModes } from "./generadores/modes.ts";
 import { extraerDosWay } from "./extraccion/properties.ts";
-import { generarDosWay } from "./generadores/properties.ts";
+import { seccionDeDosWay } from "./generadores/properties.ts";
 import { extraerCompleteAnatomy, extraerCompleteLayout } from "./extraccion/properties.ts";
-import { generarComplete } from "./generadores/complete.ts";
+import { seccionDeComplete } from "./generadores/complete.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
@@ -97,112 +97,81 @@ function setsAnidados(componentSet: ComponentSetNode): ComponentSetNode[] {
   return res;
 }
 
-async function generarSeccionAnatomy(nodo: SceneNode, nested: boolean, tabla: boolean, itemizar: boolean): Promise<void> {
-  if (!TIPOS_VALIDOS.includes(nodo.type)) {
-    responder({ tipo: "resultado", ok: false, error: "Anatomy necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
-    return;
-  }
-  const elementos = extraerAnatomy(aNodoLike(nodo), itemizar);
-  let frame: FrameNode;
-  if (nested) {
-    const nestedSpecs = instanciasAnidadas(nodo).map((inst) => ({ nodo: inst, elementos: extraerAnatomy(aNodoLike(inst), itemizar) }));
-    frame = await generarAnatomyConNested(nodo, elementos, nestedSpecs, tabla);
-  } else {
-    frame = await generarAnatomy(nodo, elementos, tabla);
-  }
-  finalizar(frame, nodo);
+// Opciones de generación tomadas del mensaje de la UI.
+interface OpcionesGen {
+  nested: boolean;
+  tabla: boolean;
+  itemizar: boolean;
+  hideOuter: boolean;
+  medirHijos: boolean;
+  columnas: number;
 }
 
-async function generarSeccionProperties(nodo: SceneNode, columnas: number, nested: boolean): Promise<void> {
+// Frame de aviso para una sección que no aplica al nodo (no aborta las demás).
+async function aviso(mensaje: string): Promise<FrameNode> {
+  const f = frameVertical("Aviso", 8);
+  f.appendChild(await texto(mensaje, 16));
+  return f;
+}
+
+// Devuelve la(s) sección(es) de un tipo para el nodo, o un aviso si no aplica.
+async function seccionPara(nodo: SceneNode, seccion: Seccion, opts: OpcionesGen): Promise<FrameNode[]> {
+  if (seccion === "anatomy") {
+    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Anatomy necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET.")];
+    const secciones = [await seccionDeAnatomy(nodo, extraerAnatomy(aNodoLike(nodo), opts.itemizar), opts.tabla)];
+    if (opts.nested) {
+      for (const inst of instanciasAnidadas(nodo)) {
+        secciones.push(await seccionDeAnatomy(inst, extraerAnatomy(aNodoLike(inst), opts.itemizar), opts.tabla));
+      }
+    }
+    return secciones;
+  }
+  if (seccion === "properties") {
+    const componentSet = resolverComponentSet(nodo);
+    if (!componentSet) return [await aviso("Properties necesita un componente con variantes.")];
+    const setNorm = normalizarSet(componentSet);
+    const secciones = [await seccionDeProperties(componentSet, extraerProperties(setNorm), setNorm.defaultProps, opts.columnas)];
+    if (opts.nested) {
+      for (const set of setsAnidados(componentSet)) {
+        const norm = normalizarSet(set);
+        secciones.push(await seccionDeProperties(set, extraerProperties(norm), norm.defaultProps, opts.columnas));
+      }
+    }
+    return secciones;
+  }
+  if (seccion === "layout") {
+    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Layout and Spacing necesita un FRAME, COMPONENT o INSTANCE.")];
+    return [await seccionDeLayout(nodo, extraerLayout(aNodoLike(nodo), opts.itemizar), opts.columnas, opts.hideOuter, opts.itemizar, opts.medirHijos)];
+  }
+  if (seccion === "data") {
+    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Data necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET.")];
+    return [await seccionDeData(nodo.name, serializarAnatomy(extraerAnatomy(aNodoLike(nodo))))];
+  }
+  if (seccion === "styling") {
+    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Styling Inventory necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET.")];
+    return [await seccionDeStyling(nodo.name, agruparInventario(recolectarEstilos(aNodoLike(nodo))))];
+  }
+  if (seccion === "modes") {
+    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Modes necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET.")];
+    return [await seccionDeModes(nodo, agruparModes(recolectarModes(nodo)), opts.columnas)];
+  }
+  if (seccion === "twoway") {
+    const componentSet = resolverComponentSet(nodo);
+    if (!componentSet) return [await aviso("Two-Way necesita un componente con variantes.")];
+    const setNorm = normalizarSet(componentSet);
+    const dosway = extraerDosWay(setNorm);
+    if (!dosway) return [await aviso("Two-Way necesita al menos dos propiedades de variante.")];
+    return [await seccionDeDosWay(componentSet, dosway, setNorm.defaultProps, opts.columnas)];
+  }
+  // complete
   const componentSet = resolverComponentSet(nodo);
-  if (!componentSet) {
-    responder({ tipo: "resultado", ok: false, error: "Properties necesita un componente con variantes." });
-    return;
-  }
+  if (!componentSet) return [await aviso("Complete necesita un componente con variantes.")];
   const setNorm = normalizarSet(componentSet);
-  const specs = extraerProperties(setNorm);
-  let frame: FrameNode;
-  if (nested) {
-    const nestedSpecs = setsAnidados(componentSet).map((set) => {
-      const norm = normalizarSet(set);
-      return { set, propiedades: extraerProperties(norm), defaultProps: norm.defaultProps };
-    });
-    frame = await generarPropertiesConNested(componentSet, specs, setNorm.defaultProps, columnas, nestedSpecs);
-  } else {
-    frame = await generarProperties(componentSet, specs, setNorm.defaultProps, columnas);
-  }
-  finalizar(frame, nodo);
+  return await seccionDeComplete(componentSet.name, extraerCompleteAnatomy(setNorm), extraerCompleteLayout(setNorm), opts.columnas);
 }
 
-async function generarSeccionLayout(nodo: SceneNode, columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<void> {
-  if (!TIPOS_VALIDOS.includes(nodo.type)) {
-    responder({ tipo: "resultado", ok: false, error: "Layout and Spacing necesita un FRAME, COMPONENT o INSTANCE." });
-    return;
-  }
-  const specs = extraerLayout(aNodoLike(nodo), itemizar);
-  const frame = await generarLayout(nodo, specs, columnas, hideOuter, itemizar, medirHijos);
-  finalizar(frame, nodo);
-}
-
-async function generarSeccionData(nodo: SceneNode): Promise<void> {
-  if (!TIPOS_VALIDOS.includes(nodo.type)) {
-    responder({ tipo: "resultado", ok: false, error: "Data necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
-    return;
-  }
-  const elementos = extraerAnatomy(aNodoLike(nodo));
-  const json = serializarAnatomy(elementos);
-  const frame = await generarData(nodo.name, json);
-  finalizar(frame, nodo);
-}
-
-async function generarSeccionStyling(nodo: SceneNode): Promise<void> {
-  if (!TIPOS_VALIDOS.includes(nodo.type)) {
-    responder({ tipo: "resultado", ok: false, error: "Styling Inventory necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
-    return;
-  }
-  const filas = agruparInventario(recolectarEstilos(aNodoLike(nodo)));
-  const frame = await generarStyling(nodo.name, filas);
-  finalizar(frame, nodo);
-}
-
-async function generarSeccionModes(nodo: SceneNode, columnas: number): Promise<void> {
-  if (!TIPOS_VALIDOS.includes(nodo.type)) {
-    responder({ tipo: "resultado", ok: false, error: "Modes necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET." });
-    return;
-  }
-  const colecciones = agruparModes(recolectarModes(nodo));
-  const frame = await generarModes(nodo, colecciones, columnas);
-  finalizar(frame, nodo);
-}
-
-async function generarSeccionTwoWay(nodo: SceneNode, columnas: number): Promise<void> {
-  const componentSet = resolverComponentSet(nodo);
-  if (!componentSet) {
-    responder({ tipo: "resultado", ok: false, error: "Two-Way necesita un componente con variantes." });
-    return;
-  }
-  const setNorm = normalizarSet(componentSet);
-  const dosway = extraerDosWay(setNorm);
-  if (!dosway) {
-    responder({ tipo: "resultado", ok: false, error: "Two-Way necesita al menos dos propiedades de variante." });
-    return;
-  }
-  const frame = await generarDosWay(componentSet, dosway, setNorm.defaultProps, columnas);
-  finalizar(frame, nodo);
-}
-
-async function generarSeccionComplete(nodo: SceneNode, columnas: number): Promise<void> {
-  const componentSet = resolverComponentSet(nodo);
-  if (!componentSet) {
-    responder({ tipo: "resultado", ok: false, error: "Complete necesita un componente con variantes." });
-    return;
-  }
-  const setNorm = normalizarSet(componentSet);
-  const anatomy = extraerCompleteAnatomy(setNorm);
-  const layout = extraerCompleteLayout(setNorm);
-  const frame = await generarComplete(componentSet.name, anatomy, layout, columnas);
-  finalizar(frame, nodo);
-}
+// Orden fijo en el que se apilan las secciones elegidas.
+const ORDEN: Seccion[] = ["anatomy", "properties", "layout", "data", "styling", "modes", "twoway", "complete"];
 
 figma.ui.onmessage = async (msg: MensajeUI) => {
   if (msg.tipo !== "generar") return;
@@ -210,6 +179,10 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   const seleccion = figma.currentPage.selection;
   if (seleccion.length === 0) {
     responder({ tipo: "resultado", ok: false, error: "Seleccioná algo para generar specs." });
+    return;
+  }
+  if (!msg.secciones || msg.secciones.length === 0) {
+    responder({ tipo: "resultado", ok: false, error: "Elegí al menos una sección." });
     return;
   }
 
@@ -222,16 +195,25 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   aplicarFormatoRaw(msg.formatoRaw ?? "HEX");
   aplicarMostrarRaw(msg.mostrarRaw ?? true);
   aplicarPreferencia(msg.preferencia ?? "VARIABLE");
-  const columnas = clampColumnas(msg.columnas);
+  const opts: OpcionesGen = {
+    nested: msg.nested ?? false,
+    tabla: msg.tabla ?? false,
+    itemizar: msg.itemizar ?? false,
+    hideOuter: msg.hideOuter ?? false,
+    medirHijos: msg.medirHijos ?? false,
+    columnas: clampColumnas(msg.columnas),
+  };
   try {
-    if (msg.seccion === "anatomy") await generarSeccionAnatomy(nodo, msg.nested ?? false, msg.tabla ?? false, msg.itemizar ?? false);
-    else if (msg.seccion === "properties") await generarSeccionProperties(nodo, columnas, msg.nested ?? false);
-    else if (msg.seccion === "layout") await generarSeccionLayout(nodo, columnas, msg.hideOuter ?? false, msg.itemizar ?? false, msg.medirHijos ?? false);
-    else if (msg.seccion === "data") await generarSeccionData(nodo);
-    else if (msg.seccion === "styling") await generarSeccionStyling(nodo);
-    else if (msg.seccion === "modes") await generarSeccionModes(nodo, columnas);
-    else if (msg.seccion === "twoway") await generarSeccionTwoWay(nodo, columnas);
-    else await generarSeccionComplete(nodo, columnas);
+    const specifications = frameVertical("Specifications", 128, 64);
+    const spec = frameVertical(`${nodo.name} Spec`, 48);
+    specifications.appendChild(spec);
+    spec.appendChild(await texto(nodo.name, 64));
+    for (const seccion of ORDEN) {
+      if (!msg.secciones.includes(seccion)) continue;
+      for (const f of await seccionPara(nodo, seccion, opts)) spec.appendChild(f);
+    }
+    figma.currentPage.appendChild(specifications);
+    finalizar(specifications, nodo);
   } catch (e) {
     responder({ tipo: "resultado", ok: false, error: String(e) });
   }

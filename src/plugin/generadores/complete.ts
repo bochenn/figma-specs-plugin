@@ -25,10 +25,21 @@ export async function generarComplete(
   const spec = frameVertical(`${nombre} Spec`, 48);
   specifications.appendChild(spec);
   spec.appendChild(await texto(nombre, 64));
+  for (const sec of await seccionDeComplete(nombre, anatomy, layout, columnas)) spec.appendChild(sec);
+  figma.currentPage.appendChild(specifications);
+  return specifications;
+}
 
+// Construye las dos secciones de Complete (Anatomy + Layout) y las devuelve como
+// array, sin Specifications ni título de nodo.
+export async function seccionDeComplete(
+  nombre: string,
+  anatomy: ElementoAdicional[],
+  layout: VarianteLayout[],
+  columnas: number,
+): Promise<FrameNode[]> {
   // Complete Anatomy: un bloque por variante con sus elementos adicionales.
   const secA = frameVertical("Complete Anatomy", 64);
-  spec.appendChild(secA);
   secA.appendChild(await texto("Complete Anatomy", 48));
   if (anatomy.length === 0) {
     secA.appendChild(await texto("No se detectaron elementos adicionales en otras variantes.", 16));
@@ -46,7 +57,6 @@ export async function generarComplete(
 
   // Complete Layout: un bloque por variante.
   const secL = frameVertical("Complete Layout", 64);
-  spec.appendChild(secL);
   secL.appendChild(await texto("Complete Layout", 48));
   if (layout.length === 0) {
     secL.appendChild(await texto("No se detectaron layouts adicionales en otras variantes.", 16));
@@ -66,6 +76,5 @@ export async function generarComplete(
   }
   agregarBloques(secL, bloquesL, columnas);
 
-  figma.currentPage.appendChild(specifications);
-  return specifications;
+  return [secA, secL];
 }

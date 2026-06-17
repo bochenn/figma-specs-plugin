@@ -343,11 +343,16 @@ async function exhibitGrids(frame: SceneNode, grids: GridSpec[]): Promise<FrameN
 export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
-  const seccion = frameVertical("Layout and Spacing", 64);
-
   specifications.appendChild(spec);
   spec.appendChild(await texto(seleccionado.name, 64));
-  spec.appendChild(seccion);
+  spec.appendChild(await seccionDeLayout(seleccionado, specs, columnas, hideOuter, itemizar, medirHijos));
+  figma.currentPage.appendChild(specifications);
+  return specifications;
+}
+
+// Construye solo la sección Layout and Spacing (sin Specifications ni título de nodo).
+export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<FrameNode> {
+  const seccion = frameVertical("Layout and Spacing", 64);
   seccion.appendChild(await texto("Layout and Spacing", 48));
 
   const contenedores = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar).map((r) => r.nodo) as unknown as FrameNode[];
@@ -391,6 +396,5 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
     for (const f of filas) seccion.appendChild(f);
   }
 
-  figma.currentPage.appendChild(specifications);
-  return specifications;
+  return seccion;
 }
