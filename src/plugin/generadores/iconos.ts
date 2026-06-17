@@ -47,12 +47,12 @@ const ICONOS_UI3: Record<string, string> = {
 
 const GRIS_ICONO = "#666666";
 
-// Crea el nodo del ícono normalizado a 16px y recoloreado al gris del panel.
+// Crea el nodo del ícono normalizado a 24px y recoloreado al gris del panel.
 export function nodoIcono(key: string): SceneNode {
   const raw = ICONOS_UI3[key] ?? ICONOS_UI3.width;
   const svg = raw
-    .replace(/width="\d+"/, 'width="16"')
-    .replace(/height="\d+"/, 'height="16"')
+    .replace(/width="\d+"/, 'width="24"')
+    .replace(/height="\d+"/, 'height="24"')
     .split("#171717").join(GRIS_ICONO);
   return figma.createNodeFromSvg(svg);
 }
