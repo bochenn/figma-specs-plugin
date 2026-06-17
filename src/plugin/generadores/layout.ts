@@ -4,7 +4,7 @@ import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
-import { marcasLayout, estiloCota, iconoDireccion, valorDim, valorColor, valorSpacing, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, valorDim, valorColor, valorSpacing, separarColisiones, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
 import { rectsGrid, textoGrid, gridSpecDe, franjasGridAutolayout } from "../utils/grilla.ts";
 import { prefijoProfundidad } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
@@ -165,15 +165,32 @@ function bandaPunteada(r: Rect, colorFill: RGB, colorStroke: RGB, artwork: Frame
   artwork.appendChild(rect);
 }
 
-// Posiciona un chip de marca en su lado del clon.
+const SEP_CHIP = 4; // separación mínima entre chips del mismo lado
+
+// Posiciona los chips de marca por lado, separando los que se solaparían.
 async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNode): Promise<void> {
+  const lados = ["top", "bottom", "left", "right"] as const;
+  const porLado: Record<string, { c: FrameNode; centro: number }[]> = { top: [], bottom: [], left: [], right: [] };
   for (const m of marcas) {
     const color = m.tipo === "padding" ? CHIP_PADDING : CHIP_GAP;
     const c = await chip(m.valor, color, artwork);
-    if (m.lado === "top") { c.x = m.centro - c.width / 2; c.y = MARGEN - 18; }
-    else if (m.lado === "bottom") { c.x = m.centro - c.width / 2; c.y = MARGEN + clon.height + 6; }
-    else if (m.lado === "left") { c.x = MARGEN - 16 - c.width; c.y = m.centro - c.height / 2; }
-    else { c.x = MARGEN + clon.width + 16; c.y = m.centro - c.height / 2; }
+    porLado[m.lado].push({ c, centro: m.centro });
+  }
+  for (const lado of lados) {
+    const grupo = porLado[lado];
+    if (grupo.length === 0) continue;
+    const ejeX = lado === "top" || lado === "bottom";
+    const centros = grupo.map((g) => g.centro);
+    const tamanos = grupo.map((g) => (ejeX ? g.c.width : g.c.height));
+    const ajustados = separarColisiones(centros, tamanos, SEP_CHIP);
+    for (let i = 0; i < grupo.length; i++) {
+      const c = grupo[i].c;
+      const p = ajustados[i];
+      if (lado === "top") { c.x = p - c.width / 2; c.y = MARGEN - 18; }
+      else if (lado === "bottom") { c.x = p - c.width / 2; c.y = MARGEN + clon.height + 6; }
+      else if (lado === "left") { c.x = MARGEN - 16 - c.width; c.y = p - c.height / 2; }
+      else { c.x = MARGEN + clon.width + 16; c.y = p - c.height / 2; }
+    }
   }
 }
 
@@ -371,6 +388,7 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
 // Construye solo la sección Layout and Spacing (sin Specifications ni título de nodo).
 export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<FrameNode> {
   const seccion = frameVertical("Layout and Spacing", 64);
+  seccion.clipsContent = false; // los chips/cotas asoman del margen del artwork
   seccion.appendChild(await texto("Layout and Spacing", 48));
 
   const recorridos = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar);
@@ -412,7 +430,9 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   if (filas.length === 0) {
     seccion.appendChild(await texto("No se detectaron capas con Auto Layout.", 16));
   } else if (columnas > 1) {
-    seccion.appendChild(enColumnas(filas, columnas));
+    const cont = enColumnas(filas, columnas);
+    cont.clipsContent = false;
+    seccion.appendChild(cont);
   } else {
     for (const f of filas) seccion.appendChild(f);
   }
