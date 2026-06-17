@@ -104,3 +104,19 @@ export function iconoDireccion(
   if (wrap) return direccion === "HORIZONTAL" ? "grilla-h" : "grilla-v";
   return direccion === "HORIZONTAL" ? "flecha-h" : "flecha-v";
 }
+
+// Dado centros y tamaños a lo largo de un eje, devuelve nuevos centros que no se
+// solapan, manteniendo el orden y dejando una separación mínima `sep`. Recorre de
+// menor a mayor y empuja hacia el lado positivo el que se solape con el anterior.
+export function separarColisiones(centros: number[], tamanos: number[], sep: number): number[] {
+  const orden = centros.map((_, i) => i).sort((a, b) => centros[a] - centros[b]);
+  const out = centros.slice();
+  let limite = -Infinity;
+  for (const i of orden) {
+    let inicio = centros[i] - tamanos[i] / 2;
+    if (inicio < limite + sep) inicio = limite + sep;
+    out[i] = inicio + tamanos[i] / 2;
+    limite = inicio + tamanos[i];
+  }
+  return out;
+}

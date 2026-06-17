@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto } from "../src/plugin/utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto, separarColisiones } from "../src/plugin/utils/marcadores-layout.ts";
 import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 
 test("marcasLayout: cada padding va a su lado con su valor", () => {
@@ -110,4 +110,20 @@ test("valorSpacing: con variable → chip + (valor)", () => {
 });
 test("valorSpacing: sin variable → solo texto", () => {
   assert.deepEqual(valorSpacing(8, "px"), [{ texto: "8" }]);
+});
+
+test("separarColisiones: sin solape deja los centros igual", () => {
+  assert.deepEqual(separarColisiones([0, 100], [10, 10], 4), [0, 100]);
+});
+
+test("separarColisiones: dos centros iguales se separan tamaño+sep", () => {
+  const r = separarColisiones([50, 50], [10, 10], 4);
+  assert.equal(r[0], 50);
+  assert.equal(r[1], 64); // 50→55 (borde), +4 sep = 59 inicio, +5 mitad = 64
+});
+
+test("separarColisiones: respeta el orden original aunque entren desordenados", () => {
+  const r = separarColisiones([100, 0], [10, 10], 4);
+  assert.equal(r[1], 0);   // el de centro menor no se mueve
+  assert.equal(r[0], 100); // el de centro mayor no solapa
 });
