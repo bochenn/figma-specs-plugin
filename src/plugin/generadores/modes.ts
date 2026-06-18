@@ -1,5 +1,5 @@
 import type { ColeccionModes } from "../modelo/tipos.ts";
-import { frameVertical, texto, enColumnas, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, FONT_SEMI } from "./frames.ts";
+import { frameVertical, texto, enColumnas, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 
 // Bloque de un mode como tarjeta: header con nombre + artwork (si hay collection) + filas-pill de atributos.
@@ -36,9 +36,9 @@ async function bloqueMode(
     const v = attr.valores.find((x) => x.modeId === modeId);
     const valor = v ? v.valor : "—";
     filas.push(filaPill([
-      await texto(`${attr.appliedAs}:`, 12, FONT_SEMI),
+      await textoClave(`${attr.appliedAs}:`),
       await chipVariable(attr.variableNombre),
-      await texto(`(${valor})`, 12, FONT_SEMI),
+      await textoValor(`(${valor})`),
     ]));
   }
 

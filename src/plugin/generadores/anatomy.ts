@@ -1,6 +1,6 @@
 import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_SEMI, FONT_BOLD } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
@@ -51,12 +51,12 @@ async function filaAtributo(attr: Atributo): Promise<FrameNode> {
     swatch.strokeWeight = 1;
     nodos.push(swatch);
   }
-  nodos.push(await texto(`${attr.clave}:`, 12, FONT_SEMI));
+  nodos.push(await textoClave(`${attr.clave}:`));
   if (attr.formato !== "HARDCODED") {
     nodos.push(await chipVariable(attr.valor));
-    if (attr.rawValue) nodos.push(await texto(`(${attr.rawValue})`, 12, FONT_SEMI));
+    if (attr.rawValue) nodos.push(await textoValor(`(${attr.rawValue})`));
   } else {
-    nodos.push(await texto(attr.valor, 12, FONT_SEMI));
+    nodos.push(await textoValor(attr.valor));
   }
   return filaPill(nodos);
 }
@@ -71,9 +71,9 @@ async function entradaLista(indice: number, el: ElementoAnatomy, color: RGB): Pr
   const filas: FrameNode[] = [];
   const variantes = parseVariantes(el.dependeDe);
   if (variantes.length > 0) {
-    for (const v of variantes) filas.push(filaPill([await texto(`${v.clave}:`, 12, FONT_SEMI), await texto(v.valor, 12, FONT_SEMI)]));
+    for (const v of variantes) filas.push(filaPill([await textoClave(`${v.clave}:`), await textoValor(v.valor)]));
   } else if (el.dependeDe) {
-    filas.push(filaPill([await texto(`Depends on: ${el.dependeDe}`, 12, FONT_SEMI)]));
+    filas.push(filaPill([await textoValor(`Depends on: ${el.dependeDe}`)]));
   }
   for (const attr of el.atributos) filas.push(await filaAtributo(attr));
   return tarjeta(headerNodos, filas);

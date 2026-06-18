@@ -1,6 +1,6 @@
 import type { PropiedadSpec, ElementoCambiado, AtributoCambiado, DosWaySpec } from "../modelo/tipos.ts";
 import { mismasProps } from "../comparacion/variantes.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, FONT_SEMI } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { hexARgb } from "../utils/color.ts";
 import { nombrePropiedad } from "../utils/propiedades.ts";
@@ -88,22 +88,22 @@ async function filaAtributoCambiado(c: AtributoCambiado): Promise<FrameNode> {
     nodos.push(swatch);
   }
   // clave:
-  nodos.push(await texto(`${c.clave}:`, 12, FONT_SEMI));
+  nodos.push(await textoClave(`${c.clave}:`));
   // valor opción
   if (c.valorOpcion && c.valorOpcion !== "—") {
     nodos.push(await chipVariable(c.valorOpcion));
   } else {
-    nodos.push(await texto("—", 12, FONT_SEMI));
+    nodos.push(await textoValor("—"));
   }
-  if (c.rawValueOpcion) nodos.push(await texto(`(${c.rawValueOpcion})`, 12, FONT_SEMI));
+  if (c.rawValueOpcion) nodos.push(await textoValor(`(${c.rawValueOpcion})`));
   // default
-  nodos.push(await texto("default:", 12, FONT_SEMI));
+  nodos.push(await textoClave("default:"));
   if (c.valorDefault && c.valorDefault !== "—") {
     nodos.push(await chipVariable(c.valorDefault));
   } else {
-    nodos.push(await texto("—", 12, FONT_SEMI));
+    nodos.push(await textoValor("—"));
   }
-  if (c.rawValueDefault) nodos.push(await texto(`(${c.rawValueDefault})`, 12, FONT_SEMI));
+  if (c.rawValueDefault) nodos.push(await textoValor(`(${c.rawValueDefault})`));
   return filaPill(nodos);
 }
 

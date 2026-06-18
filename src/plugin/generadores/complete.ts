@@ -1,5 +1,5 @@
 import type { ElementoAdicional, VarianteLayout } from "../modelo/tipos.ts";
-import { frameVertical, texto, enColumnas, tarjeta, filaPill, FONT_BOLD, FONT_SEMI } from "./frames.ts";
+import { frameVertical, texto, enColumnas, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
 import { agruparPorVariante } from "../utils/agrupar-variante.ts";
 import { etiquetaSpacing, unidadActual, textoPadding } from "../utils/espaciado.ts";
 
@@ -49,7 +49,7 @@ export async function seccionDeComplete(
     const headerNodos: SceneNode[] = [await texto(grupo.variante, 16, FONT_BOLD)];
     const filas: FrameNode[] = [];
     for (const el of grupo.elementos) {
-      filas.push(filaPill([await texto(`${el.nombre} · ${el.tipo}`, 12, FONT_SEMI)]));
+      filas.push(filaPill([await textoValor(`${el.nombre} · ${el.tipo}`)]));
     }
     bloquesA.push(tarjeta(headerNodos, filas));
   }
@@ -68,11 +68,11 @@ export async function seccionDeComplete(
     const sv = s.spacingVars;
     const headerNodos: SceneNode[] = [await texto(v.variante, 16, FONT_BOLD)];
     const filas: FrameNode[] = [
-      filaPill([await texto(`Direction:`, 12, FONT_SEMI), await texto(dir, 12, FONT_SEMI)]),
-      filaPill([await texto(`Align:`, 12, FONT_SEMI), await texto(`${s.alineacionPrimaria}/${s.alineacionContraria}`, 12, FONT_SEMI)]),
-      filaPill([await texto(`Resize:`, 12, FONT_SEMI), await texto(`${s.resizingHorizontal}×${s.resizingVertical}`, 12, FONT_SEMI)]),
-      filaPill([await texto(`Padding:`, 12, FONT_SEMI), await texto(textoPadding(s.padding, unidadActual(), sv), 12, FONT_SEMI)]),
-      filaPill([await texto(`Item spacing:`, 12, FONT_SEMI), await texto(etiquetaSpacing(s.itemSpacing, unidadActual(), sv.itemSpacing), 12, FONT_SEMI)]),
+      filaPill([await textoClave(`Direction:`), await textoValor(dir)]),
+      filaPill([await textoClave(`Align:`), await textoValor(`${s.alineacionPrimaria}/${s.alineacionContraria}`)]),
+      filaPill([await textoClave(`Resize:`), await textoValor(`${s.resizingHorizontal}×${s.resizingVertical}`)]),
+      filaPill([await textoClave(`Padding:`), await textoValor(textoPadding(s.padding, unidadActual(), sv))]),
+      filaPill([await textoClave(`Item spacing:`), await textoValor(etiquetaSpacing(s.itemSpacing, unidadActual(), sv.itemSpacing))]),
     ];
     bloquesL.push(tarjeta(headerNodos, filas));
   }

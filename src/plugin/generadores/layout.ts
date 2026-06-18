@@ -1,5 +1,5 @@
 import type { LayoutSpec, NodoLike } from "../modelo/tipos.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_SEMI, FONT_BOLD } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
@@ -42,10 +42,10 @@ async function valorConChips(partes: ParteValor[]): Promise<FrameNode> {
 
 // Fila del panel: pill con ícono + label + partes (textos y chips).
 async function filaPropiedad(iconoKey: string, label: string, partes: ParteValor[]): Promise<FrameNode> {
-  const nodos: SceneNode[] = [nodoIcono(iconoKey), await texto(`${label}:`, 12, FONT_SEMI)];
+  const nodos: SceneNode[] = [nodoIcono(iconoKey), await textoClave(`${label}:`)];
   for (const p of partes) {
     if ("chip" in p) nodos.push(await chipVariable(p.chip));
-    else nodos.push(await texto(p.texto, 12, FONT_SEMI));
+    else nodos.push(await textoValor(p.texto));
   }
   return filaPill(nodos);
 }
