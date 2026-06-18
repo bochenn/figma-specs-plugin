@@ -4,7 +4,7 @@ import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
-import { marcasLayout, estiloCota, iconoDireccion, iconoAlineacion, valorDim, valorColor, valorSpacing, separarColisiones, carrilDeMarca, esChico, nombreCorto, agruparPadding, type ParteValor, type Marca, type CotaPadding } from "../utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, iconoAlineacion, valorDim, valorColor, valorSpacing, separarColisiones, carrilDeMarca, esChico, nombreCorto, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
 import { rectsGrid, textoGrid, gridSpecDe, franjasGridAutolayout } from "../utils/grilla.ts";
 import { prefijoProfundidad } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
@@ -173,48 +173,42 @@ function lineaGuiaV(artwork: FrameNode, x: number, y: number, largo: number): vo
   artwork.appendChild(r);
 }
 
-// Chip de una cota de padding: con variable → cotaConNombre; agrupada sin variable
-// → "clave valor"; por lado sin variable → solo el valor.
-async function chipPadding(c: CotaPadding, artwork: FrameNode): Promise<FrameNode> {
-  const val = etiquetaSpacing(c.valor, unidadActual());
-  if (c.nombre) return await cotaConNombre(c.nombre, val, CHIP_PADDING, artwork);
-  const agrupado = c.clave === "padding" || c.clave === "padding-x" || c.clave === "padding-y";
-  return await cota(agrupado ? `${c.clave} ${val}` : val, CHIP_PADDING, artwork);
+// Chip de spacing (padding/gap): con variable → cotaConNombre; sin variable → cota.
+async function chipSpacing(val: number, color: RGB, artwork: FrameNode, varName?: string): Promise<FrameNode> {
+  const t = etiquetaSpacing(val, unidadActual());
+  return varName ? await cotaConNombre(nombreCorto(varName), t, color, artwork) : await cota(t, color, artwork);
 }
 
-// Ubica padding (agrupado) + gaps como callouts afuera, estilo DesignDoc: eje
-// vertical en columna a la derecha, eje horizontal en fila abajo, con línea guía.
-async function dibujarSpacingCallouts(artwork: FrameNode, clon: FrameNode, cotas: CotaPadding[], gaps: Rect[], spec: LayoutSpec): Promise<void> {
-  const u = unidadActual();
-  const derecha: FrameNode[] = [];
-  const abajo: FrameNode[] = [];
-  for (const c of cotas) (c.eje === "v" ? derecha : abajo).push(await chipPadding(c, artwork));
-  for (const g of gaps) {
-    const val = etiquetaSpacing(spec.direccion === "VERTICAL" ? g.height : g.width, u);
-    const chip = spec.spacingAuto ? await cota("Auto", CHIP_GAP, artwork)
-      : spec.spacingVars.itemSpacing ? await cotaConNombre(nombreCorto(spec.spacingVars.itemSpacing), val, CHIP_GAP, artwork)
-      : await cota(val, CHIP_GAP, artwork);
-    (spec.direccion === "VERTICAL" ? derecha : abajo).push(chip);
-  }
+// Ubica padding (por lado) + gaps como callouts afuera, exactamente como DesignDoc:
+// las cotas del eje vertical (top, bottom, gap de layout vertical) van a la DERECHA
+// alineadas a su banda; las del eje horizontal (left, right, gap horizontal) ABAJO;
+// cada una con su línea guía.
+async function dibujarSpacingCallouts(artwork: FrameNode, clon: FrameNode, spec: LayoutSpec, gaps: Rect[]): Promise<void> {
+  const p = spec.padding;
+  const sv = spec.spacingVars;
   const xCol = clon.x + clon.width + CALLOUT_SEP;
-  if (derecha.length > 0) {
-    const centros = derecha.map((_, i) => clon.y + (clon.height * (i + 1)) / (derecha.length + 1));
-    const aj = separarColisiones(centros, derecha.map((c) => c.height), SEP_CHIP);
-    for (let i = 0; i < derecha.length; i++) {
-      const c = derecha[i];
-      c.x = xCol; c.y = aj[i] - c.height / 2;
-      lineaGuiaH(artwork, clon.x + clon.width, c.y + c.height / 2, xCol - (clon.x + clon.width));
-    }
-  }
   const yRow = clon.y + clon.height + CALLOUT_SEP;
-  if (abajo.length > 0) {
-    const centros = abajo.map((_, i) => clon.x + (clon.width * (i + 1)) / (abajo.length + 1));
-    const aj = separarColisiones(centros, abajo.map((c) => c.width), SEP_CHIP);
-    for (let i = 0; i < abajo.length; i++) {
-      const c = abajo[i];
-      c.x = aj[i] - c.width / 2; c.y = yRow;
-      lineaGuiaV(artwork, c.x + c.width / 2, clon.y + clon.height, yRow - (clon.y + clon.height));
-    }
+  // chip a la derecha, alineado a la banda cuyo centro vertical es `bandaY`.
+  const aDerecha = (chip: FrameNode, bandaY: number) => {
+    chip.x = xCol;
+    chip.y = bandaY - chip.height / 2;
+    lineaGuiaH(artwork, clon.x + clon.width, bandaY, xCol - (clon.x + clon.width));
+  };
+  // chip abajo, alineado a la banda cuyo centro horizontal es `bandaX`.
+  const aAbajo = (chip: FrameNode, bandaX: number) => {
+    chip.x = bandaX - chip.width / 2;
+    chip.y = yRow;
+    lineaGuiaV(artwork, bandaX, clon.y + clon.height, yRow - (clon.y + clon.height));
+  };
+  if (p.top > 0) aDerecha(await chipSpacing(p.top, CHIP_PADDING, artwork, sv.paddingTop), clon.y + p.top / 2);
+  if (p.bottom > 0) aDerecha(await chipSpacing(p.bottom, CHIP_PADDING, artwork, sv.paddingBottom), clon.y + clon.height - p.bottom / 2);
+  if (p.left > 0) aAbajo(await chipSpacing(p.left, CHIP_PADDING, artwork, sv.paddingLeft), clon.x + p.left / 2);
+  if (p.right > 0) aAbajo(await chipSpacing(p.right, CHIP_PADDING, artwork, sv.paddingRight), clon.x + clon.width - p.right / 2);
+  for (const g of gaps) {
+    const val = spec.direccion === "VERTICAL" ? g.height : g.width;
+    const chip = spec.spacingAuto ? await cota("Auto", CHIP_GAP, artwork) : await chipSpacing(val, CHIP_GAP, artwork, sv.itemSpacing);
+    if (spec.direccion === "VERTICAL") aDerecha(chip, g.y + g.height / 2);
+    else aAbajo(chip, g.x + g.width / 2);
   }
 }
 
@@ -473,7 +467,8 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
     for (const r of columnas) bandaPunteada(r, ROJO, ROJO, artwork);
     for (const r of filas) bandaPunteada(r, ROJO, ROJO, artwork);
     dibujarLineasMedida(artwork, clon, spec, []);
-    const minLeftX = await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, [], "HORIZONTAL", spec.spacingAuto, spec.spacingVars), clon, hijosMedidos);
+    if (modo !== "dimensiones") await dibujarSpacingCallouts(artwork, clon, spec, []);
+    const minLeftX = await dibujarMarcas(artwork, [], clon, hijosMedidos);
     await dibujarCotas(artwork, clon, spec, minLeftX);
     return artwork;
   }
@@ -484,7 +479,7 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
       for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
     }
     dibujarLineasMedida(artwork, clon, spec, gaps);
-    await dibujarSpacingCallouts(artwork, clon, agruparPadding(spec.padding, spec.spacingVars), gaps, spec);
+    await dibujarSpacingCallouts(artwork, clon, spec, gaps);
   }
 
   const minLeftX = await dibujarMarcas(artwork, [], clon, modo === "spacing" ? [] : hijosMedidos);
@@ -611,10 +606,6 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   } else {
     for (const f of filas) seccion.appendChild(f);
   }
-
-  const nota = await texto("* padding: N = mismo padding en los 4 lados; padding-x / padding-y = por eje.", 12);
-  nota.fills = [{ type: "SOLID", color: { r: 0.6, g: 0.6, b: 0.6 } }];
-  seccion.appendChild(nota);
 
   return seccion;
 }
