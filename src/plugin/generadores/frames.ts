@@ -37,28 +37,38 @@ export function frameHorizontal(nombre: string, gap: number): FrameNode {
 export const FONT_REG: FontName = { family: "Inter", style: "Regular" };
 export const FONT_BOLD: FontName = { family: "Inter", style: "Bold" };
 export const FONT_SEMI: FontName = { family: "Inter", style: "Semi Bold" };
-export const FONT_MONO: FontName = { family: "JetBrains Mono", style: "Regular" };
+// Monospace: SF Mono primero, JetBrains Mono como fallback (y al final Inter, vía cargarFont).
+export const FONT_MONO: FontName[] = [
+  { family: "SF Mono", style: "Regular" },
+  { family: "JetBrains Mono", style: "Regular" },
+];
 
 const fontsCache = new Map<string, FontName>();
 
-// Carga una fuente; si no está disponible en el archivo, cae a Inter Regular.
-export async function cargarFont(font: FontName): Promise<FontName> {
-  const key = `${font.family}|${font.style}`;
+// Carga la primera fuente disponible de la lista (o una sola); si ninguna está
+// instalada en el archivo, cae a Inter Regular. Cachea por la cadena pedida.
+export async function cargarFont(font: FontName | FontName[]): Promise<FontName> {
+  const lista = Array.isArray(font) ? font : [font];
+  const key = lista.map((f) => `${f.family}|${f.style}`).join(">");
   const cached = fontsCache.get(key);
   if (cached) return cached;
-  let real = font;
-  try {
-    await figma.loadFontAsync(font);
-  } catch {
-    real = FONT_REG;
-    await figma.loadFontAsync(FONT_REG);
+  for (const f of lista) {
+    try {
+      await figma.loadFontAsync(f);
+      fontsCache.set(key, f);
+      return f;
+    } catch {
+      // probar la siguiente de la cadena
+    }
   }
-  fontsCache.set(key, real);
-  return real;
+  await figma.loadFontAsync(FONT_REG);
+  fontsCache.set(key, FONT_REG);
+  return FONT_REG;
 }
 
-// Crea un texto. fontSize en px; `font` opcional (default Inter Regular), con fallback.
-export async function texto(contenido: string, fontSize: number, font: FontName = FONT_REG): Promise<TextNode> {
+// Crea un texto. fontSize en px; `font` opcional (default Inter Regular); acepta una
+// cadena de fallback (FontName[]) y cae a Inter si ninguna está disponible.
+export async function texto(contenido: string, fontSize: number, font: FontName | FontName[] = FONT_REG): Promise<TextNode> {
   const t = figma.createText();
   t.fontName = await cargarFont(font);
   t.characters = contenido;
