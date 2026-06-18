@@ -63,7 +63,7 @@ test("extraerAnatomy: incluirRaiz + children → raíz + hijos directos", () => 
   const els = extraerAnatomy(arbol, false, { nivelMax: 1, incluirRaiz: true });
   assert.deepEqual(els.map((e) => e.id), ["r", "c"]);
 });
-test("extraerAnatomy: sin opts → solo descendientes (compat Data)", () => {
+test("extraerAnatomy: sin opts → solo descendientes, sin entrar a instancias (compat Data)", () => {
   const els = extraerAnatomy(arbol);
-  assert.deepEqual(els.map((e) => e.id), ["c", "t"]);
+  assert.deepEqual(els.map((e) => e.id), ["c"]); // no entra a la instancia card sin itemizar
 });
