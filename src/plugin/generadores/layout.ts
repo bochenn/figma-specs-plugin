@@ -612,6 +612,10 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
     for (const f of filas) seccion.appendChild(f);
   }
 
+  const nota = await texto("* padding: N = mismo padding en los 4 lados; padding-x / padding-y = por eje.", 12);
+  nota.fills = [{ type: "SOLID", color: { r: 0.6, g: 0.6, b: 0.6 } }];
+  seccion.appendChild(nota);
+
   return seccion;
 }
 
