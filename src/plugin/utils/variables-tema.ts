@@ -29,7 +29,16 @@ export async function asegurarVariablesTema(): Promise<VarsTema> {
     coleccion.renameMode(modoLight, "Light");
   }
   let modoDark = coleccion.modes.find((m) => m.name === "Dark")?.modeId;
-  if (!modoDark) modoDark = coleccion.addMode("Dark");
+  if (!modoDark) {
+    // Algunos planes de Figma limitan a 1 mode por colección: si no se puede crear
+    // el mode Dark, se degrada usando el mismo mode (el Dark mode no aplica, pero
+    // el plugin genera igual en vez de abortar).
+    try {
+      modoDark = coleccion.addMode("Dark");
+    } catch {
+      modoDark = modoLight;
+    }
+  }
 
   const locales = await figma.variables.getLocalVariablesAsync("COLOR");
   const variables: Record<string, Variable> = {};
@@ -37,7 +46,7 @@ export async function asegurarVariablesTema(): Promise<VarsTema> {
     let v = locales.find((x) => x.variableCollectionId === coleccion.id && x.name === nombre);
     if (!v) v = figma.variables.createVariable(nombre, coleccion, "COLOR");
     v.setValueForMode(modoLight, COLORES[nombre].light);
-    v.setValueForMode(modoDark, COLORES[nombre].dark);
+    if (modoDark !== modoLight) v.setValueForMode(modoDark, COLORES[nombre].dark);
     variables[nombre] = v;
   }
 
