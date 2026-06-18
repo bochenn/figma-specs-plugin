@@ -1,6 +1,6 @@
 import type { PropiedadSpec, ElementoCambiado, AtributoCambiado, DosWaySpec } from "../modelo/tipos.ts";
 import { mismasProps } from "../comparacion/variantes.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, FONT_SEMI } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { hexARgb } from "../utils/color.ts";
 import { nombrePropiedad } from "../utils/propiedades.ts";
@@ -76,36 +76,52 @@ function lineaAtributo(c: AtributoCambiado): string {
   return `${c.clave}: ${op} (default: ${def})`;
 }
 
-// Dibuja un cambio de atributo: pill (swatch + texto) si es color; texto plano si no.
-async function filaAtributoCambiado(c: AtributoCambiado): Promise<SceneNode> {
-  if (!c.swatchHex) return await texto(lineaAtributo(c), 12);
-  const fila = frameHorizontal("Atributo", 8);
-  fila.counterAxisAlignItems = "CENTER";
-  const swatch = figma.createRectangle();
-  swatch.resize(12, 12);
-  swatch.fills = [{ type: "SOLID", color: hexARgb(c.swatchHex) }];
-  swatch.strokes = [{ type: "SOLID", color: { r: 0.8, g: 0.8, b: 0.8 } }];
-  swatch.strokeWeight = 1;
-  fila.appendChild(swatch);
-  fila.appendChild(await texto(lineaAtributo(c), 12));
-  return fila;
+// Dibuja un cambio de atributo como filaPill: swatch (si color) + clave + valores.
+async function filaAtributoCambiado(c: AtributoCambiado): Promise<FrameNode> {
+  const nodos: SceneNode[] = [];
+  if (c.swatchHex) {
+    const swatch = figma.createRectangle();
+    swatch.resize(12, 12);
+    swatch.fills = [{ type: "SOLID", color: hexARgb(c.swatchHex) }];
+    swatch.strokes = [{ type: "SOLID", color: { r: 0.8, g: 0.8, b: 0.8 } }];
+    swatch.strokeWeight = 1;
+    nodos.push(swatch);
+  }
+  // clave:
+  nodos.push(await texto(`${c.clave}:`, 12, FONT_SEMI));
+  // valor opción
+  if (c.valorOpcion && c.valorOpcion !== "—") {
+    nodos.push(await chipVariable(c.valorOpcion));
+  } else {
+    nodos.push(await texto("—", 12, FONT_SEMI));
+  }
+  if (c.rawValueOpcion) nodos.push(await texto(`(${c.rawValueOpcion})`, 12, FONT_SEMI));
+  // default
+  nodos.push(await texto("default:", 12, FONT_SEMI));
+  if (c.valorDefault && c.valorDefault !== "—") {
+    nodos.push(await chipVariable(c.valorDefault));
+  } else {
+    nodos.push(await texto("—", 12, FONT_SEMI));
+  }
+  if (c.rawValueDefault) nodos.push(await texto(`(${c.rawValueDefault})`, 12, FONT_SEMI));
+  return filaPill(nodos);
 }
 
-// Construye la lista de cambios de una opción.
+// Construye la lista de cambios de una opción. Cada elemento cambiado es una tarjeta.
 async function listaCambios(cambios: ElementoCambiado[]): Promise<FrameNode> {
-  const lista = frameVertical("Cambios", 16);
+  const lista = frameVertical("Cambios", 8);
   if (cambios.length === 0) {
     lista.appendChild(await texto("Sin cambios respecto al default", 16));
     return lista;
   }
   for (const cambio of cambios) {
-    const fila = frameVertical(cambio.elementoNombre, 4);
     const sufijo = cambio.estado === "modificado" ? "" : ` · ${cambio.estado}`;
-    fila.appendChild(await texto(`${cambio.elementoNombre}${sufijo}`, 16));
+    const headerNodos: SceneNode[] = [await texto(`${cambio.elementoNombre}${sufijo}`, 16, FONT_BOLD)];
+    const filas: FrameNode[] = [];
     for (const attr of cambio.atributos) {
-      fila.appendChild(await filaAtributoCambiado(attr));
+      filas.push(await filaAtributoCambiado(attr));
     }
-    lista.appendChild(fila);
+    lista.appendChild(tarjeta(headerNodos, filas));
   }
   return lista;
 }
@@ -169,11 +185,11 @@ export async function seccionDeProperties(
     subseccion.appendChild(await texto(prop.nombre, 36));
     const bloques: FrameNode[] = [];
     for (const opcion of prop.opciones) {
-      const bloque = frameVertical(opcion.nombre, 16);
-      bloque.appendChild(await texto(opcion.nombre, 24));
       const target = { ...defaultProps, [prop.nombre]: opcion.nombre };
-      bloque.appendChild(await displayOpcion(componentSet, target, opcion.cambios));
-      bloques.push(bloque);
+      const headerNodos: SceneNode[] = [await texto(opcion.nombre, 16, FONT_BOLD)];
+      // displayOpcion (artwork + listaCambios) va dentro del body de la tarjeta como nodo único
+      const display = await displayOpcion(componentSet, target, opcion.cambios);
+      bloques.push(tarjeta(headerNodos, [display]));
     }
     if (columnas > 1) {
       subseccion.appendChild(enColumnas(bloques, columnas));
@@ -259,11 +275,10 @@ export async function seccionDeDosWay(
 
   const bloques: FrameNode[] = [];
   for (const comb of dosway.combinaciones) {
-    const bloque = frameVertical(`${comb.valor1} + ${comb.valor2}`, 16);
-    bloque.appendChild(await texto(`${comb.valor1} + ${comb.valor2}`, 24));
     const target = { ...defaultProps, [dosway.prop1]: comb.valor1, [dosway.prop2]: comb.valor2 };
-    bloque.appendChild(await displayOpcion(componentSet, target, comb.cambios));
-    bloques.push(bloque);
+    const headerNodos: SceneNode[] = [await texto(`${comb.valor1} + ${comb.valor2}`, 16, FONT_BOLD)];
+    const display = await displayOpcion(componentSet, target, comb.cambios);
+    bloques.push(tarjeta(headerNodos, [display]));
   }
   if (columnas > 1) {
     seccion.appendChild(enColumnas(bloques, columnas));
