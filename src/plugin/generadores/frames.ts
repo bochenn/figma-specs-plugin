@@ -70,6 +70,22 @@ export async function texto(contenido: string, fontSize: number, font: FontName 
 const BORDE_PILL: RGB = { r: 0.819, g: 0.835, b: 0.859 }; // #D1D5DB
 const FONDO_CHIP: RGB = { r: 0.898, g: 0.906, b: 0.922 };  // #E5E7EB
 const TEXTO_CHIP: RGB = { r: 0.2, g: 0.2, b: 0.2 };
+const COLOR_CLAVE: RGB = { r: 0.420, g: 0.447, b: 0.502 }; // #6B7280
+const COLOR_VALOR: RGB = { r: 0.216, g: 0.255, b: 0.318 }; // #374151
+
+// Texto de la CLAVE de un spec (ej. "Breakpoint:"): monospace, gris #6B7280.
+export async function textoClave(s: string): Promise<TextNode> {
+  const t = await texto(s, 12, FONT_MONO);
+  t.fills = [{ type: "SOLID", color: COLOR_CLAVE }];
+  return t;
+}
+
+// Texto del VALOR de un spec (ej. "Mobile"): monospace, gris oscuro #374151.
+export async function textoValor(s: string): Promise<TextNode> {
+  const t = await texto(s, 12, FONT_MONO);
+  t.fills = [{ type: "SOLID", color: COLOR_VALOR }];
+  return t;
+}
 
 // Chip gris para una variable/style (monospace). Compartido entre secciones.
 export async function chipVariable(nombre: string): Promise<FrameNode> {
@@ -118,13 +134,13 @@ export function tarjeta(headerNodos: SceneNode[], filas: FrameNode[]): FrameNode
   header.strokeBottomWeight = 1;
   for (const n of headerNodos) header.appendChild(n);
   card.appendChild(header);
-  header.layoutAlign = "STRETCH";
+  header.layoutSizingHorizontal = "FILL";
 
   const body = frameVertical("Body", 8);
   body.paddingTop = body.paddingBottom = body.paddingLeft = body.paddingRight = 16;
   for (const f of filas) body.appendChild(f);
   card.appendChild(body);
-  body.layoutAlign = "STRETCH";
+  body.layoutSizingHorizontal = "FILL";
   return card;
 }
 
