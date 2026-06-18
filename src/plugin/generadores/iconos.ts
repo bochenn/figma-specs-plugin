@@ -12,6 +12,12 @@ import iconCorner from "../../../resources/figma-UI3/icon.24.corners.svg";
 import iconColumns from "../../../resources/figma-UI3/icon.24.grid-column.svg";
 import iconRows from "../../../resources/figma-UI3/icon.24.grid-row.svg";
 import iconText from "../../../resources/figma-UI3/icon.24.shape.text.small.svg";
+import iconFrame from "../../../resources/figma-UI3/icon.24.frame.svg";
+import iconInstance from "../../../resources/figma-UI3/icon.24.instance.small.svg";
+import iconComponent from "../../../resources/figma-UI3/icon.24.component.svg";
+import iconComponentSet from "../../../resources/figma-UI3/icon.24.component.set.svg";
+import iconGroup from "../../../resources/figma-UI3/icon.24.group.small.svg";
+import iconImage from "../../../resources/figma-UI3/icon.24.image.svg";
 import iconAlignVLeft from "../../../resources/figma-UI3/icon.16.autolayoutgrid.vertical.left.svg";
 import iconAlignVCenter from "../../../resources/figma-UI3/icon.16.autolayoutgrid.vertical.center.svg";
 import iconAlignVRight from "../../../resources/figma-UI3/icon.16.autolayoutgrid.vertical.right.svg";
@@ -61,5 +67,23 @@ export function nodoIcono(key: string): SceneNode {
     .split("black").join(GRIS_ICONO)
     .split("#171717").join(GRIS_ICONO)
     .split("#007BE5").join(GRIS_ICONO);
+  return figma.createNodeFromSvg(svg);
+}
+
+const ICONOS_TIPO: Record<string, string> = {
+  FRAME: iconFrame, INSTANCE: iconInstance, COMPONENT: iconComponent,
+  COMPONENT_SET: iconComponentSet, GROUP: iconGroup, TEXT: iconText, VECTOR: iconImage,
+};
+
+// Nodo del ícono del tipo de capa (o undefined si no hay ícono para ese tipo).
+export function nodoIconoTipo(tipo: string): SceneNode | undefined {
+  const raw = ICONOS_TIPO[tipo];
+  if (!raw) return undefined;
+  const svg = raw
+    .replace(/width="\d+"/, 'width="16"')
+    .replace(/height="\d+"/, 'height="16"')
+    .replace(/\s*style="[^"]*"/g, "")
+    .split("black").join("#666666")
+    .split("#007BE5").join("#666666");
   return figma.createNodeFromSvg(svg);
 }

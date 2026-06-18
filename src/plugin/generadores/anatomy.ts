@@ -4,7 +4,8 @@ import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado } from "
 import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
-import { prefijoProfundidad } from "../utils/jerarquia.ts";
+import { nodoIconoTipo } from "./iconos.ts";
+import { parseVariantes } from "../utils/anatomy-variantes.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
 
@@ -58,17 +59,43 @@ async function filaAtributo(attr: Atributo): Promise<SceneNode> {
 }
 
 // Construye la entrada de un elemento en la lista de contenido.
-async function entradaLista(indice: number, el: ElementoAnatomy): Promise<FrameNode> {
-  const pref = prefijoProfundidad(el.profundidad ?? 0);
+async function entradaLista(indice: number, el: ElementoAnatomy, color: RGB): Promise<FrameNode> {
   const fila = frameVertical(`${indice}. ${el.nombre}`, 4);
-  fila.appendChild(await texto(`${indice}. ${pref}${el.nombre} · ${el.tipo}`, 16));
-  if (el.dependeDe) {
+  const header = frameHorizontal("Header", 8);
+  header.counterAxisAlignItems = "CENTER";
+  header.appendChild(await badgePanel(indice, color));
+  const icono = nodoIconoTipo(el.tipo);
+  if (icono) header.appendChild(icono);
+  header.appendChild(await texto(`${el.nombre} · ${el.tipo}`, 16));
+  fila.appendChild(header);
+  const variantes = parseVariantes(el.dependeDe);
+  if (variantes.length > 0) {
+    for (const v of variantes) fila.appendChild(await texto(`${v.clave}: ${v.valor}`, 12));
+  } else if (el.dependeDe) {
     fila.appendChild(await texto(`Depends on: ${el.dependeDe}`, 12));
   }
-  for (const attr of el.atributos) {
-    fila.appendChild(await filaAtributo(attr));
-  }
+  for (const attr of el.atributos) fila.appendChild(await filaAtributo(attr));
   return fila;
+}
+
+// Crea el badge del panel (círculo pequeño + número), sin posición absoluta.
+async function badgePanel(numero: number, color: RGB): Promise<FrameNode> {
+  const circulo = figma.createEllipse();
+  circulo.resize(TAM_MARCADOR, TAM_MARCADOR);
+  circulo.fills = [{ type: "SOLID", color }];
+  const num = await texto(String(numero), 11);
+  num.fills = [{ type: "SOLID", color: GRIS(1) }];
+  const cont = figma.createFrame();
+  cont.name = `Badge ${numero}`;
+  cont.layoutMode = "NONE";
+  cont.resize(TAM_MARCADOR, TAM_MARCADOR);
+  cont.fills = [];
+  cont.clipsContent = false;
+  cont.appendChild(circulo);
+  cont.appendChild(num);
+  num.x = (TAM_MARCADOR - num.width) / 2;
+  num.y = (TAM_MARCADOR - num.height) / 2;
+  return cont;
 }
 
 // Crea un marcador numerado (círculo + número).
@@ -118,20 +145,7 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
   display.fills = [];
   seccion.appendChild(display);
 
-  // Contenido: tabla o lista.
-  if (elementos.length === 0) {
-    display.appendChild(await texto("Sin elementos detectados", 16));
-  } else if (tabla) {
-    display.appendChild(await tablaDe(HEADERS_ANATOMY, elementos.map((e, i) => filaAnatomy(i + 1, e))));
-  } else {
-    const lista = frameVertical("Content", 16);
-    for (let i = 0; i < elementos.length; i++) {
-      lista.appendChild(await entradaLista(i + 1, elementos[i]));
-    }
-    display.appendChild(lista);
-  }
-
-  // Artwork: clon del seleccionado + marcadores.
+  // Artwork: clon del seleccionado + marcadores (va a la IZQUIERDA).
   const artwork = figma.createFrame();
   artwork.name = "Artwork";
   artwork.layoutMode = "NONE";
@@ -153,6 +167,19 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
     const color = COLORES_MARCA[i % COLORES_MARCA.length];
     bordeMarca(caja, color, artwork);
     artwork.appendChild(await marcador(i + 1, caja.x - 8, caja.y - 8, color));
+  }
+
+  // Contenido: tabla o lista (va a la DERECHA).
+  if (elementos.length === 0) {
+    display.appendChild(await texto("Sin elementos detectados", 16));
+  } else if (tabla) {
+    display.appendChild(await tablaDe(HEADERS_ANATOMY, elementos.map((e, i) => filaAnatomy(i + 1, e))));
+  } else {
+    const lista = frameVertical("Content", 16);
+    for (let i = 0; i < elementos.length; i++) {
+      lista.appendChild(await entradaLista(i + 1, elementos[i], COLORES_MARCA[i % COLORES_MARCA.length]));
+    }
+    display.appendChild(lista);
   }
 
   return seccion;
