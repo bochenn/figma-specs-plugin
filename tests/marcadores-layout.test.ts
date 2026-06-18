@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto, separarColisiones, carrilDeMarca, iconoAlineacion, esChico } from "../src/plugin/utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto, separarColisiones, carrilDeMarca, iconoAlineacion, esChico, agruparPadding } from "../src/plugin/utils/marcadores-layout.ts";
 import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 
 test("marcasLayout: cada padding va a su lado con su valor", () => {
@@ -159,4 +159,24 @@ test("esChico: tag (74x24) es chico; card (240x92) no; GRID nunca", () => {
   assert.equal(esChico(74, 24, "HORIZONTAL"), true);
   assert.equal(esChico(240, 92, "VERTICAL"), false);
   assert.equal(esChico(40, 40, "GRID"), false);
+});
+
+test("agruparPadding: uniforme → una etiqueta", () => {
+  assert.deepEqual(agruparPadding({ left: 16, top: 16, right: 16, bottom: 16 }), [{ clave: "padding", eje: "v", valor: 16 }]);
+});
+test("agruparPadding: por eje → padding-y y padding-x", () => {
+  assert.deepEqual(agruparPadding({ left: 32, top: 24, right: 32, bottom: 24 }), [
+    { clave: "padding-y", eje: "v", valor: 24 },
+    { clave: "padding-x", eje: "h", valor: 32 },
+  ]);
+});
+test("agruparPadding: por lado, omite 0", () => {
+  assert.deepEqual(agruparPadding({ left: 5, top: 10, right: 20, bottom: 0 }), [
+    { clave: "top", eje: "v", valor: 10 },
+    { clave: "left", eje: "h", valor: 5 },
+    { clave: "right", eje: "h", valor: 20 },
+  ]);
+});
+test("agruparPadding: uniforme con variable lleva nombreCorto", () => {
+  assert.deepEqual(agruparPadding({ left: 16, top: 16, right: 16, bottom: 16 }, { paddingLeft: "space/padding-1x", paddingTop: "space/padding-1x", paddingRight: "space/padding-1x", paddingBottom: "space/padding-1x" }), [{ clave: "padding", eje: "v", valor: 16, nombre: "padding-1x" }]);
 });
