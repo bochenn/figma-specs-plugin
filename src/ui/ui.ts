@@ -5,6 +5,7 @@ const tablaCheck = document.getElementById("tabla") as HTMLInputElement;
 const hideOuterCheck = document.getElementById("hideOuter") as HTMLInputElement;
 const itemizarCheck = document.getElementById("itemizar") as HTMLInputElement;
 const medirHijosCheck = document.getElementById("medirHijos") as HTMLInputElement;
+const leyendaCheck = document.getElementById("leyenda") as HTMLInputElement;
 const columnasSelect = document.getElementById("columnas") as HTMLSelectElement;
 const formatoColorSelect = document.getElementById("formatoColor") as HTMLSelectElement;
 const unidadSelect = document.getElementById("unidad") as HTMLSelectElement;
@@ -17,7 +18,7 @@ const SECCIONES = ["anatomy", "properties", "layout", "data", "styling", "modes"
 
 (document.getElementById("crear") as HTMLButtonElement).onclick = () => {
   const secciones = SECCIONES.filter((s) => (document.getElementById(`sec-${s}`) as HTMLInputElement).checked);
-  parent.postMessage({ pluginMessage: { tipo: "generar", secciones, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, hideOuter: hideOuterCheck.checked, itemizar: itemizarCheck.checked, medirHijos: medirHijosCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value, unidad: unidadSelect.value, formatoTipo: formatoTipoSelect.value, formatoRaw: formatoRawSelect.value, mostrarRaw: mostrarRawCheck.checked, preferencia: preferenciaSelect.value } }, "*");
+  parent.postMessage({ pluginMessage: { tipo: "generar", secciones, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, hideOuter: hideOuterCheck.checked, itemizar: itemizarCheck.checked, medirHijos: medirHijosCheck.checked, leyenda: leyendaCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value, unidad: unidadSelect.value, formatoTipo: formatoTipoSelect.value, formatoRaw: formatoRawSelect.value, mostrarRaw: mostrarRawCheck.checked, preferencia: preferenciaSelect.value } }, "*");
 };
 
 window.onmessage = (event: MessageEvent) => {

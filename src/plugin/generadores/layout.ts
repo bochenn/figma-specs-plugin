@@ -551,3 +551,58 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
 
   return seccion;
 }
+
+const ANCHO_MUESTRA = 150;
+
+// Caja de ancho fijo donde va la muestra visual de un ítem de la leyenda.
+function muestraBox(): FrameNode {
+  const box = frameHorizontal("Muestra", 6);
+  box.counterAxisAlignItems = "CENTER";
+  box.primaryAxisSizingMode = "FIXED";
+  box.counterAxisSizingMode = "AUTO";
+  box.resize(ANCHO_MUESTRA, 1);
+  return box;
+}
+
+// Fila de la leyenda: muestra visual (ancho fijo) + explicación.
+async function filaLeyenda(box: FrameNode, explicacion: string): Promise<FrameNode> {
+  const fila = frameHorizontal("Item", 16);
+  fila.counterAxisAlignItems = "CENTER";
+  fila.appendChild(box);
+  fila.appendChild(await texto(explicacion, 14));
+  return fila;
+}
+
+// Bloque "How to read these specs": explica las convenciones del artwork de Layout
+// con muestras visuales reales.
+export async function seccionLeyenda(): Promise<FrameNode> {
+  const sec = frameVertical("How to read these specs", 16);
+  sec.appendChild(await texto("How to read these specs", 36));
+
+  const b1 = muestraBox();
+  await cota("240", CHIP_DIM, b1);
+  sec.appendChild(await filaLeyenda(b1, "Dimension cota: element or child width/height (red)."));
+
+  const b2 = muestraBox();
+  await cotaConNombre("padding-1x", "16", CHIP_PADDING, b2);
+  sec.appendChild(await filaLeyenda(b2, "Padding: distance to the edge; chip with the variable (blue) + value."));
+
+  const b3 = muestraBox();
+  await cotaConNombre("gap-0_5x", "8", CHIP_GAP, b3);
+  sec.appendChild(await filaLeyenda(b3, "Item spacing (gap): space between children (pink)."));
+
+  const b4 = muestraBox();
+  b4.appendChild(figma.createNodeFromSvg(svgCotaH("fixed", 40)));
+  sec.appendChild(await filaLeyenda(b4, "Measurement line: marks the span of that band."));
+
+  const b5 = muestraBox();
+  b5.appendChild(await chipVariable("sizing/card-width"));
+  sec.appendChild(await filaLeyenda(b5, "Grey chip in the panel: bound variable (resolved value in parentheses)."));
+
+  const b6 = muestraBox();
+  b6.appendChild(await texto("card", 12));
+  sec.appendChild(await filaLeyenda(b6, "Left of each row: the layer hierarchy; the row's element is in bold."));
+
+  sec.appendChild(await texto("For small elements the artwork is split in two: Dimensions (W/H) and Spacing (padding & gap).", 14));
+  return sec;
+}

@@ -13,7 +13,7 @@ import { resolverComponentSet } from "./extraccion/resolver.ts";
 import { extraerProperties } from "./extraccion/properties.ts";
 import { seccionDeProperties } from "./generadores/properties.ts";
 import { extraerLayout } from "./extraccion/layout.ts";
-import { seccionDeLayout } from "./generadores/layout.ts";
+import { seccionDeLayout, seccionLeyenda } from "./generadores/layout.ts";
 import { serializarAnatomy } from "./serializacion/anatomy-json.ts";
 import { seccionDeData } from "./generadores/data.ts";
 import { recolectarEstilos } from "./inventario/recolectar.ts";
@@ -207,6 +207,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     const specifications = frameVertical("Specifications", 128, 64);
     const spec = frameVertical(`${nodo.name} Spec`, 48);
     specifications.appendChild(spec);
+    if (msg.leyenda) spec.appendChild(await seccionLeyenda());
     spec.appendChild(await texto(nodo.name, 64));
     for (const seccion of ORDEN) {
       if (!msg.secciones.includes(seccion)) continue;
