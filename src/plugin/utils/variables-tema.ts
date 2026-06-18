@@ -13,7 +13,7 @@ export interface VarsTema {
 const COLORES: Record<string, { light: RGB; dark: RGB }> = {
   "texto": { light: { r: 0, g: 0, b: 0 }, dark: { r: 0.95, g: 0.95, b: 0.95 } },
   "fondo-spec": { light: { r: 1, g: 1, b: 1 }, dark: { r: 0.12, g: 0.12, b: 0.14 } },
-  "fondo-artwork": { light: { r: 0.96, g: 0.96, b: 0.96 }, dark: { r: 0.08, g: 0.09, b: 0.1 } },
+  "fondo-artwork": { light: { r: 0.788, g: 0.788, b: 0.788 }, dark: { r: 0.08, g: 0.09, b: 0.1 } },
 };
 
 let actual: VarsTema | null = null;
