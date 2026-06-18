@@ -34,11 +34,33 @@ export function frameHorizontal(nombre: string, gap: number): FrameNode {
   return f;
 }
 
-// Crea un texto. fontSize en px; carga la fuente antes de escribir.
-export async function texto(contenido: string, fontSize: number): Promise<TextNode> {
+export const FONT_REG: FontName = { family: "Inter", style: "Regular" };
+export const FONT_BOLD: FontName = { family: "Inter", style: "Bold" };
+export const FONT_SEMI: FontName = { family: "Inter", style: "Semi Bold" };
+export const FONT_MONO: FontName = { family: "JetBrains Mono", style: "Regular" };
+
+const fontsCache = new Map<string, FontName>();
+
+// Carga una fuente; si no está disponible en el archivo, cae a Inter Regular.
+export async function cargarFont(font: FontName): Promise<FontName> {
+  const key = `${font.family}|${font.style}`;
+  const cached = fontsCache.get(key);
+  if (cached) return cached;
+  let real = font;
+  try {
+    await figma.loadFontAsync(font);
+  } catch {
+    real = FONT_REG;
+    await figma.loadFontAsync(FONT_REG);
+  }
+  fontsCache.set(key, real);
+  return real;
+}
+
+// Crea un texto. fontSize en px; `font` opcional (default Inter Regular), con fallback.
+export async function texto(contenido: string, fontSize: number, font: FontName = FONT_REG): Promise<TextNode> {
   const t = figma.createText();
-  await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-  t.fontName = { family: "Inter", style: "Regular" };
+  t.fontName = await cargarFont(font);
   t.characters = contenido;
   t.fontSize = fontSize;
   t.fills = fillTematizado(varsTema().texto);
