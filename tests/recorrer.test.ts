@@ -85,3 +85,15 @@ test("itemizar es recursivo (instancia dentro de instancia)", () => {
   });
   assert.deepEqual(recorrer(raiz, true).map((x) => [x.nodo.id, x.profundidad]), [["a", 0], ["b", 1], ["c", 2]]);
 });
+
+test("recorrer: nivelMax 1 → solo hijos directos", () => {
+  const raiz: NodoLike = { id: "r", name: "R", type: "FRAME", children: [
+    { id: "a", name: "A", type: "FRAME", children: [{ id: "a1", name: "A1", type: "FRAME", children: [] }] },
+    { id: "b", name: "B", type: "TEXT" },
+  ] };
+  assert.deepEqual(recorrer(raiz, false, 0, 0, 1).map((x) => x.nodo.id), ["a", "b"]);
+});
+test("recorrer: nivelMax 0 → vacío", () => {
+  const raiz: NodoLike = { id: "r", name: "R", type: "FRAME", children: [{ id: "a", name: "A", type: "FRAME" }] };
+  assert.deepEqual(recorrer(raiz, false, 0, 0, 0), []);
+});

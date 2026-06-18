@@ -48,3 +48,22 @@ test("incluye atributos visuales del elemento", () => {
     { clave: "width", valor: "100", formato: "HARDCODED" },
   ]);
 });
+
+const arbol: NodoLike = { id: "r", name: "screen", type: "FRAME", children: [
+  { id: "c", name: "card", type: "INSTANCE", mainComponentName: "Type=A, Orientation=V", children: [
+    { id: "t", name: "title", type: "TEXT" },
+  ] },
+] };
+
+test("extraerAnatomy: incluirRaiz + nivelMax self → solo la raíz", () => {
+  const els = extraerAnatomy(arbol, false, { nivelMax: 0, incluirRaiz: true });
+  assert.deepEqual(els.map((e) => e.id), ["r"]);
+});
+test("extraerAnatomy: incluirRaiz + children → raíz + hijos directos", () => {
+  const els = extraerAnatomy(arbol, false, { nivelMax: 1, incluirRaiz: true });
+  assert.deepEqual(els.map((e) => e.id), ["r", "c"]);
+});
+test("extraerAnatomy: sin opts → solo descendientes (compat Data)", () => {
+  const els = extraerAnatomy(arbol);
+  assert.deepEqual(els.map((e) => e.id), ["c", "t"]);
+});
