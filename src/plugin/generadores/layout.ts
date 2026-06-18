@@ -172,9 +172,9 @@ async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNod
     if (carril === "top") top.push({ c, centro: m.centro });
     else if (carril === "left") left.push({ c, centro: m.centro });
     else {
-      const centro = m.tipo === "padding" && m.lado === "left" ? clon.x
-        : m.tipo === "padding" && m.lado === "right" ? clon.x + clon.width
-        : m.centro;
+      let centro = m.centro;
+      if (m.tipo === "padding" && m.lado === "left") centro = clon.x + c.width / 2;        // chip pegado a la esquina inferior izquierda
+      else if (m.tipo === "padding" && m.lado === "right") centro = clon.x + clon.width - c.width / 2; // a la inferior derecha
       bottom.push({ c, centro });
     }
   }
@@ -223,6 +223,7 @@ async function cota(valor: string, color: RGB, artwork: FrameNode): Promise<Fram
   c.cornerRadius = 4;
   c.fills = [{ type: "SOLID", color }];
   const t = await texto(valor, 11);
+  t.lineHeight = { unit: "PIXELS", value: 16 };
   t.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
   c.appendChild(t);
   artwork.appendChild(c);
@@ -254,10 +255,12 @@ async function cotaConNombre(nombre: string, valor: string, color: RGB, artwork:
   sub.cornerRadius = 2;
   sub.fills = [{ type: "SOLID", color: aclarar(color, 0.35) }];
   const tn = await texto(nombre, 11);
+  tn.lineHeight = { unit: "PIXELS", value: 16 };
   tn.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
   sub.appendChild(tn);
   c.appendChild(sub);
   const tv = await texto(valor, 11);
+  tv.lineHeight = { unit: "PIXELS", value: 16 };
   tv.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
   c.appendChild(tv);
   artwork.appendChild(c);
