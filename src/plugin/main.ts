@@ -105,6 +105,7 @@ interface OpcionesGen {
   hideOuter: boolean;
   medirHijos: boolean;
   columnas: number;
+  anatomyDepth: "self" | "children" | "all";
 }
 
 // Frame de aviso para una sección que no aplica al nodo (no aborta las demás).
@@ -118,10 +119,11 @@ async function aviso(mensaje: string): Promise<FrameNode> {
 async function seccionPara(nodo: SceneNode, seccion: Seccion, opts: OpcionesGen): Promise<FrameNode[]> {
   if (seccion === "anatomy") {
     if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Anatomy necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET.")];
-    const secciones = [await seccionDeAnatomy(nodo, extraerAnatomy(aNodoLike(nodo), opts.itemizar), opts.tabla)];
+    const nivelMax = opts.anatomyDepth === "self" ? 0 : opts.anatomyDepth === "all" ? Infinity : 1;
+    const secciones = [await seccionDeAnatomy(nodo, extraerAnatomy(aNodoLike(nodo), opts.itemizar, { nivelMax, incluirRaiz: true }), opts.tabla)];
     if (opts.nested) {
       for (const inst of instanciasAnidadas(nodo)) {
-        secciones.push(await seccionDeAnatomy(inst, extraerAnatomy(aNodoLike(inst), opts.itemizar), opts.tabla));
+        secciones.push(await seccionDeAnatomy(inst, extraerAnatomy(aNodoLike(inst), opts.itemizar, { nivelMax, incluirRaiz: true }), opts.tabla));
       }
     }
     return secciones;
@@ -202,6 +204,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     hideOuter: msg.hideOuter ?? false,
     medirHijos: msg.medirHijos ?? false,
     columnas: clampColumnas(msg.columnas),
+    anatomyDepth: msg.anatomyDepth ?? "children",
   };
   try {
     const specifications = frameVertical("Specifications", 128, 64);

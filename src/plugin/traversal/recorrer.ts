@@ -5,17 +5,15 @@ export interface Recorrido { nodo: NodoLike; profundidad: number; camino?: strin
 const TIPOS_INSTANCIA = "INSTANCE";
 const TIPOS_CONTENEDOR = ["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET"];
 
-// Recorre los descendientes y devuelve la lista plana con su profundidad.
-// La profundidad cuenta instancias atravesadas: un frame normal mantiene la del
-// contexto; al entrar en una instancia (solo con itemizar) sube +1.
-export function recorrer(nodo: NodoLike, itemizar = false, prof = 0): Recorrido[] {
+export function recorrer(nodo: NodoLike, itemizar = false, prof = 0, nivel = 0, nivelMax = Infinity): Recorrido[] {
   const elementos: Recorrido[] = [];
+  if (nivel >= nivelMax) return elementos;
   for (const hijo of nodo.children ?? []) {
     elementos.push({ nodo: hijo, profundidad: prof });
     if (hijo.type === TIPOS_INSTANCIA) {
-      if (itemizar) elementos.push(...recorrer(hijo, itemizar, prof + 1));
+      if (itemizar) elementos.push(...recorrer(hijo, itemizar, prof + 1, nivel + 1, nivelMax));
     } else if (TIPOS_CONTENEDOR.includes(hijo.type)) {
-      elementos.push(...recorrer(hijo, itemizar, prof));
+      elementos.push(...recorrer(hijo, itemizar, prof, nivel + 1, nivelMax));
     }
   }
   return elementos;
