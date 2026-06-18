@@ -157,22 +157,6 @@ const FILA_TOP = 24;    // distancia de la fila superior sobre el borde del elem
 const FILA_BOT = 8;     // distancia de la fila inferior bajo el borde
 const COL_IZQ = 8;      // distancia de la columna izquierda al borde
 
-const CALLOUT_SEP = 40;          // distancia del chip al borde (deja lugar a la línea guía)
-const GRIS_LEADER: RGB = { r: 0.6, g: 0.6, b: 0.6 };
-
-function lineaGuiaH(artwork: FrameNode, x: number, y: number, largo: number): void {
-  const r = figma.createRectangle();
-  r.x = x; r.y = y; r.resize(Math.max(largo, 0.5), 1);
-  r.fills = [{ type: "SOLID", color: GRIS_LEADER }];
-  artwork.appendChild(r);
-}
-function lineaGuiaV(artwork: FrameNode, x: number, y: number, largo: number): void {
-  const r = figma.createRectangle();
-  r.x = x; r.y = y; r.resize(1, Math.max(largo, 0.5));
-  r.fills = [{ type: "SOLID", color: GRIS_LEADER }];
-  artwork.appendChild(r);
-}
-
 // Chip de spacing (padding/gap): con variable → cotaConNombre; sin variable → cota.
 async function chipSpacing(val: number, color: RGB, artwork: FrameNode, varName?: string): Promise<FrameNode> {
   const t = etiquetaSpacing(val, unidadActual());
@@ -180,35 +164,37 @@ async function chipSpacing(val: number, color: RGB, artwork: FrameNode, varName?
 }
 
 // Ubica padding (por lado) + gaps como callouts afuera, exactamente como DesignDoc:
-// las cotas del eje vertical (top, bottom, gap de layout vertical) van a la DERECHA
-// alineadas a su banda; las del eje horizontal (left, right, gap horizontal) ABAJO;
-// cada una con su línea guía.
+// cada banda se mide con un BRACKET corto (la cota con topes, del color de la banda)
+// pegado al borde — vertical a la derecha para top/bottom/gaps verticales, horizontal
+// abajo para left/right/gaps horizontales — con el chip al lado.
 async function dibujarSpacingCallouts(artwork: FrameNode, clon: FrameNode, spec: LayoutSpec, gaps: Rect[]): Promise<void> {
   const p = spec.padding;
   const sv = spec.spacingVars;
-  const xCol = clon.x + clon.width + CALLOUT_SEP;
-  const yRow = clon.y + clon.height + CALLOUT_SEP;
-  // chip a la derecha, alineado a la banda cuyo centro vertical es `bandaY`.
-  const aDerecha = (chip: FrameNode, bandaY: number) => {
-    chip.x = xCol;
-    chip.y = bandaY - chip.height / 2;
-    lineaGuiaH(artwork, clon.x + clon.width, bandaY, xCol - (clon.x + clon.width));
+  const xBr = clon.x + clon.width + 6;   // x del bracket vertical (a la derecha del borde)
+  const yBr = clon.y + clon.height + 6;  // y del bracket horizontal (abajo del borde)
+
+  // Bracket vertical (mide una banda de alto `largo` desde `y0`) + chip a la derecha.
+  const vertical = (largo: number, y0: number, lineaColor: string, chip: FrameNode) => {
+    const br = figma.createNodeFromSvg(svgCotaV("fixed", largo, lineaColor));
+    br.x = xBr - 6; br.y = y0; artwork.appendChild(br);
+    chip.x = xBr + 8; chip.y = y0 + largo / 2 - chip.height / 2;
   };
-  // chip abajo, alineado a la banda cuyo centro horizontal es `bandaX`.
-  const aAbajo = (chip: FrameNode, bandaX: number) => {
-    chip.x = bandaX - chip.width / 2;
-    chip.y = yRow;
-    lineaGuiaV(artwork, bandaX, clon.y + clon.height, yRow - (clon.y + clon.height));
+  // Bracket horizontal (mide banda de ancho `largo` desde `x0`) + chip abajo.
+  const horizontal = (largo: number, x0: number, lineaColor: string, chip: FrameNode) => {
+    const br = figma.createNodeFromSvg(svgCotaH("fixed", largo, lineaColor));
+    br.x = x0; br.y = yBr - 6; artwork.appendChild(br);
+    chip.x = x0 + largo / 2 - chip.width / 2; chip.y = yBr + 8;
   };
-  if (p.top > 0) aDerecha(await chipSpacing(p.top, CHIP_PADDING, artwork, sv.paddingTop), clon.y + p.top / 2);
-  if (p.bottom > 0) aDerecha(await chipSpacing(p.bottom, CHIP_PADDING, artwork, sv.paddingBottom), clon.y + clon.height - p.bottom / 2);
-  if (p.left > 0) aAbajo(await chipSpacing(p.left, CHIP_PADDING, artwork, sv.paddingLeft), clon.x + p.left / 2);
-  if (p.right > 0) aAbajo(await chipSpacing(p.right, CHIP_PADDING, artwork, sv.paddingRight), clon.x + clon.width - p.right / 2);
+
+  if (p.top > 0) vertical(p.top, clon.y, LINEA_PADDING, await chipSpacing(p.top, CHIP_PADDING, artwork, sv.paddingTop));
+  if (p.bottom > 0) vertical(p.bottom, clon.y + clon.height - p.bottom, LINEA_PADDING, await chipSpacing(p.bottom, CHIP_PADDING, artwork, sv.paddingBottom));
+  if (p.left > 0) horizontal(p.left, clon.x, LINEA_PADDING, await chipSpacing(p.left, CHIP_PADDING, artwork, sv.paddingLeft));
+  if (p.right > 0) horizontal(p.right, clon.x + clon.width - p.right, LINEA_PADDING, await chipSpacing(p.right, CHIP_PADDING, artwork, sv.paddingRight));
   for (const g of gaps) {
     const val = spec.direccion === "VERTICAL" ? g.height : g.width;
     const chip = spec.spacingAuto ? await cota("Auto", CHIP_GAP, artwork) : await chipSpacing(val, CHIP_GAP, artwork, sv.itemSpacing);
-    if (spec.direccion === "VERTICAL") aDerecha(chip, g.y + g.height / 2);
-    else aAbajo(chip, g.x + g.width / 2);
+    if (spec.direccion === "VERTICAL") vertical(g.height, g.y, LINEA_GAP, chip);
+    else horizontal(g.width, g.x, LINEA_GAP, chip);
   }
 }
 
@@ -466,7 +452,6 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
     for (const r of columnas) bandaPunteada(r, ROJO, ROJO, artwork);
     for (const r of filas) bandaPunteada(r, ROJO, ROJO, artwork);
-    dibujarLineasMedida(artwork, clon, spec, []);
     if (modo !== "dimensiones") await dibujarSpacingCallouts(artwork, clon, spec, []);
     const minLeftX = await dibujarMarcas(artwork, [], clon, hijosMedidos);
     await dibujarCotas(artwork, clon, spec, minLeftX);
@@ -478,7 +463,6 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
     for (const g of spec.grids) {
       for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
     }
-    dibujarLineasMedida(artwork, clon, spec, gaps);
     await dibujarSpacingCallouts(artwork, clon, spec, gaps);
   }
 
