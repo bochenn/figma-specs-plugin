@@ -145,3 +145,9 @@ export function iconoAlineacion(direccion: string, alineacionContraria: string):
   if (alineacionContraria === "End") return "align-v-right";
   return "align-v-left";
 }
+
+// Un elemento es "chico" (y conviene dividir su artwork) si no es GRID y su lado
+// menor está por debajo del umbral.
+export function esChico(width: number, height: number, direccion: string): boolean {
+  return direccion !== "GRID" && Math.min(width, height) < 48;
+}

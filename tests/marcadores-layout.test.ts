@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto, separarColisiones, carrilDeMarca, iconoAlineacion } from "../src/plugin/utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, textoDimension, valorDim, valorColor, valorSpacing, nombreCorto, separarColisiones, carrilDeMarca, iconoAlineacion, esChico } from "../src/plugin/utils/marcadores-layout.ts";
 import { aplicarUnidad } from "../src/plugin/utils/espaciado.ts";
 
 test("marcasLayout: cada padding va a su lado con su valor", () => {
@@ -153,4 +153,10 @@ test("iconoAlineacion: horizontal mapea a top/center/bottom y baseline", () => {
   assert.equal(iconoAlineacion("HORIZONTAL", "Center"), "align-h-center");
   assert.equal(iconoAlineacion("HORIZONTAL", "End"), "align-h-bottom");
   assert.equal(iconoAlineacion("HORIZONTAL", "Baseline"), "align-baseline");
+});
+
+test("esChico: tag (74x24) es chico; card (240x92) no; GRID nunca", () => {
+  assert.equal(esChico(74, 24, "HORIZONTAL"), true);
+  assert.equal(esChico(240, 92, "VERTICAL"), false);
+  assert.equal(esChico(40, 40, "GRID"), false);
 });

@@ -4,7 +4,7 @@ import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
-import { marcasLayout, estiloCota, iconoDireccion, iconoAlineacion, valorDim, valorColor, valorSpacing, separarColisiones, carrilDeMarca, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
+import { marcasLayout, estiloCota, iconoDireccion, iconoAlineacion, valorDim, valorColor, valorSpacing, separarColisiones, carrilDeMarca, esChico, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
 import { rectsGrid, textoGrid, gridSpecDe, franjasGridAutolayout } from "../utils/grilla.ts";
 import { prefijoProfundidad } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
@@ -379,11 +379,12 @@ function dibujarLineasHijos(artwork: FrameNode, hijos: Rect[]): void {
   }
 }
 
-// Construye el artwork anotado de UN contenedor con Auto Layout: clon del
-// subárbol + overlays de ese contenedor (hijos azules, padding verde, gaps
-// naranjas). El clon va corrido (MARGEN, MARGEN) para dejar lugar a las
-// anotaciones.
-async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: boolean): Promise<FrameNode> {
+const UMBRAL_CHICO = 48; // referencia; el umbral real vive en esChico
+
+// Dibuja el artwork de un contenedor en un modo: "completo" (todo), "dimensiones"
+// (solo W/H + medidas de hijos) o "spacing" (solo padding/gap). El clon va corrido
+// (MARGEN_IZQ, MARGEN) para dejar lugar a las anotaciones.
+async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: boolean, modo: "completo" | "dimensiones" | "spacing"): Promise<FrameNode> {
   const artwork = figma.createFrame();
   artwork.name = `Artwork ${spec.elementoNombre}`;
   artwork.layoutMode = "NONE";
@@ -401,8 +402,8 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
   }));
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
   const hijosMedidos = medirHijos ? hijosRects : [];
-  if (medirHijos) dibujarLineasHijos(artwork, hijosRects);
-  for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, PADDING_BANDA, CHIP_PADDING, artwork);
+  if (medirHijos && modo !== "spacing") dibujarLineasHijos(artwork, hijosRects);
+  if (modo !== "dimensiones") for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, PADDING_BANDA, CHIP_PADDING, artwork);
   if (spec.direccion === "GRID") {
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
     for (const r of columnas) bandaPunteada(r, ROJO, ROJO, artwork);
@@ -413,23 +414,47 @@ async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: bo
     return artwork;
   }
   const gaps = rectsSpacing(hijosRects, spec.direccion);
-  for (const r of gaps) bandaPunteada(r, GAP_BANDA, CHIP_GAP, artwork);
-  for (const g of spec.grids) {
-    for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
+  if (modo !== "dimensiones") {
+    for (const r of gaps) bandaPunteada(r, GAP_BANDA, CHIP_GAP, artwork);
+    for (const g of spec.grids) {
+      for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
+    }
+    dibujarLineasMedida(artwork, clon, spec, gaps);
   }
 
-  dibujarLineasMedida(artwork, clon, spec, gaps);
-  // Cotas de padding/gap (reubicadas) + cotas de W/H (rojo) despejadas.
-  const minLeftX = await dibujarMarcas(artwork, marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto, spec.spacingVars), clon, hijosMedidos);
-  await dibujarCotas(artwork, clon, spec, minLeftX);
+  const marcas = modo === "dimensiones" ? [] : marcasLayout(frameRect, spec.padding, gaps, spec.direccion, spec.spacingAuto, spec.spacingVars);
+  const hijosParaMarcas = modo === "spacing" ? [] : hijosMedidos;
+  const minLeftX = await dibujarMarcas(artwork, marcas, clon, hijosParaMarcas);
+  if (modo !== "spacing") await dibujarCotas(artwork, clon, spec, minLeftX);
 
-  // Ícono de dirección, arriba a la izquierda del artwork.
-  const icono = figma.createNodeFromSvg(svgIcono(iconoDireccion(spec.direccion, spec.wrap)));
-  icono.x = 8;
-  icono.y = 8;
-  artwork.appendChild(icono);
-
+  if (modo !== "dimensiones") {
+    const icono = figma.createNodeFromSvg(svgIcono(iconoDireccion(spec.direccion, spec.wrap)));
+    icono.x = 8;
+    icono.y = 8;
+    artwork.appendChild(icono);
+  }
   return artwork;
+}
+
+// Envuelve un artwork con un título arriba.
+async function artworkEtiquetado(titulo: string, art: FrameNode): Promise<FrameNode> {
+  const col = frameVertical(titulo, 8);
+  col.appendChild(await texto(titulo, 16));
+  col.appendChild(art);
+  return col;
+}
+
+// Artwork de un contenedor: único si es grande; dividido en Dimensions | Spacing
+// (etiquetados) si es chico.
+async function artworkDe(contenedor: FrameNode, spec: LayoutSpec, medirHijos: boolean): Promise<FrameNode> {
+  if (!esChico(contenedor.width, contenedor.height, spec.direccion)) {
+    return await artworkModo(contenedor, spec, medirHijos, "completo");
+  }
+  const cont = frameHorizontal(`Artwork ${spec.elementoNombre}`, 48);
+  cont.clipsContent = false;
+  cont.appendChild(await artworkEtiquetado("Dimensions", await artworkModo(contenedor, spec, medirHijos, "dimensiones")));
+  cont.appendChild(await artworkEtiquetado("Spacing", await artworkModo(contenedor, spec, medirHijos, "spacing")));
+  return cont;
 }
 
 // Artwork de un frame con layout grids pero sin Auto Layout: clon + franjas
