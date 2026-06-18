@@ -1,5 +1,5 @@
 import type { LayoutSpec, NodoLike } from "../modelo/tipos.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
@@ -28,20 +28,6 @@ const GAP_BANDA: RGB = { r: 1, g: 0.7, b: 0.85 };
 const MARGEN = 96;
 const MARGEN_IZQ = 160; // margen izquierdo ancho: aloja la cota de alto + breadcrumb del artwork
 const RESPIRO = 16; // borde derecho e inferior
-
-// Chip gris para una variable/style en el panel (nombre completo, texto oscuro).
-async function chipVariable(nombre: string): Promise<FrameNode> {
-  const c = frameHorizontal("ChipVar", 0);
-  c.counterAxisAlignItems = "CENTER";
-  c.paddingTop = c.paddingBottom = 2;
-  c.paddingLeft = c.paddingRight = 5;
-  c.cornerRadius = 4;
-  c.fills = [{ type: "SOLID", color: { r: 0.92, g: 0.92, b: 0.92 } }];
-  const t = await texto(nombre, 11);
-  t.fills = [{ type: "SOLID", color: { r: 0.2, g: 0.2, b: 0.2 } }];
-  c.appendChild(t);
-  return c;
-}
 
 // Lado derecho de una fila: textos y chips según las partes.
 async function valorConChips(partes: ParteValor[]): Promise<FrameNode> {

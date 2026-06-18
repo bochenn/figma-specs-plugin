@@ -67,6 +67,67 @@ export async function texto(contenido: string, fontSize: number, font: FontName 
   return t;
 }
 
+const BORDE_PILL: RGB = { r: 0.819, g: 0.835, b: 0.859 }; // #D1D5DB
+const FONDO_CHIP: RGB = { r: 0.898, g: 0.906, b: 0.922 };  // #E5E7EB
+const TEXTO_CHIP: RGB = { r: 0.2, g: 0.2, b: 0.2 };
+
+// Chip gris para una variable/style (monospace). Compartido entre secciones.
+export async function chipVariable(nombre: string): Promise<FrameNode> {
+  const c = frameHorizontal("ChipVar", 0);
+  c.counterAxisAlignItems = "CENTER";
+  c.paddingTop = c.paddingBottom = 2;
+  c.paddingLeft = c.paddingRight = 5;
+  c.cornerRadius = 4;
+  c.fills = [{ type: "SOLID", color: FONDO_CHIP }];
+  const t = await texto(nombre, 11, FONT_MONO);
+  t.fills = [{ type: "SOLID", color: TEXTO_CHIP }];
+  c.appendChild(t);
+  return c;
+}
+
+// Fila en pill con borde (cada atributo/propiedad). Appendea los nodos provistos.
+export function filaPill(nodos: SceneNode[]): FrameNode {
+  const fila = frameHorizontal("Fila", 6);
+  fila.counterAxisAlignItems = "CENTER";
+  fila.paddingTop = fila.paddingBottom = 6;
+  fila.paddingLeft = fila.paddingRight = 8;
+  fila.cornerRadius = 4;
+  fila.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+  fila.strokeWeight = 1;
+  for (const n of nodos) fila.appendChild(n);
+  return fila;
+}
+
+// Card de entrada: header (con divisor inferior) + body (padding 16, gap 8).
+export function tarjeta(headerNodos: SceneNode[], filas: FrameNode[]): FrameNode {
+  const card = frameVertical("Card", 0);
+  card.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+  card.strokeWeight = 1;
+  card.cornerRadius = 8;
+  card.fills = fillTematizado(varsTema().fondoSpec);
+  card.clipsContent = true;
+
+  const header = frameHorizontal("Header", 8);
+  header.counterAxisAlignItems = "CENTER";
+  header.paddingTop = header.paddingBottom = 8;
+  header.paddingLeft = header.paddingRight = 16;
+  header.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+  header.strokeTopWeight = 0;
+  header.strokeLeftWeight = 0;
+  header.strokeRightWeight = 0;
+  header.strokeBottomWeight = 1;
+  for (const n of headerNodos) header.appendChild(n);
+  card.appendChild(header);
+  header.layoutAlign = "STRETCH";
+
+  const body = frameVertical("Body", 8);
+  body.paddingTop = body.paddingBottom = body.paddingLeft = body.paddingRight = 16;
+  for (const f of filas) body.appendChild(f);
+  card.appendChild(body);
+  body.layoutAlign = "STRETCH";
+  return card;
+}
+
 const GAP_COL = 64;
 
 // Acomoda los ítems en `columnas` columnas: un contenedor wrap de ancho fijo,
