@@ -1,6 +1,6 @@
 import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_SEMI, FONT_BOLD } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
@@ -40,42 +40,43 @@ function bordeMarca(caja: { x: number; y: number; width: number; height: number 
   artwork.appendChild(r);
 }
 
-// Dibuja un atributo: pill (swatch + texto) si es color; texto plano si no.
-async function filaAtributo(attr: Atributo): Promise<SceneNode> {
-  const linea = attr.rawValue ? `${attr.clave}: ${attr.valor} (${attr.rawValue})` : `${attr.clave}: ${attr.valor}`;
-  if (!attr.swatchHex) {
-    return await texto(linea, 12);
+// Dibuja un atributo como fila-pill: swatch (si color) + "clave:" + valor/ChipVar + (raw).
+async function filaAtributo(attr: Atributo): Promise<FrameNode> {
+  const nodos: SceneNode[] = [];
+  if (attr.swatchHex) {
+    const swatch = figma.createRectangle();
+    swatch.resize(12, 12);
+    swatch.fills = [{ type: "SOLID", color: hexARgb(attr.swatchHex) }];
+    swatch.strokes = [{ type: "SOLID", color: GRIS(0.8) }];
+    swatch.strokeWeight = 1;
+    nodos.push(swatch);
   }
-  const fila = frameHorizontal("Atributo", 8);
-  fila.counterAxisAlignItems = "CENTER";
-  const swatch = figma.createRectangle();
-  swatch.resize(12, 12);
-  swatch.fills = [{ type: "SOLID", color: hexARgb(attr.swatchHex) }];
-  swatch.strokes = [{ type: "SOLID", color: GRIS(0.8) }];
-  swatch.strokeWeight = 1;
-  fila.appendChild(swatch);
-  fila.appendChild(await texto(linea, 12));
-  return fila;
+  nodos.push(await texto(`${attr.clave}:`, 12, FONT_SEMI));
+  if (attr.formato !== "HARDCODED") {
+    nodos.push(await chipVariable(attr.valor));
+    if (attr.rawValue) nodos.push(await texto(`(${attr.rawValue})`, 12, FONT_SEMI));
+  } else {
+    nodos.push(await texto(attr.valor, 12, FONT_SEMI));
+  }
+  return filaPill(nodos);
 }
 
-// Construye la entrada de un elemento en la lista de contenido.
+// Construye la entrada de un elemento como card (header + filas-pill).
 async function entradaLista(indice: number, el: ElementoAnatomy, color: RGB): Promise<FrameNode> {
-  const fila = frameVertical(`${indice}. ${el.nombre}`, 4);
-  const header = frameHorizontal("Header", 8);
-  header.counterAxisAlignItems = "CENTER";
-  header.appendChild(await badgePanel(indice, color));
+  const headerNodos: SceneNode[] = [await badgePanel(indice, color)];
   const icono = nodoIconoTipo(el.tipo);
-  if (icono) header.appendChild(icono);
-  header.appendChild(await texto(`${el.nombre} · ${el.tipo}`, 16));
-  fila.appendChild(header);
+  if (icono) headerNodos.push(icono);
+  headerNodos.push(await texto(`${el.nombre} · ${el.tipo}`, 16, FONT_BOLD));
+
+  const filas: FrameNode[] = [];
   const variantes = parseVariantes(el.dependeDe);
   if (variantes.length > 0) {
-    for (const v of variantes) fila.appendChild(await texto(`${v.clave}: ${v.valor}`, 12));
+    for (const v of variantes) filas.push(filaPill([await texto(`${v.clave}:`, 12, FONT_SEMI), await texto(v.valor, 12, FONT_SEMI)]));
   } else if (el.dependeDe) {
-    fila.appendChild(await texto(`Depends on: ${el.dependeDe}`, 12));
+    filas.push(filaPill([await texto(`Depends on: ${el.dependeDe}`, 12, FONT_SEMI)]));
   }
-  for (const attr of el.atributos) fila.appendChild(await filaAtributo(attr));
-  return fila;
+  for (const attr of el.atributos) filas.push(await filaAtributo(attr));
+  return tarjeta(headerNodos, filas);
 }
 
 // Crea el badge del panel (círculo pequeño + número), sin posición absoluta.
