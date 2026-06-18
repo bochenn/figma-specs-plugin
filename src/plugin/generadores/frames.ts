@@ -34,15 +34,124 @@ export function frameHorizontal(nombre: string, gap: number): FrameNode {
   return f;
 }
 
-// Crea un texto. fontSize en px; carga la fuente antes de escribir.
-export async function texto(contenido: string, fontSize: number): Promise<TextNode> {
+export const FONT_REG: FontName = { family: "Inter", style: "Regular" };
+export const FONT_BOLD: FontName = { family: "Inter", style: "Bold" };
+export const FONT_SEMI: FontName = { family: "Inter", style: "Semi Bold" };
+// Monospace: SF Mono primero, JetBrains Mono como fallback (y al final Inter, vía cargarFont).
+export const FONT_MONO: FontName[] = [
+  { family: "SF Mono", style: "Regular" },
+  { family: "JetBrains Mono", style: "Regular" },
+];
+
+const fontsCache = new Map<string, FontName>();
+
+// Carga la primera fuente disponible de la lista (o una sola); si ninguna está
+// instalada en el archivo, cae a Inter Regular. Cachea por la cadena pedida.
+export async function cargarFont(font: FontName | FontName[]): Promise<FontName> {
+  const lista = Array.isArray(font) ? font : [font];
+  const key = lista.map((f) => `${f.family}|${f.style}`).join(">");
+  const cached = fontsCache.get(key);
+  if (cached) return cached;
+  for (const f of lista) {
+    try {
+      await figma.loadFontAsync(f);
+      fontsCache.set(key, f);
+      return f;
+    } catch {
+      // probar la siguiente de la cadena
+    }
+  }
+  await figma.loadFontAsync(FONT_REG);
+  fontsCache.set(key, FONT_REG);
+  return FONT_REG;
+}
+
+// Crea un texto. fontSize en px; `font` opcional (default Inter Regular); acepta una
+// cadena de fallback (FontName[]) y cae a Inter si ninguna está disponible.
+export async function texto(contenido: string, fontSize: number, font: FontName | FontName[] = FONT_REG): Promise<TextNode> {
   const t = figma.createText();
-  await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-  t.fontName = { family: "Inter", style: "Regular" };
+  t.fontName = await cargarFont(font);
   t.characters = contenido;
   t.fontSize = fontSize;
   t.fills = fillTematizado(varsTema().texto);
   return t;
+}
+
+const BORDE_PILL: RGB = { r: 0.819, g: 0.835, b: 0.859 }; // #D1D5DB
+const FONDO_CHIP: RGB = { r: 0.898, g: 0.906, b: 0.922 };  // #E5E7EB
+const TEXTO_CHIP: RGB = { r: 0.2, g: 0.2, b: 0.2 };
+const COLOR_CLAVE: RGB = { r: 0.420, g: 0.447, b: 0.502 }; // #6B7280
+const COLOR_VALOR: RGB = { r: 0.216, g: 0.255, b: 0.318 }; // #374151
+
+// Texto de la CLAVE de un spec (ej. "Breakpoint:"): monospace, gris #6B7280.
+export async function textoClave(s: string): Promise<TextNode> {
+  const t = await texto(s, 12, FONT_MONO);
+  t.fills = [{ type: "SOLID", color: COLOR_CLAVE }];
+  return t;
+}
+
+// Texto del VALOR de un spec (ej. "Mobile"): monospace, gris oscuro #374151.
+export async function textoValor(s: string): Promise<TextNode> {
+  const t = await texto(s, 12, FONT_MONO);
+  t.fills = [{ type: "SOLID", color: COLOR_VALOR }];
+  return t;
+}
+
+// Chip gris para una variable/style (monospace). Compartido entre secciones.
+export async function chipVariable(nombre: string): Promise<FrameNode> {
+  const c = frameHorizontal("ChipVar", 0);
+  c.counterAxisAlignItems = "CENTER";
+  c.paddingTop = c.paddingBottom = 2;
+  c.paddingLeft = c.paddingRight = 5;
+  c.cornerRadius = 4;
+  c.fills = [{ type: "SOLID", color: FONDO_CHIP }];
+  const t = await texto(nombre, 11, FONT_MONO);
+  t.fills = [{ type: "SOLID", color: TEXTO_CHIP }];
+  c.appendChild(t);
+  return c;
+}
+
+// Fila en pill con borde (cada atributo/propiedad). Appendea los nodos provistos.
+export function filaPill(nodos: SceneNode[]): FrameNode {
+  const fila = frameHorizontal("Fila", 6);
+  fila.counterAxisAlignItems = "CENTER";
+  fila.paddingTop = fila.paddingBottom = 6;
+  fila.paddingLeft = fila.paddingRight = 8;
+  fila.cornerRadius = 4;
+  fila.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+  fila.strokeWeight = 1;
+  for (const n of nodos) fila.appendChild(n);
+  return fila;
+}
+
+// Card de entrada: header (con divisor inferior) + body (padding 16, gap 8).
+export function tarjeta(headerNodos: SceneNode[], filas: FrameNode[]): FrameNode {
+  const card = frameVertical("Card", 0);
+  card.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+  card.strokeWeight = 1;
+  card.cornerRadius = 8;
+  card.fills = fillTematizado(varsTema().fondoSpec);
+  card.clipsContent = true;
+
+  const header = frameHorizontal("Header", 8);
+  header.counterAxisAlignItems = "CENTER";
+  header.paddingTop = header.paddingBottom = 8;
+  header.paddingLeft = header.paddingRight = 16;
+  header.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+  header.strokeTopWeight = 0;
+  header.strokeLeftWeight = 0;
+  header.strokeRightWeight = 0;
+  header.strokeBottomWeight = 1;
+  for (const n of headerNodos) header.appendChild(n);
+  card.appendChild(header);
+  header.layoutSizingHorizontal = "FILL";
+
+  const body = frameVertical("Body", 8);
+  body.paddingTop = body.paddingBottom = body.paddingLeft = body.paddingRight = 16;
+  for (const f of filas) body.appendChild(f);
+  card.appendChild(body);
+  body.layoutSizingHorizontal = "FILL";
+  return card;
 }
 
 const GAP_COL = 64;

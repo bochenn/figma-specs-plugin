@@ -1,8 +1,8 @@
 import type { ColeccionModes } from "../modelo/tipos.ts";
-import { frameVertical, texto, enColumnas, fillTematizado } from "./frames.ts";
+import { frameVertical, texto, enColumnas, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 
-// Bloque de un mode: nombre + artwork (clon con el mode aplicado) + atributos.
+// Bloque de un mode como tarjeta: header con nombre + artwork (si hay collection) + filas-pill de atributos.
 async function bloqueMode(
   seleccionado: SceneNode,
   collection: VariableCollection | null,
@@ -10,8 +10,9 @@ async function bloqueMode(
   nombre: string,
   coleccion: ColeccionModes,
 ): Promise<FrameNode> {
-  const bloque = frameVertical(nombre, 8);
-  bloque.appendChild(await texto(nombre, 24));
+  const headerNodos: SceneNode[] = [await texto(nombre, 16, FONT_BOLD)];
+
+  const filas: FrameNode[] = [];
 
   if (collection) {
     const clon = seleccionado.clone();
@@ -26,15 +27,22 @@ async function bloqueMode(
       (clon as { setExplicitVariableMode(c: VariableCollection, m: string): void }).setExplicitVariableMode(collection, modeId);
     }
     artwork.resize(clon.width, clon.height);
-    bloque.appendChild(artwork);
+    // El artwork no es una filaPill; va como nodo suelto dentro del body de la tarjeta.
+    // Para poder pasarlo como FrameNode al array filas, lo incluimos directamente.
+    filas.push(artwork);
   }
 
   for (const attr of coleccion.atributos) {
     const v = attr.valores.find((x) => x.modeId === modeId);
     const valor = v ? v.valor : "—";
-    bloque.appendChild(await texto(`${attr.appliedAs}: ${attr.variableNombre} (${valor})`, 12));
+    filas.push(filaPill([
+      await textoClave(`${attr.appliedAs}:`),
+      await chipVariable(attr.variableNombre),
+      await textoValor(`(${valor})`),
+    ]));
   }
-  return bloque;
+
+  return tarjeta(headerNodos, filas);
 }
 
 // Subsección de una collection: heading + un bloque por mode.
