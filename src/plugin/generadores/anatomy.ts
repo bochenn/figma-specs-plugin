@@ -1,6 +1,6 @@
 import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, chipVariable } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
@@ -40,21 +40,26 @@ function bordeMarca(caja: { x: number; y: number; width: number; height: number 
   artwork.appendChild(r);
 }
 
-// Dibuja un atributo: pill (swatch + texto) si es color; texto plano si no.
+// Dibuja un atributo: swatch (si es color) + "clave:" + valor. Si es variable/style,
+// el valor va en chip gris (ChipVar) + (rawValue), igual que el panel de Layout.
 async function filaAtributo(attr: Atributo): Promise<SceneNode> {
-  const linea = attr.rawValue ? `${attr.clave}: ${attr.valor} (${attr.rawValue})` : `${attr.clave}: ${attr.valor}`;
-  if (!attr.swatchHex) {
-    return await texto(linea, 12);
-  }
-  const fila = frameHorizontal("Atributo", 8);
+  const fila = frameHorizontal("Atributo", 6);
   fila.counterAxisAlignItems = "CENTER";
-  const swatch = figma.createRectangle();
-  swatch.resize(12, 12);
-  swatch.fills = [{ type: "SOLID", color: hexARgb(attr.swatchHex) }];
-  swatch.strokes = [{ type: "SOLID", color: GRIS(0.8) }];
-  swatch.strokeWeight = 1;
-  fila.appendChild(swatch);
-  fila.appendChild(await texto(linea, 12));
+  if (attr.swatchHex) {
+    const swatch = figma.createRectangle();
+    swatch.resize(12, 12);
+    swatch.fills = [{ type: "SOLID", color: hexARgb(attr.swatchHex) }];
+    swatch.strokes = [{ type: "SOLID", color: GRIS(0.8) }];
+    swatch.strokeWeight = 1;
+    fila.appendChild(swatch);
+  }
+  fila.appendChild(await texto(`${attr.clave}:`, 12));
+  if (attr.formato !== "HARDCODED") {
+    fila.appendChild(await chipVariable(attr.valor));
+    if (attr.rawValue) fila.appendChild(await texto(`(${attr.rawValue})`, 12));
+  } else {
+    fila.appendChild(await texto(attr.valor, 12));
+  }
   return fila;
 }
 

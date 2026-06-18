@@ -45,6 +45,21 @@ export async function texto(contenido: string, fontSize: number): Promise<TextNo
   return t;
 }
 
+// Chip gris para una variable/style (nombre completo, texto oscuro). Compartido
+// entre Layout (panel) y Anatomy (atributos).
+export async function chipVariable(nombre: string): Promise<FrameNode> {
+  const c = frameHorizontal("ChipVar", 0);
+  c.counterAxisAlignItems = "CENTER";
+  c.paddingTop = c.paddingBottom = 2;
+  c.paddingLeft = c.paddingRight = 5;
+  c.cornerRadius = 4;
+  c.fills = [{ type: "SOLID", color: { r: 0.92, g: 0.92, b: 0.92 } }];
+  const t = await texto(nombre, 11);
+  t.fills = [{ type: "SOLID", color: { r: 0.2, g: 0.2, b: 0.2 } }];
+  c.appendChild(t);
+  return c;
+}
+
 const GAP_COL = 64;
 
 // Acomoda los ítems en `columnas` columnas: un contenedor wrap de ancho fijo,
