@@ -553,15 +553,25 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
 }
 
 const ANCHO_MUESTRA = 150;
+const ALTO_MUESTRA = 28;
 
-// Caja de ancho fijo donde va la muestra visual de un ítem de la leyenda.
+// Caja de tamaño fijo SIN auto-layout: la muestra (chip/cota/línea) se posiciona
+// absoluta y centrada, igual que en el artwork real (así no se colapsa).
 function muestraBox(): FrameNode {
-  const box = frameHorizontal("Muestra", 6);
-  box.counterAxisAlignItems = "CENTER";
-  box.primaryAxisSizingMode = "FIXED";
-  box.counterAxisSizingMode = "AUTO";
-  box.resize(ANCHO_MUESTRA, 1);
+  const box = figma.createFrame();
+  box.name = "Muestra";
+  box.layoutMode = "NONE";
+  box.clipsContent = false;
+  box.fills = [];
+  box.resize(ANCHO_MUESTRA, ALTO_MUESTRA);
   return box;
+}
+
+// Mete la muestra en la caja y la centra verticalmente, pegada a la izquierda.
+function ponerMuestra(box: FrameNode, nodo: SceneNode): void {
+  box.appendChild(nodo);
+  nodo.x = 0;
+  nodo.y = (ALTO_MUESTRA - nodo.height) / 2;
 }
 
 // Fila de la leyenda: muestra visual (ancho fijo) + explicación.
@@ -580,27 +590,27 @@ export async function seccionLeyenda(): Promise<FrameNode> {
   sec.appendChild(await texto("How to read these specs", 36));
 
   const b1 = muestraBox();
-  await cota("240", CHIP_DIM, b1);
+  ponerMuestra(b1, await cota("240", CHIP_DIM, b1));
   sec.appendChild(await filaLeyenda(b1, "Dimension cota: element or child width/height (red)."));
 
   const b2 = muestraBox();
-  await cotaConNombre("padding-1x", "16", CHIP_PADDING, b2);
+  ponerMuestra(b2, await cotaConNombre("padding-1x", "16", CHIP_PADDING, b2));
   sec.appendChild(await filaLeyenda(b2, "Padding: distance to the edge; chip with the variable (blue) + value."));
 
   const b3 = muestraBox();
-  await cotaConNombre("gap-0_5x", "8", CHIP_GAP, b3);
+  ponerMuestra(b3, await cotaConNombre("gap-0_5x", "8", CHIP_GAP, b3));
   sec.appendChild(await filaLeyenda(b3, "Item spacing (gap): space between children (pink)."));
 
   const b4 = muestraBox();
-  b4.appendChild(figma.createNodeFromSvg(svgCotaH("fixed", 40)));
+  ponerMuestra(b4, figma.createNodeFromSvg(svgCotaH("fixed", 40)));
   sec.appendChild(await filaLeyenda(b4, "Measurement line: marks the span of that band."));
 
   const b5 = muestraBox();
-  b5.appendChild(await chipVariable("sizing/card-width"));
+  ponerMuestra(b5, await chipVariable("sizing/card-width"));
   sec.appendChild(await filaLeyenda(b5, "Grey chip in the panel: bound variable (resolved value in parentheses)."));
 
   const b6 = muestraBox();
-  b6.appendChild(await texto("card", 12));
+  ponerMuestra(b6, await texto("card", 12));
   sec.appendChild(await filaLeyenda(b6, "Left of each row: the layer hierarchy; the row's element is in bold."));
 
   sec.appendChild(await texto("For small elements the artwork is split in two: Dimensions (W/H) and Spacing (padding & gap).", 14));
