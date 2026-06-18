@@ -13,12 +13,13 @@ const formatoTipoSelect = document.getElementById("formatoTipo") as HTMLSelectEl
 const mostrarRawCheck = document.getElementById("mostrarRaw") as HTMLInputElement;
 const formatoRawSelect = document.getElementById("formatoRaw") as HTMLSelectElement;
 const preferenciaSelect = document.getElementById("preferencia") as HTMLSelectElement;
+const anatomyDepthSelect = document.getElementById("anatomyDepth") as HTMLSelectElement;
 
 const SECCIONES = ["anatomy", "properties", "layout", "data", "styling", "modes", "twoway", "complete"] as const;
 
 (document.getElementById("crear") as HTMLButtonElement).onclick = () => {
   const secciones = SECCIONES.filter((s) => (document.getElementById(`sec-${s}`) as HTMLInputElement).checked);
-  parent.postMessage({ pluginMessage: { tipo: "generar", secciones, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, hideOuter: hideOuterCheck.checked, itemizar: itemizarCheck.checked, medirHijos: medirHijosCheck.checked, leyenda: leyendaCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value, unidad: unidadSelect.value, formatoTipo: formatoTipoSelect.value, formatoRaw: formatoRawSelect.value, mostrarRaw: mostrarRawCheck.checked, preferencia: preferenciaSelect.value } }, "*");
+  parent.postMessage({ pluginMessage: { tipo: "generar", secciones, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, hideOuter: hideOuterCheck.checked, itemizar: itemizarCheck.checked, medirHijos: medirHijosCheck.checked, leyenda: leyendaCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value, unidad: unidadSelect.value, formatoTipo: formatoTipoSelect.value, formatoRaw: formatoRawSelect.value, mostrarRaw: mostrarRawCheck.checked, preferencia: preferenciaSelect.value, anatomyDepth: anatomyDepthSelect.value } }, "*");
 };
 
 window.onmessage = (event: MessageEvent) => {

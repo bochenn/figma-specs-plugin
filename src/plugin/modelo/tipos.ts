@@ -90,7 +90,7 @@ export type Preferencia = "VARIABLE" | "STYLE";
 
 export type FormatoTipo = "Plain" | "CSS";
 
-export type MensajeUI = { tipo: "generar"; secciones: Seccion[]; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; hideOuter?: boolean; itemizar?: boolean; medirHijos?: boolean; leyenda?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo; formatoRaw?: FormatoColor; mostrarRaw?: boolean; preferencia?: Preferencia };
+export type MensajeUI = { tipo: "generar"; secciones: Seccion[]; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; hideOuter?: boolean; itemizar?: boolean; medirHijos?: boolean; leyenda?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo; formatoRaw?: FormatoColor; mostrarRaw?: boolean; preferencia?: Preferencia; anatomyDepth?: "self" | "children" | "all" };
 
 export type MensajePlugin =
   | { tipo: "resultado"; ok: true }
