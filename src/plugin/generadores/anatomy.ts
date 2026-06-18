@@ -153,11 +153,13 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
   artwork.fills = fillTematizado(varsTema().fondoArtwork);
   display.appendChild(artwork);
 
+  // Margen para que los badges de las capas pegadas al borde no se corten.
+  const MARGEN_ARTWORK = 20;
   const clon = seleccionado.clone();
   artwork.appendChild(clon);
-  clon.x = 0;
-  clon.y = 0;
-  artwork.resize(clon.width, clon.height);
+  clon.x = MARGEN_ARTWORK;
+  clon.y = MARGEN_ARTWORK;
+  artwork.resize(clon.width + 2 * MARGEN_ARTWORK, clon.height + 2 * MARGEN_ARTWORK);
 
   // Un marcador por elemento, posicionado sobre la caja real de la capa.
   const cajas = cajasRelativas(seleccionado);
@@ -165,8 +167,10 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
     const caja = cajas.get(elementos[i].id);
     if (!caja) continue;
     const color = COLORES_MARCA[i % COLORES_MARCA.length];
-    bordeMarca(caja, color, artwork);
-    artwork.appendChild(await marcador(i + 1, caja.x - 8, caja.y - 8, color));
+    const x = caja.x + MARGEN_ARTWORK;
+    const y = caja.y + MARGEN_ARTWORK;
+    bordeMarca({ x, y, width: caja.width, height: caja.height }, color, artwork);
+    artwork.appendChild(await marcador(i + 1, x - 8, y - 8, color));
   }
 
   // Contenido: tabla o lista (va a la DERECHA).
