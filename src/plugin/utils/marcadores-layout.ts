@@ -151,3 +151,36 @@ export function iconoAlineacion(direccion: string, alineacionContraria: string):
 export function esChico(width: number, height: number, direccion: string): boolean {
   return direccion !== "GRID" && Math.min(width, height) < 48;
 }
+
+export interface CotaPadding {
+  clave: "padding" | "padding-x" | "padding-y" | "top" | "right" | "bottom" | "left";
+  eje: "h" | "v";
+  valor: number;
+  nombre?: string;
+}
+
+// Agrupa el padding en las etiquetas a mostrar: uniforme → una; por eje → x/y;
+// por lado → los lados con valor > 0. `nombre` = variable corta si la hay.
+export function agruparPadding(
+  padding: { left: number; top: number; right: number; bottom: number },
+  spacingVars: { paddingLeft?: string; paddingTop?: string; paddingRight?: string; paddingBottom?: string } = {},
+): CotaPadding[] {
+  const { left, top, right, bottom } = padding;
+  const vL = spacingVars.paddingLeft, vT = spacingVars.paddingTop, vR = spacingVars.paddingRight, vB = spacingVars.paddingBottom;
+  const con = (n?: string) => (n ? { nombre: nombreCorto(n) } : {});
+  if (left === top && top === right && right === bottom && vL === vT && vT === vR && vR === vB) {
+    return left === 0 ? [] : [{ clave: "padding", eje: "v", valor: left, ...con(vL) }];
+  }
+  if (top === bottom && vT === vB && left === right && vL === vR) {
+    const out: CotaPadding[] = [];
+    if (top > 0) out.push({ clave: "padding-y", eje: "v", valor: top, ...con(vT) });
+    if (left > 0) out.push({ clave: "padding-x", eje: "h", valor: left, ...con(vL) });
+    return out;
+  }
+  const out: CotaPadding[] = [];
+  if (top > 0) out.push({ clave: "top", eje: "v", valor: top, ...con(vT) });
+  if (bottom > 0) out.push({ clave: "bottom", eje: "v", valor: bottom, ...con(vB) });
+  if (left > 0) out.push({ clave: "left", eje: "h", valor: left, ...con(vL) });
+  if (right > 0) out.push({ clave: "right", eje: "h", valor: right, ...con(vR) });
+  return out;
+}
