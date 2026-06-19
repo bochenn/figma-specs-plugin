@@ -134,6 +134,24 @@ async function marcador(numero: number, x: number, y: number, color: RGB): Promi
   return cont;
 }
 
+// Chip con borde para el nombre de la sección (ej. "ANATOMY"): sin fill, stroke #374151.
+async function tagSeccion(etiqueta: string): Promise<FrameNode> {
+  const chip = frameHorizontal("Tag", 0);
+  chip.counterAxisAlignItems = "CENTER";
+  chip.paddingTop = chip.paddingBottom = 6;
+  chip.paddingLeft = chip.paddingRight = 16;
+  chip.cornerRadius = 6;
+  chip.fills = [];
+  chip.strokes = [{ type: "SOLID", color: GRIS_OSCURO }];
+  chip.strokeWeight = 1;
+
+  const t = await texto(etiqueta.toUpperCase(), 12, FONT_SEMI);
+  t.fills = [{ type: "SOLID", color: GRIS_OSCURO }];
+  t.letterSpacing = { value: 8, unit: "PERCENT" };
+  chip.appendChild(t);
+  return chip;
+}
+
 // Bloque de título (nombre del nodo, 40px) + descripción placeholder (gris, 16px).
 async function tituloYDescripcion(nombre: string): Promise<FrameNode> {
   const bloque = frameVertical("Título", 8);
