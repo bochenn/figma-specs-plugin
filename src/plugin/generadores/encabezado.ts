@@ -40,13 +40,16 @@ async function barraStatus(etiquetaSeccion: string): Promise<FrameNode> {
   barra.strokeRightWeight = 0;
   barra.strokeBottomWeight = 1;
 
-  const right = await ladoBarra("Right Side", "MIN", NOMBRE_PLUGIN);
-  barra.appendChild(right);
-  right.layoutSizingHorizontal = "FILL";
+  // Nota: los nombres de frame "Right Side"/"Left Side" vienen del structure.pdf del
+  // usuario (están cruzados respecto a su posición visual); las variables sí reflejan
+  // qué contiene cada lado.
+  const ladoPlugin = await ladoBarra("Right Side", "MIN", NOMBRE_PLUGIN);
+  barra.appendChild(ladoPlugin);
+  ladoPlugin.layoutSizingHorizontal = "FILL";
 
-  const left = await ladoBarra("Left Side", "MAX", etiquetaSeccion.toUpperCase());
-  barra.appendChild(left);
-  left.layoutSizingHorizontal = "FILL";
+  const ladoSeccion = await ladoBarra("Left Side", "MAX", etiquetaSeccion.toUpperCase());
+  barra.appendChild(ladoSeccion);
+  ladoSeccion.layoutSizingHorizontal = "FILL";
 
   return barra;
 }

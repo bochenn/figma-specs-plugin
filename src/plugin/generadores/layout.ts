@@ -285,11 +285,11 @@ async function cotaConNombre(nombre: string, valor: string, par: ParCota, artwor
   return c;
 }
 
-const AZUL_HEX = "#1E6B3A"; // las cotas de dimensión → verde (acorde a COTA_DIM)
+const COTA_DIM_HEX = "#1E6B3A"; // las cotas de dimensión → verde (acorde a COTA_DIM)
 const GRIS_HEX = "#444444";
 
 // Cota horizontal de `largo` px; las puntas codifican el resizing.
-function svgCotaH(estilo: "fixed" | "fill" | "hug", largo: number, color = AZUL_HEX): string {
+function svgCotaH(estilo: "fixed" | "fill" | "hug", largo: number, color = COTA_DIM_HEX): string {
   const L = largo;
   const base = `<line x1="0" y1="6" x2="${L}" y2="6" stroke="${color}"/>`;
   const topes = `<line x1="0.5" y1="0" x2="0.5" y2="12" stroke="${color}"/><line x1="${L - 0.5}" y1="0" x2="${L - 0.5}" y2="12" stroke="${color}"/>`;
@@ -303,7 +303,7 @@ function svgCotaH(estilo: "fixed" | "fill" | "hug", largo: number, color = AZUL_
 }
 
 // Cota vertical de `largo` px (misma idea, ejes intercambiados).
-function svgCotaV(estilo: "fixed" | "fill" | "hug", largo: number, color = AZUL_HEX): string {
+function svgCotaV(estilo: "fixed" | "fill" | "hug", largo: number, color = COTA_DIM_HEX): string {
   const L = largo;
   const base = `<line x1="6" y1="0" x2="6" y2="${L}" stroke="${color}"/>`;
   const topes = `<line x1="0" y1="0.5" x2="12" y2="0.5" stroke="${color}"/><line x1="0" y1="${L - 0.5}" x2="12" y2="${L - 0.5}" stroke="${color}"/>`;
@@ -491,7 +491,7 @@ async function artworkGrids(frame: FrameNode, grids: GridSpec[]): Promise<FrameN
   artwork.resize(clon.width + RESPIRO, clon.height + RESPIRO);
   const frameRect: Rect = { x: 0, y: 0, width: clon.width, height: clon.height };
   for (const g of grids) {
-    for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, artwork);
+    for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
   }
   return artwork;
 }
