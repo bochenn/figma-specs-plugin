@@ -424,7 +424,7 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
   const hijosMedidos = medirHijos ? hijosRects : [];
   if (medirHijos && modo !== "spacing") dibujarLineasHijos(artwork, hijosRects);
-  if (modo !== "dimensiones") for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, PADDING_BANDA, PADDING_BANDA, artwork);
+  if (modo !== "dimensiones") for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, PADDING_BANDA, COTA_PADDING.texto, artwork);
   if (spec.direccion === "GRID") {
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
     for (const r of columnas) bandaPunteada(r, ROJO, ROJO, artwork);
@@ -436,7 +436,7 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
   }
   const gaps = rectsSpacing(hijosRects, spec.direccion);
   if (modo !== "dimensiones") {
-    for (const r of gaps) bandaPunteada(r, GAP_BANDA, GAP_BANDA, artwork);
+    for (const r of gaps) bandaPunteada(r, GAP_BANDA, COTA_GAP.texto, artwork);
     for (const g of spec.grids) {
       for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
     }
