@@ -184,20 +184,26 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
 
   // Margen para que los badges de las capas pegadas al borde no se corten.
   const MARGEN_ARTWORK = 20;
+  // Tamaño mínimo del canvas gris: un elemento chico queda centrado en una caja amplia.
+  const ARTWORK_MIN = 440;
   const clon = seleccionado.clone();
   artwork.appendChild(clon);
-  clon.x = MARGEN_ARTWORK;
-  clon.y = MARGEN_ARTWORK;
-  artwork.resize(clon.width + 2 * MARGEN_ARTWORK, clon.height + 2 * MARGEN_ARTWORK);
+  const canvasW = Math.max(ARTWORK_MIN, clon.width + 2 * MARGEN_ARTWORK);
+  const canvasH = Math.max(ARTWORK_MIN, clon.height + 2 * MARGEN_ARTWORK);
+  artwork.resize(canvasW, canvasH);
+  const offsetX = (canvasW - clon.width) / 2;
+  const offsetY = (canvasH - clon.height) / 2;
+  clon.x = offsetX;
+  clon.y = offsetY;
 
-  // Un marcador por elemento, posicionado sobre la caja real de la capa.
+  // Un marcador por elemento, posicionado sobre la caja real de la capa (clon centrado).
   const cajas = cajasRelativas(seleccionado);
   for (let i = 0; i < elementos.length; i++) {
     const caja = cajas.get(elementos[i].id);
     if (!caja) continue;
     const color = COLORES_MARCA[i % COLORES_MARCA.length];
-    const x = caja.x + MARGEN_ARTWORK;
-    const y = caja.y + MARGEN_ARTWORK;
+    const x = caja.x + offsetX;
+    const y = caja.y + offsetY;
     bordeMarca({ x, y, width: caja.width, height: caja.height }, color, artwork);
     artwork.appendChild(await marcador(i + 1, x - 8, y - 8, color));
   }
