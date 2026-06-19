@@ -190,16 +190,16 @@ async function headerPagina(seccion: string): Promise<FrameNode> {
 
 // Construye el [Nombre] Spec (heading + sección Anatomy con lista + artwork).
 async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
-  const spec = frameVertical(`${seleccionado.name} Spec`, 48);
-  spec.appendChild(await texto(seleccionado.name, 64));
+  const spec = frameVertical(`${seleccionado.name} Spec`, 24);
+  spec.appendChild(await tituloYDescripcion(seleccionado.name));
   spec.appendChild(await seccionDeAnatomy(seleccionado, elementos, tabla));
   return spec;
 }
 
 // Construye solo la sección Anatomy (sin Specifications ni título de nodo).
 export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
-  const seccion = frameVertical("Anatomy", 64);
-  seccion.appendChild(await texto("Anatomy", 48));
+  const seccion = frameVertical("Anatomy", 24);
+  seccion.appendChild(await tagSeccion("Anatomy"));
 
   // Display horizontal: lista a la izquierda, artwork a la derecha.
   const display = figma.createFrame();
@@ -258,6 +258,9 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
 // Genera el spec de Anatomy de un solo ítem. Devuelve el frame Specifications.
 export async function generarAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
+  const header = await headerPagina("Anatomy");
+  specifications.appendChild(header);
+  header.layoutSizingHorizontal = "FILL";
   specifications.appendChild(await specDeAnatomy(seleccionado, elementos, tabla));
   figma.currentPage.appendChild(specifications);
   return specifications;
@@ -271,6 +274,9 @@ export async function generarAnatomyConNested(
   tabla: boolean,
 ): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
+  const header = await headerPagina("Anatomy");
+  specifications.appendChild(header);
+  header.layoutSizingHorizontal = "FILL";
   specifications.appendChild(await specDeAnatomy(seleccionado, elementos, tabla));
   for (const n of nested) {
     specifications.appendChild(await specDeAnatomy(n.nodo, n.elementos, tabla));
