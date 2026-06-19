@@ -14,6 +14,11 @@ const NOMBRE_PLUGIN = "BLUEPRINT SPECS & HANDOFF";
 // Gris oscuro del header/tag (#374151) y borde del header (#D1D5DB).
 const GRIS_OSCURO: RGB = { r: 0.216, g: 0.255, b: 0.318 };
 const BORDE_HEADER: RGB = { r: 0.819, g: 0.835, b: 0.859 };
+// Texto placeholder de la descripción (el usuario lo edita a mano en Figma).
+const DESCRIPCION_PLACEHOLDER =
+  "This a placeholder text to add a brief description of what this element does in the project.";
+// Gris de la descripción (#6B7280).
+const GRIS_DESC: RGB = { r: 0.420, g: 0.447, b: 0.502 };
 
 // Mapa id → caja (x/y/w/h) relativa a la esquina del nodo raíz.
 function cajasRelativas(raiz: SceneNode): Map<string, { x: number; y: number; width: number; height: number }> {
@@ -127,6 +132,16 @@ async function marcador(numero: number, x: number, y: number, color: RGB): Promi
   cont.x = x;
   cont.y = y;
   return cont;
+}
+
+// Bloque de título (nombre del nodo, 40px) + descripción placeholder (gris, 16px).
+async function tituloYDescripcion(nombre: string): Promise<FrameNode> {
+  const bloque = frameVertical("Título", 8);
+  bloque.appendChild(await texto(nombre, 40, FONT_BOLD));
+  const desc = await texto(DESCRIPCION_PLACEHOLDER, 16);
+  desc.fills = [{ type: "SOLID", color: GRIS_DESC }];
+  bloque.appendChild(desc);
+  return bloque;
 }
 
 // Header de página: nombre del plugin (izq) + nombre de sección (der) + borde inferior.
