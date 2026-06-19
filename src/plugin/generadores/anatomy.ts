@@ -9,16 +9,8 @@ import { parseVariantes } from "../utils/anatomy-variantes.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
 
-// Nombre del plugin para el header de página (coincide con manifest.json "name").
-const NOMBRE_PLUGIN = "BLUEPRINT SPECS & HANDOFF";
-// Gris oscuro del header/tag (#374151) y borde del header (#D1D5DB).
+// Gris oscuro del chip de sección (#374151).
 const GRIS_OSCURO: RGB = { r: 0.216, g: 0.255, b: 0.318 };
-const BORDE_HEADER: RGB = { r: 0.819, g: 0.835, b: 0.859 };
-// Texto placeholder de la descripción (el usuario lo edita a mano en Figma).
-const DESCRIPCION_PLACEHOLDER =
-  "This a placeholder text to add a brief description of what this element does in the project.";
-// Gris de la descripción (#6B7280).
-const GRIS_DESC: RGB = { r: 0.420, g: 0.447, b: 0.502 };
 
 // Mapa id → caja (x/y/w/h) relativa a la esquina del nodo raíz.
 function cajasRelativas(raiz: SceneNode): Map<string, { x: number; y: number; width: number; height: number }> {
@@ -152,46 +144,11 @@ async function tagSeccion(etiqueta: string): Promise<FrameNode> {
   return chip;
 }
 
-// Bloque de título (nombre del nodo, 40px) + descripción placeholder (gris, 16px).
-async function tituloYDescripcion(nombre: string): Promise<FrameNode> {
-  const bloque = frameVertical("Título", 8);
-  bloque.appendChild(await texto(nombre, 40, FONT_BOLD));
-  const desc = await texto(DESCRIPCION_PLACEHOLDER, 16);
-  desc.fills = [{ type: "SOLID", color: GRIS_DESC }];
-  bloque.appendChild(desc);
-  return bloque;
-}
-
-// Header de página: nombre del plugin (izq) + nombre de sección (der) + borde inferior.
-// Pensado para ir como primer hijo de Specifications (se estira a FILL al appendearlo).
-async function headerPagina(seccion: string): Promise<FrameNode> {
-  const header = frameHorizontal("Header de página", 0);
-  header.primaryAxisAlignItems = "SPACE_BETWEEN";
-  header.counterAxisAlignItems = "CENTER";
-  header.paddingBottom = 12;
-  header.strokes = [{ type: "SOLID", color: BORDE_HEADER }];
-  header.strokeTopWeight = 0;
-  header.strokeLeftWeight = 0;
-  header.strokeRightWeight = 0;
-  header.strokeBottomWeight = 1;
-
-  const izq = await texto(NOMBRE_PLUGIN, 12, FONT_SEMI);
-  izq.fills = [{ type: "SOLID", color: GRIS_OSCURO }];
-  izq.letterSpacing = { value: 8, unit: "PERCENT" };
-
-  const der = await texto(seccion.toUpperCase(), 12, FONT_SEMI);
-  der.fills = [{ type: "SOLID", color: GRIS_OSCURO }];
-  der.letterSpacing = { value: 8, unit: "PERCENT" };
-
-  header.appendChild(izq);
-  header.appendChild(der);
-  return header;
-}
 
 // Construye el [Nombre] Spec (heading + sección Anatomy con lista + artwork).
 async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
-  const spec = frameVertical(`${seleccionado.name} Spec`, 24);
-  spec.appendChild(await tituloYDescripcion(seleccionado.name));
+  const spec = frameVertical(`${seleccionado.name} Spec`, 48);
+  spec.appendChild(await texto(seleccionado.name, 64));
   spec.appendChild(await seccionDeAnatomy(seleccionado, elementos, tabla));
   return spec;
 }
@@ -258,9 +215,6 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
 // Genera el spec de Anatomy de un solo ítem. Devuelve el frame Specifications.
 export async function generarAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
-  const header = await headerPagina("Anatomy");
-  specifications.appendChild(header);
-  header.layoutSizingHorizontal = "FILL";
   specifications.appendChild(await specDeAnatomy(seleccionado, elementos, tabla));
   figma.currentPage.appendChild(specifications);
   return specifications;
@@ -274,9 +228,6 @@ export async function generarAnatomyConNested(
   tabla: boolean,
 ): Promise<FrameNode> {
   const specifications = frameVertical("Specifications", 128, 64);
-  const header = await headerPagina("Anatomy");
-  specifications.appendChild(header);
-  header.layoutSizingHorizontal = "FILL";
   specifications.appendChild(await specDeAnatomy(seleccionado, elementos, tabla));
   for (const n of nested) {
     specifications.appendChild(await specDeAnatomy(n.nodo, n.elementos, tabla));
