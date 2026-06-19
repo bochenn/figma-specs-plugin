@@ -220,16 +220,22 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     anatomyDepth: msg.anatomyDepth ?? "children",
   };
   try {
-    const specifications = frameVertical("Specifications", 128, 64);
-    const spec = frameVertical(`${nodo.name} Spec`, 48);
-    specifications.appendChild(spec);
-    if (msg.leyenda) spec.appendChild(await seccionLeyenda());
+    const specifications = frameVertical("Specifications", 64, 0);
+    let primeraSeccion = true;
     for (const seccion of ORDEN) {
       if (!msg.secciones.includes(seccion)) continue;
       const header = await tituloYEncabezado(nodo.name, ETIQUETA_SECCION[seccion]);
-      spec.appendChild(header);
+      specifications.appendChild(header);
       header.layoutSizingHorizontal = "FILL";
-      for (const f of await seccionPara(nodo, seccion, opts)) spec.appendChild(f);
+
+      const cuerpo = frameVertical(`${nodo.name} Spec`, 64);
+      cuerpo.paddingLeft = cuerpo.paddingRight = cuerpo.paddingBottom = 64;
+      if (primeraSeccion && msg.leyenda) cuerpo.appendChild(await seccionLeyenda());
+      for (const f of await seccionPara(nodo, seccion, opts)) cuerpo.appendChild(f);
+      specifications.appendChild(cuerpo);
+      cuerpo.layoutSizingHorizontal = "FILL";
+
+      primeraSeccion = false;
     }
     figma.currentPage.appendChild(specifications);
     finalizar(specifications, nodo);
