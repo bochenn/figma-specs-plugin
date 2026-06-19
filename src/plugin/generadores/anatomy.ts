@@ -25,10 +25,16 @@ function cajasRelativas(raiz: SceneNode): Map<string, { x: number; y: number; wi
   return mapa;
 }
 
-// Paleta de colores de marcador (badge + borde), cicla por índice.
+// Paleta de colores de marcador (badge + borde), cicla por índice. Texto blanco.
 const COLORES_MARCA: RGB[] = [
-  { r: 0.05, g: 0.4, b: 0.85 }, { r: 0.9, g: 0.2, b: 0.5 }, { r: 0.45, g: 0.3, b: 0.8 },
-  { r: 0.95, g: 0.45, b: 0.1 }, { r: 0.1, g: 0.6, b: 0.4 },
+  hexARgb("#0D80FF"), // azul
+  hexARgb("#FF2D9C"), // magenta
+  hexARgb("#9747FF"), // violeta
+  hexARgb("#F0411E"), // rojo
+  hexARgb("#F5C518"), // amarillo
+  hexARgb("#1FA855"), // verde
+  hexARgb("#5E6B8A"), // slate
+  hexARgb("#F5921E"), // naranja
 ];
 
 // Borde punteado alrededor de la caja, del color del marcador.
