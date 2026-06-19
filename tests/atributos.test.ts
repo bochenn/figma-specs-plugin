@@ -78,3 +78,25 @@ test("opacity 1 (totalmente opaco) no se incluye", () => {
   const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", opacity: 1 };
   assert.equal(leerAtributos(nodo).find((a) => a.clave === "opacity"), undefined);
 });
+
+test("typography con estilo aplicado → usa el nombre del estilo (con grupo)", () => {
+  const nodo: NodoLike = {
+    id: "x", name: "x", type: "TEXT",
+    fontFamily: "Inter", fontStyle: "Medium", fontSize: 14,
+    textStyleName: "Text SM/Medium",
+  };
+  assert.deepEqual(
+    leerAtributos(nodo).find((a) => a.clave === "typography"),
+    { clave: "typography", valor: "Text SM/Medium", formato: "HARDCODED" },
+  );
+});
+
+test("typography sin estilo → usa el raw de la fuente", () => {
+  const nodo: NodoLike = {
+    id: "x", name: "x", type: "TEXT",
+    fontFamily: "Inter", fontStyle: "Medium", fontSize: 14,
+  };
+  const attr = leerAtributos(nodo).find((a) => a.clave === "typography");
+  assert.equal(attr?.formato, "HARDCODED");
+  assert.match(attr?.valor ?? "", /Inter/);
+});
