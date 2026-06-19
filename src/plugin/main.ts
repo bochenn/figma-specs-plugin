@@ -26,6 +26,7 @@ import { extraerDosWay } from "./extraccion/properties.ts";
 import { seccionDeDosWay } from "./generadores/properties.ts";
 import { extraerCompleteAnatomy, extraerCompleteLayout } from "./extraccion/properties.ts";
 import { seccionDeComplete } from "./generadores/complete.ts";
+import { tituloYEncabezado } from "./generadores/encabezado.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
@@ -175,6 +176,18 @@ async function seccionPara(nodo: SceneNode, seccion: Seccion, opts: OpcionesGen)
 // Orden fijo en el que se apilan las secciones elegidas.
 const ORDEN: Seccion[] = ["anatomy", "properties", "layout", "data", "styling", "modes", "twoway", "complete"];
 
+// Etiqueta (mayúsculas) que muestra la barra del encabezado por cada sección.
+const ETIQUETA_SECCION: Record<Seccion, string> = {
+  anatomy: "ANATOMY",
+  properties: "PROPERTIES",
+  layout: "LAYOUT AND SPACING",
+  data: "DATA",
+  styling: "STYLING INVENTORY",
+  modes: "MODES",
+  twoway: "TWO-WAY",
+  complete: "COMPLETE",
+};
+
 figma.ui.onmessage = async (msg: MensajeUI) => {
   if (msg.tipo !== "generar") return;
 
@@ -211,9 +224,11 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     const spec = frameVertical(`${nodo.name} Spec`, 48);
     specifications.appendChild(spec);
     if (msg.leyenda) spec.appendChild(await seccionLeyenda());
-    spec.appendChild(await texto(nodo.name, 64));
     for (const seccion of ORDEN) {
       if (!msg.secciones.includes(seccion)) continue;
+      const header = await tituloYEncabezado(nodo.name, ETIQUETA_SECCION[seccion]);
+      spec.appendChild(header);
+      header.layoutSizingHorizontal = "FILL";
       for (const f of await seccionPara(nodo, seccion, opts)) spec.appendChild(f);
     }
     figma.currentPage.appendChild(specifications);
