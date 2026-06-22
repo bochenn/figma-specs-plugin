@@ -185,11 +185,29 @@ async function dibujarSpacingCallouts(artwork: FrameNode, clon: FrameNode, spec:
   if (p.bottom > 0) vertical(p.bottom, clon.y + clon.height - p.bottom, LINEA_PADDING, await chipSpacing(p.bottom, COTA_PADDING, artwork, sv.paddingBottom));
   if (p.left > 0) horizontal(p.left, clon.x, LINEA_PADDING, await chipSpacing(p.left, COTA_PADDING, artwork, sv.paddingLeft));
   if (p.right > 0) horizontal(p.right, clon.x + clon.width - p.right, LINEA_PADDING, await chipSpacing(p.right, COTA_PADDING, artwork, sv.paddingRight));
+  // Gap medido en su lugar: bracket sobre el gap + chip adyacente (no en el carril del borde).
+  // Dirección HORIZONTAL → gap = franja vertical, se mide el ancho con bracket horizontal
+  // ARRIBA del gap y chip encima. Dirección VERTICAL → gap = franja horizontal, se mide el alto
+  // con bracket vertical a la DERECHA del gap y chip al lado.
+  const gapHorizontal = (g: Rect, chip: FrameNode) => {
+    const yBracket = g.y - 12;
+    const br = figma.createNodeFromSvg(svgCotaH("fixed", g.width, LINEA_GAP));
+    br.x = g.x; br.y = yBracket - 6; artwork.appendChild(br);
+    chip.x = g.x + g.width / 2 - chip.width / 2;
+    chip.y = yBracket - 6 - SEP_VALOR - chip.height;
+  };
+  const gapVertical = (g: Rect, chip: FrameNode) => {
+    const xBracket = g.x + g.width + 12;
+    const br = figma.createNodeFromSvg(svgCotaV("fixed", g.height, LINEA_GAP));
+    br.x = xBracket - 6; br.y = g.y; artwork.appendChild(br);
+    chip.x = xBracket + 6 + SEP_VALOR;
+    chip.y = g.y + g.height / 2 - chip.height / 2;
+  };
   for (const g of gaps) {
     const val = spec.direccion === "VERTICAL" ? g.height : g.width;
     const chip = spec.spacingAuto ? await cota("Auto", COTA_GAP, artwork) : await chipSpacing(val, COTA_GAP, artwork, sv.itemSpacing);
-    if (spec.direccion === "VERTICAL") vertical(g.height, g.y, LINEA_GAP, chip);
-    else horizontal(g.width, g.x, LINEA_GAP, chip);
+    if (spec.direccion === "VERTICAL") gapVertical(g, chip);
+    else gapHorizontal(g, chip);
   }
 }
 
