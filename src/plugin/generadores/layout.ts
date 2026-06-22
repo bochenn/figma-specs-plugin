@@ -393,6 +393,18 @@ async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpe
 
 const UMBRAL_CHICO = 48; // referencia; el umbral real vive en esChico
 
+// Agranda el artwork (a la derecha/abajo) para contener todas las anotaciones que asoman,
+// y que no queden cortadas por el borde del fondo gris ni tapadas por el exhibit.
+function ajustarArtwork(artwork: FrameNode, pad = 16): void {
+  let maxX = 0;
+  let maxY = 0;
+  for (const c of artwork.children) {
+    maxX = Math.max(maxX, c.x + c.width);
+    maxY = Math.max(maxY, c.y + c.height);
+  }
+  artwork.resize(Math.max(artwork.width, maxX + pad), Math.max(artwork.height, maxY + pad));
+}
+
 // Dibuja el artwork de un contenedor en un modo: "completo" (todo), "dimensiones"
 // (solo W/H + medidas de hijos) o "spacing" (solo padding/gap). El clon va corrido
 // (MARGEN_IZQ, MARGEN) para dejar lugar a las anotaciones.
@@ -421,6 +433,7 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, _medirHijos:
     if (modo !== "dimensiones") await dibujarSpacingCallouts(artwork, clon, spec, []);
     const minLeftX = await dibujarMarcas(artwork, [], clon);
     await dibujarCotas(artwork, clon, spec, minLeftX);
+    ajustarArtwork(artwork);
     return artwork;
   }
   const gaps = rectsSpacing(hijosRects, spec.direccion);
@@ -441,6 +454,7 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, _medirHijos:
     icono.y = 8;
     artwork.appendChild(icono);
   }
+  ajustarArtwork(artwork);
   return artwork;
 }
 
