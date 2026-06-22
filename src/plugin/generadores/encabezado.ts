@@ -31,7 +31,7 @@ async function ladoBarra(nombre: string, align: "MIN" | "MAX", contenido: string
 
 // Barra superior _Status: plugin (izq) + sección (der) + divisor inferior.
 async function barraStatus(etiquetaSeccion: string): Promise<FrameNode> {
-  const barra = frameHorizontal("_Status", 0);
+  const barra = frameHorizontal("title", 0);
   barra.counterAxisAlignItems = "CENTER";
   barra.paddingBottom = 12;
   barra.strokes = [{ type: "SOLID", color: BORDE_HEADER }];
