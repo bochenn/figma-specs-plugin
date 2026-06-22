@@ -214,6 +214,8 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
 
   // Marcadores en el riel izquierdo, apilados de arriba a abajo (por Y del anchor),
   // separados para no superponerse; cada uno con una línea guía a su box.
+  // El número del marcador es el índice del elemento (coincide con la lista de la
+  // derecha), no el orden vertical del riel: ordenados por Y pueden quedar 3, 1, 2.
   const RIEL_X = 16;
   anchors.sort((a, b) => a.ay - b.ay);
   let proximoTop = MARGEN_ARTWORK;
