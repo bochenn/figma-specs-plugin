@@ -200,7 +200,7 @@ async function dibujarSpacingCallouts(artwork: FrameNode, clon: FrameNode, spec:
 // (fuera del elemento): fila arriba (padding-top + gaps horizontales + anchos de
 // hijos), fila abajo (padding bottom/left/right), columna izquierda (gaps
 // verticales + altos de hijos). Devuelve el x mínimo a la izquierda.
-async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNode, hijos: Rect[] = []): Promise<number> {
+async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNode): Promise<number> {
   const top: { c: FrameNode; centro: number }[] = [];
   const bottom: { c: FrameNode; centro: number }[] = [];
   const left: { c: FrameNode; centro: number }[] = [];
@@ -216,13 +216,6 @@ async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNod
       else if (m.tipo === "padding" && m.lado === "right") centro = clon.x + clon.width - c.width / 2; // a la inferior derecha
       bottom.push({ c, centro });
     }
-  }
-  // Medidas de hijos (Element measures): ancho al carril de arriba, alto al de la
-  // izquierda, para que compartan la separación anti-colisión con el resto.
-  const u = unidadActual();
-  for (const h of hijos) {
-    if (h.width !== clon.width) top.push({ c: await cota(etiquetaSpacing(h.width, u), COTA_DIM, artwork), centro: h.x + h.width / 2 });
-    if (h.height !== clon.height) left.push({ c: await cota(etiquetaSpacing(h.height, u), COTA_DIM, artwork), centro: h.y + h.height / 2 });
   }
   const filas: [{ c: FrameNode; centro: number }[], number][] = [[top, clon.y - FILA_TOP], [bottom, clon.y + clon.height + FILA_BOT]];
   for (const [grupo, y] of filas) {
@@ -401,31 +394,12 @@ async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpe
   tH.y = clon.y + clon.height / 2 - tH.height / 2;
 }
 
-// Líneas de cota de ancho (arriba) y alto (izquierda) de cada hijo directo. Los
-// badges (números) los ubica dibujarMarcas en los carriles externos.
-function dibujarLineasHijos(artwork: FrameNode, hijos: Rect[], anchoPadre: number, altoPadre: number): void {
-  for (const h of hijos) {
-    if (h.width !== anchoPadre) {
-      const cw = figma.createNodeFromSvg(svgCotaH("fixed", h.width));
-      cw.x = h.x;
-      cw.y = h.y - 14;
-      artwork.appendChild(cw);
-    }
-    if (h.height !== altoPadre) {
-      const ch = figma.createNodeFromSvg(svgCotaV("fixed", h.height));
-      ch.x = h.x - 14;
-      ch.y = h.y;
-      artwork.appendChild(ch);
-    }
-  }
-}
-
 const UMBRAL_CHICO = 48; // referencia; el umbral real vive en esChico
 
 // Dibuja el artwork de un contenedor en un modo: "completo" (todo), "dimensiones"
 // (solo W/H + medidas de hijos) o "spacing" (solo padding/gap). El clon va corrido
 // (MARGEN_IZQ, MARGEN) para dejar lugar a las anotaciones.
-async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: boolean, modo: "completo" | "dimensiones" | "spacing"): Promise<FrameNode> {
+async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, _medirHijos: boolean, modo: "completo" | "dimensiones" | "spacing"): Promise<FrameNode> {
   const artwork = figma.createFrame();
   artwork.name = `Artwork ${spec.elementoNombre}`;
   artwork.layoutMode = "NONE";
@@ -442,15 +416,13 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
     x: MARGEN_IZQ + c.x, y: MARGEN + c.y, width: c.width, height: c.height,
   }));
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
-  const hijosMedidos = medirHijos ? hijosRects : [];
-  if (medirHijos && modo !== "spacing") dibujarLineasHijos(artwork, hijosRects, clon.width, clon.height);
   if (modo !== "dimensiones") for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, PADDING_BANDA, COTA_PADDING.oscuro, artwork);
   if (spec.direccion === "GRID") {
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
     for (const r of columnas) bandaPunteada(r, ROJO, ROJO, artwork);
     for (const r of filas) bandaPunteada(r, ROJO, ROJO, artwork);
     if (modo !== "dimensiones") await dibujarSpacingCallouts(artwork, clon, spec, []);
-    const minLeftX = await dibujarMarcas(artwork, [], clon, hijosMedidos);
+    const minLeftX = await dibujarMarcas(artwork, [], clon);
     await dibujarCotas(artwork, clon, spec, minLeftX);
     return artwork;
   }
@@ -463,7 +435,7 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
     await dibujarSpacingCallouts(artwork, clon, spec, gaps);
   }
 
-  const minLeftX = await dibujarMarcas(artwork, [], clon, modo === "spacing" ? [] : hijosMedidos);
+  const minLeftX = await dibujarMarcas(artwork, [], clon);
   if (modo !== "spacing") await dibujarCotas(artwork, clon, spec, minLeftX);
 
   if (modo !== "dimensiones") {
