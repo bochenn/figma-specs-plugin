@@ -22,9 +22,6 @@ const COTA_PADDING: ParCota = { oscuro: hexARgb("#007BE5"), claro: hexARgb("#62A
 const COTA_GAP: ParCota     = { oscuro: hexARgb("#FF24BD"), claro: hexARgb("#FF84DA"), texto: hexARgb("#FFFFFF") }; // magenta
 const COTA_DIM: ParCota     = { oscuro: hexARgb("#F24822"), claro: hexARgb("#F6866D"), texto: hexARgb("#FFFFFF") }; // rojo
 
-const PADDING_BANDA: RGB = { r: 0.6, g: 0.78, b: 1 };
-const GAP_BANDA: RGB = { r: 1, g: 0.7, b: 0.85 };
-
 // Margen del artwork reservado para las anotaciones (arriba e izquierda).
 // 80px: la cota vertical (44) + el número de la medida (hasta ~3 dígitos) deben
 // entrar sin cortarse contra el borde izquierdo.
@@ -416,7 +413,7 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, _medirHijos:
     x: MARGEN_IZQ + c.x, y: MARGEN + c.y, width: c.width, height: c.height,
   }));
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
-  if (modo !== "dimensiones") for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, PADDING_BANDA, COTA_PADDING.oscuro, artwork);
+  if (modo !== "dimensiones") for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, COTA_PADDING.oscuro, COTA_PADDING.oscuro, artwork);
   if (spec.direccion === "GRID") {
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
     for (const r of columnas) bandaPunteada(r, ROJO, ROJO, artwork);
@@ -428,7 +425,7 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, _medirHijos:
   }
   const gaps = rectsSpacing(hijosRects, spec.direccion);
   if (modo !== "dimensiones") {
-    for (const r of gaps) bandaPunteada(r, GAP_BANDA, COTA_GAP.oscuro, artwork);
+    for (const r of gaps) bandaPunteada(r, COTA_GAP.oscuro, COTA_GAP.oscuro, artwork);
     for (const g of spec.grids) {
       for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
     }
