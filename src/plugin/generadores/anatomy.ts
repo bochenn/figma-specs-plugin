@@ -216,14 +216,20 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
     // Lado izquierdo (default): centro del marcador a la izquierda del box, en su centro vertical.
     let mcx = bx - OFFSET_MARCA - TAM_MARCADOR / 2;
     let mcy = by + caja.height / 2;
+    let arriba = false;
     if (colisiona(mcx, mcy)) {
       // Lado superior: centro del marcador arriba del box, en su centro horizontal.
       mcx = bx + caja.width / 2;
       mcy = by - OFFSET_MARCA - TAM_MARCADOR / 2;
-      lineaGuiaV(artwork, mcx, mcy + TAM_MARCADOR / 2, by, color);
-    } else {
-      lineaGuiaH(artwork, mcx + TAM_MARCADOR / 2, mcy, bx, color);
+      arriba = true;
     }
+    // 3+ marcadores en el mismo box: correrlo en el eje libre del carril hasta despejar.
+    while (colisiona(mcx, mcy)) {
+      if (arriba) mcx += TAM_MARCADOR + 4;
+      else mcy += TAM_MARCADOR + 4;
+    }
+    if (arriba) lineaGuiaV(artwork, mcx, mcy + TAM_MARCADOR / 2, by, color);
+    else lineaGuiaH(artwork, mcx + TAM_MARCADOR / 2, mcy, bx, color);
     artwork.appendChild(await marcador(i + 1, mcx - TAM_MARCADOR / 2, mcy - TAM_MARCADOR / 2, color));
     colocados.push({ x: mcx, y: mcy });
   }

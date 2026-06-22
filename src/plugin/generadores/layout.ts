@@ -194,7 +194,7 @@ async function dibujarSpacingCallouts(artwork: FrameNode, clon: FrameNode, spec:
     const br = figma.createNodeFromSvg(svgCotaH("fixed", g.width, LINEA_GAP));
     br.x = g.x; br.y = yBracket - 6; artwork.appendChild(br);
     chip.x = g.x + g.width / 2 - chip.width / 2;
-    chip.y = yBracket - 6 - SEP_VALOR - chip.height;
+    chip.y = Math.max(0, yBracket - 6 - SEP_VALOR - chip.height);
   };
   const gapVertical = (g: Rect, chip: FrameNode) => {
     const xBracket = g.x + g.width + 12;
