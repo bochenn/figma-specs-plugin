@@ -37,6 +37,8 @@ export function frameHorizontal(nombre: string, gap: number): FrameNode {
 export const FONT_REG: FontName = { family: "Inter", style: "Regular" };
 export const FONT_BOLD: FontName = { family: "Inter", style: "Bold" };
 export const FONT_SEMI: FontName = { family: "Inter", style: "Semi Bold" };
+// Inter Medium (con fallback a Regular vía cargarFont).
+export const FONT_MEDIUM: FontName[] = [{ family: "Inter", style: "Medium" }, { family: "Inter", style: "Regular" }];
 // Monospace: SF Mono primero, JetBrains Mono como fallback (y al final Inter, vía cargarFont).
 export const FONT_MONO: FontName[] = [
   { family: "SF Mono", style: "Regular" },

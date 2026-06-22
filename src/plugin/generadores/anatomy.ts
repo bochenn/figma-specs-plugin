@@ -1,6 +1,6 @@
 import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor, tagSeccion } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor, tagSeccion, FONT_MEDIUM } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
@@ -91,7 +91,7 @@ async function badgePanel(numero: number, color: RGB): Promise<FrameNode> {
   const circulo = figma.createEllipse();
   circulo.resize(TAM_MARCADOR, TAM_MARCADOR);
   circulo.fills = [{ type: "SOLID", color }];
-  const num = await texto(String(numero), 11);
+  const num = await texto(String(numero), 11, FONT_MEDIUM);
   num.fills = [{ type: "SOLID", color: GRIS(1) }];
   const cont = figma.createFrame();
   cont.name = `Badge ${numero}`;
@@ -112,7 +112,7 @@ async function marcador(numero: number, x: number, y: number, color: RGB): Promi
   circulo.resize(TAM_MARCADOR, TAM_MARCADOR);
   circulo.fills = [{ type: "SOLID", color }];
 
-  const num = await texto(String(numero), 14);
+  const num = await texto(String(numero), 14, FONT_MEDIUM);
   num.fills = [{ type: "SOLID", color: GRIS(1) }];
 
   const cont = figma.createFrame();

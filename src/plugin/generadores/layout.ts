@@ -1,6 +1,6 @@
 import type { LayoutSpec, NodoLike, Unidad } from "../modelo/tipos.ts";
 import { hexARgb } from "../utils/color.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor, tagSeccion } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor, tagSeccion, FONT_MEDIUM } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing } from "../utils/espaciado.ts";
@@ -246,7 +246,7 @@ async function cota(valor: string, par: ParCota, artwork: FrameNode): Promise<Fr
   c.paddingLeft = c.paddingRight = 4;
   c.cornerRadius = 4;
   c.fills = [{ type: "SOLID", color: par.oscuro }];
-  const t = await texto(valor, 11);
+  const t = await texto(valor, 11, FONT_MEDIUM);
   t.lineHeight = { unit: "PIXELS", value: 16 };
   t.fills = [{ type: "SOLID", color: par.texto }];
   c.appendChild(t);
@@ -278,12 +278,12 @@ async function cotaConNombre(nombre: string, valor: string, par: ParCota, artwor
   sub.paddingLeft = sub.paddingRight = 2;
   sub.cornerRadius = 2;
   sub.fills = [{ type: "SOLID", color: par.claro }];
-  const tn = await texto(nombre, 11);
+  const tn = await texto(nombre, 11, FONT_MEDIUM);
   tn.lineHeight = { unit: "PIXELS", value: 16 };
   tn.fills = [{ type: "SOLID", color: par.texto }];
   sub.appendChild(tn);
   c.appendChild(sub);
-  const tv = await texto(valor, 11);
+  const tv = await texto(valor, 11, FONT_MEDIUM);
   tv.lineHeight = { unit: "PIXELS", value: 16 };
   tv.fills = [{ type: "SOLID", color: par.texto }];
   c.appendChild(tv);
