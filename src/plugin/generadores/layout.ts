@@ -1,4 +1,4 @@
-import type { LayoutSpec, NodoLike } from "../modelo/tipos.ts";
+import type { LayoutSpec, NodoLike, Unidad } from "../modelo/tipos.ts";
 import { hexARgb } from "../utils/color.ts";
 import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
@@ -77,6 +77,20 @@ async function breadcrumb(camino: { nombre: string; tipo: string }[]): Promise<F
   return col;
 }
 
+// Filas de padding del panel: una sola "Padding" si los 4 lados son uniformes; si no,
+// una fila por lado (Top/Right/Bottom/Left).
+async function filasPadding(p: LayoutSpec["padding"], sv: LayoutSpec["spacingVars"], u: Unidad): Promise<FrameNode[]> {
+  const uniforme = p.left === p.top && p.top === p.right && p.right === p.bottom
+    && sv.paddingLeft === sv.paddingTop && sv.paddingTop === sv.paddingRight && sv.paddingRight === sv.paddingBottom;
+  if (uniforme) return [await filaPropiedad("padding", "Padding", valorSpacing(p.left, u, sv.paddingLeft))];
+  return [
+    await filaPropiedad("padding", "Padding top", valorSpacing(p.top, u, sv.paddingTop)),
+    await filaPropiedad("padding", "Padding right", valorSpacing(p.right, u, sv.paddingRight)),
+    await filaPropiedad("padding", "Padding bottom", valorSpacing(p.bottom, u, sv.paddingBottom)),
+    await filaPropiedad("padding", "Padding left", valorSpacing(p.left, u, sv.paddingLeft)),
+  ];
+}
+
 // Construye el exhibit (bloque de texto) de una capa con Auto Layout como tarjeta.
 async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const u = unidadActual();
@@ -87,25 +101,13 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   if (spec.fill) filas.push(await filaPropiedad("fill", "Fill", valorColor(spec.fill)));
   if (spec.stroke) filas.push(await filaPropiedad("stroke", "Stroke", valorColor(spec.stroke)));
 
-  // Padding: chip si los 4 lados comparten variable y valor; si no, texto colapsado.
-  const p = spec.padding;
-  const padUniforme = p.left === p.top && p.top === p.right && p.right === p.bottom && sv.paddingLeft === sv.paddingTop && sv.paddingTop === sv.paddingRight && sv.paddingRight === sv.paddingBottom;
-  const partesPadding: ParteValor[] = padUniforme
-    ? valorSpacing(p.left, u, sv.paddingLeft)
-    : [
-        ...valorSpacing(p.top, u, sv.paddingTop),
-        ...valorSpacing(p.right, u, sv.paddingRight),
-        ...valorSpacing(p.bottom, u, sv.paddingBottom),
-        ...valorSpacing(p.left, u, sv.paddingLeft),
-      ];
-
   if (spec.direccion === "GRID") {
     filas.push(await filaPropiedad("dir-grid", "Direction", [{ texto: "Grid" }]));
     if (spec.gridColumnas !== undefined) filas.push(await filaPropiedad("columns", "Columns", [{ texto: String(spec.gridColumnas) }]));
     if (spec.gridFilas !== undefined) filas.push(await filaPropiedad("rows", "Rows", [{ texto: String(spec.gridFilas) }]));
     if (spec.gridColumnGap !== undefined) filas.push(await filaPropiedad("spacing-h", "Column gap", valorSpacing(spec.gridColumnGap, u, spec.gridColumnGapVar)));
     if (spec.gridRowGap !== undefined) filas.push(await filaPropiedad("spacing-v", "Row gap", valorSpacing(spec.gridRowGap, u, spec.gridRowGapVar)));
-    filas.push(await filaPropiedad("padding", "Padding", partesPadding));
+    filas.push(...await filasPadding(spec.padding, sv, u));
     if (spec.cornerRadius) filas.push(await filaPropiedad("corner", "Corner radius", valorSpacing(spec.cornerRadius, u, spec.cornerRadiusVar)));
     if (spec.textStyle) filas.push(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
     return tarjeta([await texto(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`, 16, FONT_BOLD)], filas);
@@ -116,7 +118,7 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const gapKey = spec.direccion === "HORIZONTAL" ? "spacing-h" : "spacing-v";
   filas.push(await filaPropiedad(dirKey, "Direction", [{ texto: direccion }]));
   filas.push(await filaPropiedad(iconoAlineacion(spec.direccion, spec.alineacionContraria), "Alignment", [{ texto: `${spec.alineacionPrimaria} / ${spec.alineacionContraria}` }]));
-  filas.push(await filaPropiedad("padding", "Padding", partesPadding));
+  filas.push(...await filasPadding(spec.padding, sv, u));
   filas.push(await filaPropiedad(gapKey, "Item spacing", valorSpacing(spec.itemSpacing, u, sv.itemSpacing)));
   if (spec.cornerRadius) filas.push(await filaPropiedad("corner", "Corner radius", valorSpacing(spec.cornerRadius, u, spec.cornerRadiusVar)));
   for (const g of spec.grids) filas.push(await filaPropiedad("columns", "Grid", [{ texto: textoGrid(g) }]));
