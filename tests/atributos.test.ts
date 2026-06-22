@@ -100,3 +100,27 @@ test("typography sin estilo → usa el raw de la fuente", () => {
   assert.equal(attr?.formato, "HARDCODED");
   assert.match(attr?.valor ?? "", /Inter/);
 });
+
+test("width con layoutSizing FIXED → incluye prefijo Fixed", () => {
+  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 67, layoutSizingHorizontal: "FIXED" };
+  assert.deepEqual(
+    leerAtributos(nodo).find((a) => a.clave === "width"),
+    { clave: "width", valor: "67px", formato: "HARDCODED", prefijo: "Fixed" },
+  );
+});
+
+test("width con layoutSizing HUG → incluye prefijo Hug", () => {
+  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 88, layoutSizingHorizontal: "HUG" };
+  assert.deepEqual(
+    leerAtributos(nodo).find((a) => a.clave === "width"),
+    { clave: "width", valor: "88px", formato: "HARDCODED", prefijo: "Hug" },
+  );
+});
+
+test("width sin layoutSizing → sin prefijo (igual que antes)", () => {
+  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 240 };
+  assert.deepEqual(
+    leerAtributos(nodo).find((a) => a.clave === "width"),
+    { clave: "width", valor: "240px", formato: "HARDCODED" },
+  );
+});

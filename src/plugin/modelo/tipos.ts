@@ -67,6 +67,7 @@ export interface Atributo {
   formato: "HARDCODED" | "VARIABLE" | "STYLE";
   rawValue?: string;    // hex resuelto (para variable/style)
   swatchHex?: string;   // color del swatch (presente en atributos de color)
+  prefijo?: string;     // modo de resizing para width/height ("Fixed" | "Hug" | "Fill")
 }
 
 export interface ElementoAnatomy {

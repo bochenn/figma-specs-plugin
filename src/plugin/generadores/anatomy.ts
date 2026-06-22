@@ -61,6 +61,7 @@ async function filaAtributo(attr: Atributo): Promise<FrameNode> {
     nodos.push(swatch);
   }
   nodos.push(await textoClave(`${attr.clave}:`));
+  if (attr.prefijo) nodos.push(await textoValor(attr.prefijo));
   if (attr.formato !== "HARDCODED") {
     nodos.push(await chipVariable(attr.valor));
     if (attr.rawValue) nodos.push(await textoValor(`(${attr.rawValue})`));

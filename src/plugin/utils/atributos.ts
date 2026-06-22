@@ -41,12 +41,24 @@ export function hexSolido(
   return p && p.color ? aHex(p.color) : undefined;
 }
 
+// Mapea el modo de resizing de Figma a su etiqueta ("FIXED" → "Fixed", etc.).
+function modoDeSizing(s?: string): string | undefined {
+  if (s === "HUG") return "Hug";
+  if (s === "FILL") return "Fill";
+  if (s === "FIXED") return "Fixed";
+  return undefined;
+}
+
 // Atributo de dimensión: VARIABLE (nombre + rawValue) si hay variable atada;
-// HARDCODED (valor pelado) si no.
-function dimensionAtributo(clave: string, px: number, nombreVar?: string): Atributo {
+// HARDCODED (valor pelado) si no. `modo` agrega el prefijo de resizing si está.
+function dimensionAtributo(clave: string, px: number, nombreVar?: string, modo?: string): Atributo {
   const valorFmt = formatearEspaciado(px, unidadActual(), true);
-  if (nombreVar) return { clave, valor: nombreVar, formato: "VARIABLE", rawValue: valorFmt };
-  return { clave, valor: valorFmt, formato: "HARDCODED" };
+  const a: Atributo = nombreVar
+    ? { clave, valor: nombreVar, formato: "VARIABLE", rawValue: valorFmt }
+    : { clave, valor: valorFmt, formato: "HARDCODED" };
+  const prefijo = modoDeSizing(modo);
+  if (prefijo) a.prefijo = prefijo;
+  return a;
 }
 
 // Lee los atributos visuales presentes en un nodo.
@@ -68,11 +80,11 @@ export function leerAtributos(nodo: NodoLike): Atributo[] {
   if (bd) atributos.push(bd);
 
   if (typeof nodo.width === "number") {
-    atributos.push(dimensionAtributo("width", nodo.width, nodo.widthVariableName));
+    atributos.push(dimensionAtributo("width", nodo.width, nodo.widthVariableName, nodo.layoutSizingHorizontal));
   }
 
   if (typeof nodo.height === "number" && nodo.heightVariableName) {
-    atributos.push(dimensionAtributo("height", nodo.height, nodo.heightVariableName));
+    atributos.push(dimensionAtributo("height", nodo.height, nodo.heightVariableName, nodo.layoutSizingVertical));
   }
 
   if (typeof nodo.opacity === "number" && nodo.opacity < 1) {
