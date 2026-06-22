@@ -3,7 +3,7 @@ import { hexARgb } from "../utils/color.ts";
 import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
-import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
+import { unidadActual, etiquetaSpacing } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
 import { marcasLayout, estiloCota, iconoDireccion, iconoAlineacion, valorDim, valorColor, valorSpacing, separarColisiones, carrilDeMarca, esChico, nombreCorto, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
 import { rectsGrid, textoGrid, gridSpecDe, franjasGridAutolayout } from "../utils/grilla.ts";
@@ -84,7 +84,14 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   // Padding: chip si los 4 lados comparten variable y valor; si no, texto colapsado.
   const p = spec.padding;
   const padUniforme = !!sv.paddingLeft && sv.paddingLeft === sv.paddingTop && sv.paddingTop === sv.paddingRight && sv.paddingRight === sv.paddingBottom && p.left === p.top && p.top === p.right && p.right === p.bottom;
-  const partesPadding: ParteValor[] = padUniforme ? valorSpacing(p.left, u, sv.paddingLeft) : [{ texto: textoPadding(p, u, sv) }];
+  const partesPadding: ParteValor[] = padUniforme
+    ? valorSpacing(p.left, u, sv.paddingLeft)
+    : [
+        ...valorSpacing(p.top, u, sv.paddingTop),
+        ...valorSpacing(p.right, u, sv.paddingRight),
+        ...valorSpacing(p.bottom, u, sv.paddingBottom),
+        ...valorSpacing(p.left, u, sv.paddingLeft),
+      ];
 
   if (spec.direccion === "GRID") {
     filas.push(await filaPropiedad("dir-grid", "Direction", [{ texto: "Grid" }]));
