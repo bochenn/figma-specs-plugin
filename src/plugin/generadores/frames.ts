@@ -111,6 +111,23 @@ export async function chipVariable(nombre: string): Promise<FrameNode> {
   return c;
 }
 
+// Chip con borde para el nombre de una sección (ej. "ANATOMY"): sin fill, stroke #374151.
+export async function tagSeccion(etiqueta: string): Promise<FrameNode> {
+  const chip = frameHorizontal("Tag", 0);
+  chip.counterAxisAlignItems = "CENTER";
+  chip.paddingTop = chip.paddingBottom = 6;
+  chip.paddingLeft = chip.paddingRight = 16;
+  chip.cornerRadius = 6;
+  chip.fills = [];
+  chip.strokes = [{ type: "SOLID", color: COLOR_VALOR }];
+  chip.strokeWeight = 1;
+  const t = await texto(etiqueta.toUpperCase(), 12, FONT_SEMI);
+  t.fills = [{ type: "SOLID", color: COLOR_VALOR }];
+  t.letterSpacing = { value: 8, unit: "PERCENT" };
+  chip.appendChild(t);
+  return chip;
+}
+
 // Fila en pill con borde (cada atributo/propiedad). Appendea los nodos provistos.
 export function filaPill(nodos: SceneNode[]): FrameNode {
   const fila = frameHorizontal("Fila", 6);

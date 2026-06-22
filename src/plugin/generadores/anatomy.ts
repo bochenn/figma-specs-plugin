@@ -1,6 +1,6 @@
 import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, FONT_SEMI, textoClave, textoValor } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor, tagSeccion } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
@@ -8,9 +8,6 @@ import { nodoIconoTipo } from "./iconos.ts";
 import { parseVariantes } from "../utils/anatomy-variantes.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
-
-// Gris oscuro del chip de sección (#374151).
-const GRIS_OSCURO: RGB = { r: 0.216, g: 0.255, b: 0.318 };
 
 // Mapa id → caja (x/y/w/h) relativa a la esquina del nodo raíz.
 function cajasRelativas(raiz: SceneNode): Map<string, { x: number; y: number; width: number; height: number }> {
@@ -132,25 +129,6 @@ async function marcador(numero: number, x: number, y: number, color: RGB): Promi
   cont.y = y;
   return cont;
 }
-
-// Chip con borde para el nombre de la sección (ej. "ANATOMY"): sin fill, stroke #374151.
-async function tagSeccion(etiqueta: string): Promise<FrameNode> {
-  const chip = frameHorizontal("Tag", 0);
-  chip.counterAxisAlignItems = "CENTER";
-  chip.paddingTop = chip.paddingBottom = 6;
-  chip.paddingLeft = chip.paddingRight = 16;
-  chip.cornerRadius = 6;
-  chip.fills = [];
-  chip.strokes = [{ type: "SOLID", color: GRIS_OSCURO }];
-  chip.strokeWeight = 1;
-
-  const t = await texto(etiqueta.toUpperCase(), 12, FONT_SEMI);
-  t.fills = [{ type: "SOLID", color: GRIS_OSCURO }];
-  t.letterSpacing = { value: 8, unit: "PERCENT" };
-  chip.appendChild(t);
-  return chip;
-}
-
 
 // Construye el [Nombre] Spec (heading + sección Anatomy con lista + artwork).
 async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {

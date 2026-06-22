@@ -1,6 +1,6 @@
 import type { LayoutSpec, NodoLike, Unidad } from "../modelo/tipos.ts";
 import { hexARgb } from "../utils/color.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor, tagSeccion } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing } from "../utils/espaciado.ts";
@@ -537,9 +537,9 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
 
 // Construye solo la sección Layout and Spacing (sin Specifications ni título de nodo).
 export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<FrameNode> {
-  const seccion = frameVertical("Layout and Spacing", 64);
+  const seccion = frameVertical("Layout and Spacing", 24);
   seccion.clipsContent = false; // los chips/cotas asoman del margen del artwork
-  seccion.appendChild(await texto("Layout and Spacing", 48));
+  seccion.appendChild(await tagSeccion("Layout and Spacing"));
 
   const recorridos = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar);
   const contenedores = recorridos.map((r) => r.nodo) as unknown as FrameNode[];
