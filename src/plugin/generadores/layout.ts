@@ -150,6 +150,7 @@ function bandaPunteada(r: Rect, colorFill: RGB, colorStroke: RGB, artwork: Frame
 }
 
 const SEP_CHIP = 4;     // separación mínima entre cotas del mismo carril
+const SEP_VALOR = 4;    // separación constante entre el chip de la cota y su bracket
 const FILA_TOP = 24;    // distancia de la fila superior sobre el borde del elemento
 const FILA_BOT = 8;     // distancia de la fila inferior bajo el borde
 const COL_IZQ = 8;      // distancia de la columna izquierda al borde
@@ -174,13 +175,13 @@ async function dibujarSpacingCallouts(artwork: FrameNode, clon: FrameNode, spec:
   const vertical = (largo: number, y0: number, lineaColor: string, chip: FrameNode) => {
     const br = figma.createNodeFromSvg(svgCotaV("fixed", largo, lineaColor));
     br.x = xBr - 6; br.y = y0; artwork.appendChild(br);
-    chip.x = xBr + 8; chip.y = y0 + largo / 2 - chip.height / 2;
+    chip.x = xBr + 6 + SEP_VALOR; chip.y = y0 + largo / 2 - chip.height / 2;
   };
   // Bracket horizontal (mide banda de ancho `largo` desde `x0`) + chip abajo.
   const horizontal = (largo: number, x0: number, lineaColor: string, chip: FrameNode) => {
     const br = figma.createNodeFromSvg(svgCotaH("fixed", largo, lineaColor));
     br.x = x0; br.y = yBr - 6; artwork.appendChild(br);
-    chip.x = x0 + largo / 2 - chip.width / 2; chip.y = yBr + 8;
+    chip.x = x0 + largo / 2 - chip.width / 2; chip.y = yBr + 6 + SEP_VALOR;
   };
 
   if (p.top > 0) vertical(p.top, clon.y, LINEA_PADDING, await chipSpacing(p.top, COTA_PADDING, artwork, sv.paddingTop));
@@ -389,14 +390,14 @@ async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpe
   artwork.appendChild(cotaH);
   const tW = await cota(etiquetaSpacing(spec.width, u), COTA_DIM, artwork);
   tW.x = clon.x + clon.width / 2 - tW.width / 2;
-  tW.y = clon.y - 44 - 12;
+  tW.y = clon.y - 44 - SEP_VALOR - tW.height;
   const xLinea = Math.min(clon.x - 44, minLeftX - 28);
   const cotaV = figma.createNodeFromSvg(svgCotaV(estiloCota(spec.resizingVertical), clon.height));
   cotaV.x = xLinea;
   cotaV.y = clon.y;
   artwork.appendChild(cotaV);
   const tH = await cota(etiquetaSpacing(spec.height, u), COTA_DIM, artwork);
-  tH.x = xLinea - tH.width - 2;
+  tH.x = xLinea - SEP_VALOR - tH.width;
   tH.y = clon.y + clon.height / 2 - tH.height / 2;
 }
 
