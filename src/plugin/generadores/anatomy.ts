@@ -206,12 +206,12 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
   // El número del marcador es el índice del elemento (coincide con la lista de la derecha),
   // no el orden horizontal del riel.
   const RIEL_Y = 8;
-  anchors.sort((a, b) => a.ay - b.ay);
+  anchors.sort((a, b) => a.centroX - b.centroX); // izquierda→derecha: el spread por X funciona bien
   let proximoCentro = MARGEN_ARTWORK + TAM_MARCADOR / 2;
   for (const an of anchors) {
     let cx = Math.max(an.centroX, proximoCentro);
     cx = Math.min(cx, an.der - TAM_MARCADOR / 2);
-    cx = Math.max(cx, an.izq + TAM_MARCADOR / 2);
+    cx = Math.max(cx, an.izq + TAM_MARCADOR / 2); // si der-izq < TAM, gana el borde izq
     lineaGuiaV(artwork, cx, RIEL_Y + TAM_MARCADOR, an.ay, an.color);
     artwork.appendChild(await marcador(an.numero, cx - TAM_MARCADOR / 2, RIEL_Y, an.color));
     proximoCentro = cx + TAM_MARCADOR + 4;

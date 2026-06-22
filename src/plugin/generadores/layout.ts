@@ -396,6 +396,8 @@ const UMBRAL_CHICO = 48; // referencia; el umbral real vive en esChico
 // Agranda el artwork (a la derecha/abajo) para contener todas las anotaciones que asoman,
 // y que no queden cortadas por el borde del fondo gris ni tapadas por el exhibit.
 function ajustarArtwork(artwork: FrameNode, pad = 16): void {
+  // Asume hijos con x/y >= 0 (el clon arranca en MARGEN_IZQ/MARGEN y las anotaciones
+  // caen dentro): solo se agranda a la derecha/abajo, no se reposiciona el origen.
   let maxX = 0;
   let maxY = 0;
   for (const c of artwork.children) {
