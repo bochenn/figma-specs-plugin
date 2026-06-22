@@ -1,12 +1,13 @@
 import type { NodoLike } from "../modelo/tipos.ts";
 import { gridSpecDe } from "../utils/grilla.ts";
+import { limpiarPrefijoColeccion } from "../utils/nombre-variable.ts";
 
 // Resuelve una variable a "Colección/Variable" (o solo su nombre si no hay collection).
 function nombreVariable(id: string): string | undefined {
   const variable = figma.variables.getVariableById(id);
   if (!variable) return undefined;
   const col = figma.variables.getVariableCollectionById(variable.variableCollectionId);
-  return col ? `${col.name}/${variable.name}` : variable.name;
+  return col ? `${limpiarPrefijoColeccion(col.name)}/${variable.name}` : variable.name;
 }
 
 // Convierte un nodo real de Figma en NodoLike (solo lo que leen los módulos puros).
