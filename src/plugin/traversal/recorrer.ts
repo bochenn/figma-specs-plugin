@@ -1,6 +1,6 @@
 import type { NodoLike } from "../modelo/tipos.ts";
 
-export interface Recorrido { nodo: NodoLike; profundidad: number; camino?: string[]; }
+export interface Recorrido { nodo: NodoLike; profundidad: number; camino?: { nombre: string; tipo: string }[]; }
 
 const TIPOS_INSTANCIA = "INSTANCE";
 const TIPOS_CONTENEDOR = ["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET"];

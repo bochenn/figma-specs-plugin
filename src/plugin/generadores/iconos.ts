@@ -76,12 +76,12 @@ const ICONOS_TIPO: Record<string, string> = {
 };
 
 // Nodo del ícono del tipo de capa (o undefined si no hay ícono para ese tipo).
-export function nodoIconoTipo(tipo: string): SceneNode | undefined {
+export function nodoIconoTipo(tipo: string, tam = 24): SceneNode | undefined {
   const raw = ICONOS_TIPO[tipo];
   if (!raw) return undefined;
   const svg = raw
-    .replace(/width="\d+"/, 'width="24"')
-    .replace(/height="\d+"/, 'height="24"')
+    .replace(/width="\d+"/, `width="${tam}"`)
+    .replace(/height="\d+"/, `height="${tam}"`)
     .replace(/\s*style="[^"]*"/g, "")
     .split("black").join("#666666")
     .split("#007BE5").join("#666666");

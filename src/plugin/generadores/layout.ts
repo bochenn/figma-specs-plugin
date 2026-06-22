@@ -9,7 +9,7 @@ import { marcasLayout, estiloCota, iconoDireccion, iconoAlineacion, valorDim, va
 import { rectsGrid, textoGrid, gridSpecDe, franjasGridAutolayout } from "../utils/grilla.ts";
 import { prefijoProfundidad } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
-import { nodoIcono } from "./iconos.ts";
+import { nodoIcono, nodoIconoTipo } from "./iconos.ts";
 
 const AZUL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
 const VERDE: RGB = { r: 0.1, g: 0.7, b: 0.3 };
@@ -56,17 +56,23 @@ async function filaPropiedad(iconoKey: string, label: string, partes: ParteValor
 const ANCHO_BREADCRUMB = 160;
 const GRIS_ANCESTRO: RGB = { r: 0.6, g: 0.6, b: 0.6 };
 
-// Columna de jerarquía: un texto por ancestro (raíz→elemento), indentado por
-// nivel. Los ancestros van en gris; el último (el elemento de la fila) en el
-// color de texto normal, para resaltarlo. Ancho fijo para alinear los artworks.
-async function breadcrumb(camino: string[]): Promise<FrameNode> {
+// Columna de jerarquía: una fila por ancestro (raíz→elemento), con icono de tipo
+// e indentación progresiva. Los ancestros van en gris; el último en color normal.
+// Ancho fijo para alinear los artworks.
+async function breadcrumb(camino: { nombre: string; tipo: string }[]): Promise<FrameNode> {
   const col = frameVertical("Hierarchy", 4);
   col.counterAxisSizingMode = "FIXED";
   col.resize(ANCHO_BREADCRUMB, col.height);
   for (let i = 0; i < camino.length; i++) {
-    const t = await texto("  ".repeat(i) + camino[i], 12);
+    const fila = frameHorizontal("Capa", 4);
+    fila.counterAxisAlignItems = "CENTER";
+    fila.paddingLeft = i * 12;
+    const icono = nodoIconoTipo(camino[i].tipo, 16);
+    if (icono) fila.appendChild(icono);
+    const t = await texto(camino[i].nombre, 12);
     if (i < camino.length - 1) t.fills = [{ type: "SOLID", color: GRIS_ANCESTRO }];
-    col.appendChild(t);
+    fila.appendChild(t);
+    col.appendChild(fila);
   }
   return col;
 }
@@ -544,7 +550,7 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   for (let i = inicio; i < n; i++) {
     const fila = frameHorizontal(`Layout ${specs[i].elementoNombre}`, 48);
     fila.clipsContent = false; // los chips/cotas del artwork pueden asomar del margen
-    fila.appendChild(await breadcrumb(recorridos[i].camino ?? [specs[i].elementoNombre]));
+    fila.appendChild(await breadcrumb(recorridos[i].camino ?? [{ nombre: specs[i].elementoNombre, tipo: specs[i].tipo }]));
     fila.appendChild(await artworkDe(contenedores[i], specs[i], medirHijos));
     fila.appendChild(await exhibit(specs[i]));
     filas.push(fila);
@@ -562,7 +568,7 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
     if (gridsRaiz.length > 0) {
       const fila = frameHorizontal(`Layout ${seleccionado.name}`, 48);
       fila.clipsContent = false;
-      fila.appendChild(await breadcrumb([seleccionado.name]));
+      fila.appendChild(await breadcrumb([{ nombre: seleccionado.name, tipo: seleccionado.type }]));
       fila.appendChild(await artworkGrids(seleccionado as FrameNode, gridsRaiz));
       fila.appendChild(await exhibitGrids(seleccionado, gridsRaiz));
       filas.unshift(fila);
