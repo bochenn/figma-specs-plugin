@@ -44,7 +44,7 @@ export function hexSolido(
 // Atributo de dimensión: VARIABLE (nombre + rawValue) si hay variable atada;
 // HARDCODED (valor pelado) si no.
 function dimensionAtributo(clave: string, px: number, nombreVar?: string): Atributo {
-  const valorFmt = formatearEspaciado(px, unidadActual());
+  const valorFmt = formatearEspaciado(px, unidadActual(), true);
   if (nombreVar) return { clave, valor: nombreVar, formato: "VARIABLE", rawValue: valorFmt };
   return { clave, valor: valorFmt, formato: "HARDCODED" };
 }

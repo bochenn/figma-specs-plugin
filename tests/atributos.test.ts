@@ -41,7 +41,7 @@ test("incluye width cuando está presente (sin swatch)", () => {
   const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 240 };
   assert.deepEqual(
     leerAtributos(nodo).find((a) => a.clave === "width"),
-    { clave: "width", valor: "240", formato: "HARDCODED" },
+    { clave: "width", valor: "240px", formato: "HARDCODED" },
   );
 });
 
@@ -49,7 +49,7 @@ test("width con variable atada → VARIABLE + rawValue", () => {
   const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 343, widthVariableName: "DS Sizing/iOS width" };
   assert.deepEqual(
     leerAtributos(nodo).find((a) => a.clave === "width"),
-    { clave: "width", valor: "DS Sizing/iOS width", formato: "VARIABLE", rawValue: "343" },
+    { clave: "width", valor: "DS Sizing/iOS width", formato: "VARIABLE", rawValue: "343px" },
   );
 });
 
@@ -62,7 +62,7 @@ test("height con variable atada → aparece como VARIABLE", () => {
   const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 100, height: 48, heightVariableName: "DS Sizing/button" };
   assert.deepEqual(
     leerAtributos(nodo).find((a) => a.clave === "height"),
-    { clave: "height", valor: "DS Sizing/button", formato: "VARIABLE", rawValue: "48" },
+    { clave: "height", valor: "DS Sizing/button", formato: "VARIABLE", rawValue: "48px" },
   );
 });
 

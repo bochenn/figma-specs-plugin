@@ -96,10 +96,10 @@ test("nombreCorto: último segmento tras la barra", () => {
 });
 
 test("valorDim: con variable → resizing + chip + (valor)", () => {
-  assert.deepEqual(valorDim("Fixed", 240, "px", "sizing/card-width"), [{ texto: "Fixed" }, { chip: "sizing/card-width" }, { texto: "(240)" }]);
+  assert.deepEqual(valorDim("Fixed", 240, "px", "sizing/card-width"), [{ texto: "Fixed" }, { chip: "sizing/card-width" }, { texto: "(240px)" }]);
 });
 test("valorDim: sin variable → resizing + valor en texto", () => {
-  assert.deepEqual(valorDim("Hug", 88, "px"), [{ texto: "Hug 88" }]);
+  assert.deepEqual(valorDim("Hug", 88, "px"), [{ texto: "Hug 88px" }]);
 });
 test("valorColor: variable/style → chip + (raw)", () => {
   assert.deepEqual(valorColor({ clave: "fill", valor: "color/surface", formato: "VARIABLE", rawValue: "#FFFFFF" }), [{ chip: "color/surface" }, { texto: "(#FFFFFF)" }]);
@@ -108,10 +108,10 @@ test("valorColor: hardcoded → solo texto", () => {
   assert.deepEqual(valorColor({ clave: "fill", valor: "#000000", formato: "HARDCODED" }), [{ texto: "#000000" }]);
 });
 test("valorSpacing: con variable → chip + (valor)", () => {
-  assert.deepEqual(valorSpacing(16, "px", "space/padding-1x"), [{ chip: "space/padding-1x" }, { texto: "(16)" }]);
+  assert.deepEqual(valorSpacing(16, "px", "space/padding-1x"), [{ chip: "space/padding-1x" }, { texto: "(16px)" }]);
 });
 test("valorSpacing: sin variable → solo texto", () => {
-  assert.deepEqual(valorSpacing(8, "px"), [{ texto: "8" }]);
+  assert.deepEqual(valorSpacing(8, "px"), [{ texto: "8px" }]);
 });
 
 test("separarColisiones: sin solape deja los centros igual", () => {

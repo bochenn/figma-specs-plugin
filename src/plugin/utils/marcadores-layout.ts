@@ -13,8 +13,8 @@ export type ParteValor = { texto: string } | { chip: string };
 
 // Width/Height: con variable → modo + chip(nombre) + (valor); sin variable → "modo valor".
 export function valorDim(resizing: string, px: number, unidad: Unidad, nombreVar?: string): ParteValor[] {
-  if (nombreVar) return [{ texto: resizing }, { chip: nombreVar }, { texto: `(${formatearEspaciado(px, unidad)})` }];
-  return [{ texto: `${resizing} ${formatearEspaciado(px, unidad)}` }];
+  if (nombreVar) return [{ texto: resizing }, { chip: nombreVar }, { texto: `(${formatearEspaciado(px, unidad, true)})` }];
+  return [{ texto: `${resizing} ${formatearEspaciado(px, unidad, true)}` }];
 }
 
 // Fill/Stroke: variable/style → chip(nombre) + (rawValue); hardcoded → texto(valor).
@@ -29,8 +29,8 @@ export function valorColor(attr: Atributo): ParteValor[] {
 
 // Padding/Gap: con variable → chip(nombre) + (valor); sin variable → texto(valor).
 export function valorSpacing(px: number, unidad: Unidad, nombreVar?: string): ParteValor[] {
-  if (nombreVar) return [{ chip: nombreVar }, { texto: `(${formatearEspaciado(px, unidad)})` }];
-  return [{ texto: formatearEspaciado(px, unidad) }];
+  if (nombreVar) return [{ chip: nombreVar }, { texto: `(${formatearEspaciado(px, unidad, true)})` }];
+  return [{ texto: formatearEspaciado(px, unidad, true) }];
 }
 
 export interface Marca {

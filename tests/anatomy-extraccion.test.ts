@@ -45,7 +45,7 @@ test("incluye atributos visuales del elemento", () => {
   const elementos = extraerAnatomy(raiz);
   assert.deepEqual(elementos[0].atributos, [
     { clave: "background-color", valor: "#000000", formato: "HARDCODED", swatchHex: "#000000" },
-    { clave: "width", valor: "100", formato: "HARDCODED" },
+    { clave: "width", valor: "100px", formato: "HARDCODED" },
   ]);
 });
 
