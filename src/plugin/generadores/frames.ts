@@ -130,6 +130,15 @@ export async function tagSeccion(etiqueta: string): Promise<FrameNode> {
   return chip;
 }
 
+// Párrafo descriptivo de una sección (gris, ancho fijo con wrap). Va debajo del tag.
+export async function parrafoSeccion(descripcion: string, ancho = 720): Promise<TextNode> {
+  const t = await texto(descripcion, 14);
+  t.fills = [{ type: "SOLID", color: COLOR_CLAVE }];
+  t.textAutoResize = "HEIGHT";
+  t.resize(ancho, t.height);
+  return t;
+}
+
 // Fila en pill con borde (cada atributo/propiedad). Appendea los nodos provistos.
 export function filaPill(nodos: SceneNode[]): FrameNode {
   const fila = frameHorizontal("Fila", 6);

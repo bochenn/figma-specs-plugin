@@ -1,6 +1,6 @@
 import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor, tagSeccion, FONT_MEDIUM } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor, tagSeccion, FONT_MEDIUM, parrafoSeccion } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
@@ -152,6 +152,7 @@ async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy
 export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
   const seccion = frameVertical("Anatomy", 24);
   seccion.appendChild(await tagSeccion("Anatomy"));
+  seccion.appendChild(await parrafoSeccion("Desglosa el elemento en sus capas. Cada capa se numera sobre el diseño (a la izquierda) y se detalla a la derecha con su tipo y sus atributos —color, dimensiones, tipografía y las variables aplicadas—. Úsalo para entender de qué está compuesto el elemento y qué tokens del sistema usa cada parte."));
 
   // Display horizontal: lista a la izquierda, artwork a la derecha.
   const display = figma.createFrame();
