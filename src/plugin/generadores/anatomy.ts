@@ -130,25 +130,14 @@ async function marcador(numero: number, x: number, y: number, color: RGB): Promi
   return cont;
 }
 
-// Línea guía en L (del color del marcador) desde el marcador hasta el anchor del box:
-// segmento horizontal a la altura del marcador + segmento vertical hasta el anchor.
-function lineaGuia(artwork: FrameNode, desdeX: number, desdeY: number, haciaX: number, haciaY: number, color: RGB): void {
-  if (haciaX !== desdeX) {
-    const h = figma.createRectangle();
-    h.x = Math.min(desdeX, haciaX);
-    h.y = desdeY - 0.5;
-    h.resize(Math.max(Math.abs(haciaX - desdeX), 0.01), 1);
-    h.fills = [{ type: "SOLID", color }];
-    artwork.appendChild(h);
-  }
-  if (haciaY !== desdeY) {
-    const v = figma.createRectangle();
-    v.x = haciaX - 0.5;
-    v.y = Math.min(desdeY, haciaY);
-    v.resize(1, Math.max(Math.abs(haciaY - desdeY), 0.01));
-    v.fills = [{ type: "SOLID", color }];
-    artwork.appendChild(v);
-  }
+// Línea guía vertical recta (del color del marcador): de `desdeY` a `haciaY` en la X dada.
+function lineaGuiaV(artwork: FrameNode, x: number, desdeY: number, haciaY: number, color: RGB): void {
+  const v = figma.createRectangle();
+  v.x = x - 0.5;
+  v.y = Math.min(desdeY, haciaY);
+  v.resize(1, Math.max(Math.abs(haciaY - desdeY), 0.01));
+  v.fills = [{ type: "SOLID", color }];
+  artwork.appendChild(v);
 }
 
 // Construye el [Nombre] Spec (heading + sección Anatomy con lista + artwork).
@@ -184,24 +173,24 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
 
   // Margen para que los badges de las capas pegadas al borde no se corten.
   const MARGEN_ARTWORK = 20;
-  // Riel a la izquierda del clon donde se apilan los marcadores (callouts).
-  const RIEL = 80;
+  // Margen superior (riel) donde se ubican los marcadores (callouts) sobre el clon.
+  const RIEL_TOP = 64;
   // Tamaño mínimo del canvas gris: un elemento chico queda centrado en una caja amplia.
   const ARTWORK_MIN = 440;
   const clon = seleccionado.clone();
   artwork.appendChild(clon);
-  const areaW = Math.max(ARTWORK_MIN, clon.width + 2 * MARGEN_ARTWORK);
-  const canvasW = areaW + RIEL;
-  const canvasH = Math.max(ARTWORK_MIN, clon.height + 2 * MARGEN_ARTWORK);
+  const canvasW = Math.max(ARTWORK_MIN, clon.width + 2 * MARGEN_ARTWORK);
+  const areaH = Math.max(ARTWORK_MIN, clon.height + 2 * MARGEN_ARTWORK);
+  const canvasH = areaH + RIEL_TOP;
   artwork.resize(canvasW, canvasH);
-  const offsetX = RIEL + (areaW - clon.width) / 2;
-  const offsetY = (canvasH - clon.height) / 2;
+  const offsetX = (canvasW - clon.width) / 2;
+  const offsetY = RIEL_TOP + (areaH - clon.height) / 2;
   clon.x = offsetX;
   clon.y = offsetY;
 
-  // Borde punteado de cada box + recolección de anchors (esquina sup-izq del box).
+  // Borde punteado de cada box + recolección de anchors (borde superior del box).
   const cajas = cajasRelativas(seleccionado);
-  const anchors: { numero: number; color: RGB; ax: number; ay: number }[] = [];
+  const anchors: { numero: number; color: RGB; centroX: number; izq: number; der: number; ay: number }[] = [];
   for (let i = 0; i < elementos.length; i++) {
     const caja = cajas.get(elementos[i].id);
     if (!caja) continue;
@@ -209,22 +198,23 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
     const ax = caja.x + offsetX;
     const ay = caja.y + offsetY;
     bordeMarca({ x: ax, y: ay, width: caja.width, height: caja.height }, color, artwork);
-    anchors.push({ numero: i + 1, color, ax, ay });
+    anchors.push({ numero: i + 1, color, centroX: ax + caja.width / 2, izq: ax, der: ax + caja.width, ay });
   }
 
-  // Marcadores en el riel izquierdo, apilados de arriba a abajo (por Y del anchor),
-  // separados para no superponerse; cada uno con una línea guía a su box.
-  // El número del marcador es el índice del elemento (coincide con la lista de la
-  // derecha), no el orden vertical del riel: ordenados por Y pueden quedar 3, 1, 2.
-  const RIEL_X = 16;
+  // Marcadores en el riel superior, separados horizontalmente (dentro del ancho de su box);
+  // cada uno con una línea VERTICAL recta hacia el borde superior de su box (sin esquinas).
+  // El número del marcador es el índice del elemento (coincide con la lista de la derecha),
+  // no el orden horizontal del riel.
+  const RIEL_Y = 8;
   anchors.sort((a, b) => a.ay - b.ay);
-  let proximoTop = MARGEN_ARTWORK;
+  let proximoCentro = MARGEN_ARTWORK + TAM_MARCADOR / 2;
   for (const an of anchors) {
-    const top = Math.max(an.ay - TAM_MARCADOR / 2, proximoTop);
-    const cy = top + TAM_MARCADOR / 2;
-    lineaGuia(artwork, RIEL_X + TAM_MARCADOR, cy, an.ax, an.ay, an.color);
-    artwork.appendChild(await marcador(an.numero, RIEL_X, top, an.color));
-    proximoTop = top + TAM_MARCADOR + 4;
+    let cx = Math.max(an.centroX, proximoCentro);
+    cx = Math.min(cx, an.der - TAM_MARCADOR / 2);
+    cx = Math.max(cx, an.izq + TAM_MARCADOR / 2);
+    lineaGuiaV(artwork, cx, RIEL_Y + TAM_MARCADOR, an.ay, an.color);
+    artwork.appendChild(await marcador(an.numero, cx - TAM_MARCADOR / 2, RIEL_Y, an.color));
+    proximoCentro = cx + TAM_MARCADOR + 4;
   }
 
   // Contenido: tabla o lista (va a la DERECHA).
