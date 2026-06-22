@@ -16,11 +16,11 @@ const VERDE: RGB = { r: 0.1, g: 0.7, b: 0.3 };
 const NARANJA: RGB = { r: 1, g: 0.5, b: 0.1 };
 const ROJO: RGB = { r: 1, g: 0.1, b: 0.3 };
 
-// Cotas: fondo claro + texto oscuro (paleta colores-cotas-anotaciones).
-interface ParCota { bg: RGB; texto: RGB; }
-const COTA_PADDING: ParCota = { bg: hexARgb("#E6F0FB"), texto: hexARgb("#324049") }; // azul claro / slate
-const COTA_GAP: ParCota     = { bg: hexARgb("#FBE5F0"), texto: hexARgb("#C71E84") }; // rosa claro / magenta
-const COTA_DIM: ParCota     = { bg: hexARgb("#E8F6EC"), texto: hexARgb("#1E6B3A") }; // verde claro / verde
+// Cotas: pill/fondo oscuro + cápsula del nombre de variable en claro + texto.
+interface ParCota { oscuro: RGB; claro: RGB; texto: RGB; }
+const COTA_PADDING: ParCota = { oscuro: hexARgb("#007BE5"), claro: hexARgb("#62ACFF"), texto: hexARgb("#FFFFFF") }; // azul
+const COTA_GAP: ParCota     = { oscuro: hexARgb("#FF24BD"), claro: hexARgb("#FF84DA"), texto: hexARgb("#FFFFFF") }; // magenta
+const COTA_DIM: ParCota     = { oscuro: hexARgb("#F24822"), claro: hexARgb("#F6866D"), texto: hexARgb("#FFFFFF") }; // rojo
 
 const PADDING_BANDA: RGB = { r: 0.6, g: 0.78, b: 1 };
 const GAP_BANDA: RGB = { r: 1, g: 0.7, b: 0.85 };
@@ -239,7 +239,7 @@ async function cota(valor: string, par: ParCota, artwork: FrameNode): Promise<Fr
   c.paddingTop = c.paddingBottom = 1;
   c.paddingLeft = c.paddingRight = 4;
   c.cornerRadius = 4;
-  c.fills = [{ type: "SOLID", color: par.bg }];
+  c.fills = [{ type: "SOLID", color: par.oscuro }];
   const t = await texto(valor, 11);
   t.lineHeight = { unit: "PIXELS", value: 16 };
   t.fills = [{ type: "SOLID", color: par.texto }];
@@ -248,8 +248,8 @@ async function cota(valor: string, par: ParCota, artwork: FrameNode): Promise<Fr
   return c;
 }
 
-// Cota de dos partes: pill claro con sub-pill oscura `value` (nombre de variable, texto
-// blanco) + el valor numérico en color oscuro. Estilo cota.pdf.
+// Cota de dos partes: pill oscuro con sub-cápsula clara `value` (nombre de variable) +
+// el valor numérico; textos en el color de texto del par. Estilo cota.pdf / subchip.pdf.
 async function cotaConNombre(nombre: string, valor: string, par: ParCota, artwork: FrameNode): Promise<FrameNode> {
   const c = figma.createFrame();
   c.name = "cota";
@@ -262,7 +262,7 @@ async function cotaConNombre(nombre: string, valor: string, par: ParCota, artwor
   c.paddingLeft = 2;
   c.paddingRight = 4;
   c.cornerRadius = 4;
-  c.fills = [{ type: "SOLID", color: par.bg }];
+  c.fills = [{ type: "SOLID", color: par.oscuro }];
   const sub = figma.createFrame();
   sub.name = "value";
   sub.layoutMode = "HORIZONTAL";
@@ -271,10 +271,10 @@ async function cotaConNombre(nombre: string, valor: string, par: ParCota, artwor
   sub.paddingTop = sub.paddingBottom = 0;
   sub.paddingLeft = sub.paddingRight = 2;
   sub.cornerRadius = 2;
-  sub.fills = [{ type: "SOLID", color: par.texto }];
+  sub.fills = [{ type: "SOLID", color: par.claro }];
   const tn = await texto(nombre, 11);
   tn.lineHeight = { unit: "PIXELS", value: 16 };
-  tn.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
+  tn.fills = [{ type: "SOLID", color: par.texto }];
   sub.appendChild(tn);
   c.appendChild(sub);
   const tv = await texto(valor, 11);
@@ -285,7 +285,7 @@ async function cotaConNombre(nombre: string, valor: string, par: ParCota, artwor
   return c;
 }
 
-const COTA_DIM_HEX = "#1E6B3A"; // las cotas de dimensión → verde (acorde a COTA_DIM)
+const COTA_DIM_HEX = "#F24822"; // las cotas de dimensión → rojo (acorde a COTA_DIM)
 const GRIS_HEX = "#444444";
 
 // Cota horizontal de `largo` px; las puntas codifican el resizing.
@@ -316,8 +316,8 @@ function svgCotaV(estilo: "fixed" | "fill" | "hug", largo: number, color = COTA_
   return `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="${L}">${base}${puntas}</svg>`;
 }
 
-const LINEA_PADDING = "#324049"; // slate, acorde a COTA_PADDING
-const LINEA_GAP = "#C71E84";     // magenta, acorde a COTA_GAP
+const LINEA_PADDING = "#007BE5"; // azul, acorde a COTA_PADDING
+const LINEA_GAP = "#FF24BD";     // magenta, acorde a COTA_GAP
 
 // Línea de cota vertical centrada en `xCentro`, desde `y`, de `largo` px.
 function lineaV(artwork: FrameNode, xCentro: number, y: number, largo: number, color: string): void {
@@ -424,7 +424,7 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
   const hijosMedidos = medirHijos ? hijosRects : [];
   if (medirHijos && modo !== "spacing") dibujarLineasHijos(artwork, hijosRects);
-  if (modo !== "dimensiones") for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, PADDING_BANDA, COTA_PADDING.texto, artwork);
+  if (modo !== "dimensiones") for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, PADDING_BANDA, COTA_PADDING.oscuro, artwork);
   if (spec.direccion === "GRID") {
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
     for (const r of columnas) bandaPunteada(r, ROJO, ROJO, artwork);
@@ -436,7 +436,7 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
   }
   const gaps = rectsSpacing(hijosRects, spec.direccion);
   if (modo !== "dimensiones") {
-    for (const r of gaps) bandaPunteada(r, GAP_BANDA, COTA_GAP.texto, artwork);
+    for (const r of gaps) bandaPunteada(r, GAP_BANDA, COTA_GAP.oscuro, artwork);
     for (const g of spec.grids) {
       for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
     }
