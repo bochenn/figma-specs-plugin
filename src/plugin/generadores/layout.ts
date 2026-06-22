@@ -83,7 +83,7 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
 
   // Padding: chip si los 4 lados comparten variable y valor; si no, texto colapsado.
   const p = spec.padding;
-  const padUniforme = !!sv.paddingLeft && sv.paddingLeft === sv.paddingTop && sv.paddingTop === sv.paddingRight && sv.paddingRight === sv.paddingBottom && p.left === p.top && p.top === p.right && p.right === p.bottom;
+  const padUniforme = p.left === p.top && p.top === p.right && p.right === p.bottom && sv.paddingLeft === sv.paddingTop && sv.paddingTop === sv.paddingRight && sv.paddingRight === sv.paddingBottom;
   const partesPadding: ParteValor[] = padUniforme
     ? valorSpacing(p.left, u, sv.paddingLeft)
     : [
