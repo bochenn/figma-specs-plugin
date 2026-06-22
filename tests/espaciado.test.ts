@@ -35,3 +35,15 @@ test("textoPadding: vertical/horizontal pares → 2 valores", () => {
 test("textoPadding: los 4 distintos → T R B L", () => {
   assert.equal(textoPadding({ left: 4, top: 1, right: 2, bottom: 3 }, "px"), "1 2 3 4");
 });
+
+test("formatearEspaciado redondea a máximo 2 decimales", () => {
+  assert.equal(formatearEspaciado(485.3333435058594, "px"), "485.33");
+  assert.equal(formatearEspaciado(197.33334350585938, "px"), "197.33");
+  assert.equal(formatearEspaciado(296, "px"), "296");
+});
+
+test("formatearEspaciado con mostrarUnidad agrega px", () => {
+  assert.equal(formatearEspaciado(296, "px", true), "296px");
+  assert.equal(formatearEspaciado(485.3333435058594, "px", true), "485.33px");
+  assert.equal(formatearEspaciado(24, "rem", true), "1.5rem");
+});

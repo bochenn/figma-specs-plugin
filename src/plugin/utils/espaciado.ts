@@ -1,8 +1,16 @@
 import type { Unidad } from "../modelo/tipos.ts";
 
-// Formatea un valor en px al formato elegido (px = número pelado; rem = n/16).
-export function formatearEspaciado(n: number, unidad: Unidad): string {
-  return unidad === "rem" ? `${n / 16}rem` : String(n);
+// Redondea a máximo 2 decimales (sin ceros sobrantes).
+function redondear2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+// Formatea un valor en px al formato elegido. `mostrarUnidad` agrega "px" (rem siempre
+// lleva su unidad). px sin unidad = número pelado (para las cotas del artwork).
+export function formatearEspaciado(n: number, unidad: Unidad, mostrarUnidad = false): string {
+  if (unidad === "rem") return `${redondear2(n / 16)}rem`;
+  const v = redondear2(n);
+  return mostrarUnidad ? `${v}px` : `${v}`;
 }
 
 // "16" / "1rem" sin variable; "DS Space/padding/1x (16)" con variable.
