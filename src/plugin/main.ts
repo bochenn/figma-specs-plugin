@@ -201,14 +201,14 @@ const TITULO_SECCION: Record<Seccion, string> = {
 
 // Párrafo descriptivo del Hero por sección.
 const DESCRIPCION_SECCION: Record<Seccion, string> = {
-  anatomy: "Desglosa el elemento en sus capas. Cada capa se numera sobre el diseño (a la izquierda) y se detalla a la derecha con su tipo y sus atributos —color, dimensiones, tipografía y las variables aplicadas—. Úsalo para entender de qué está compuesto el elemento y qué tokens del sistema usa cada parte.",
-  properties: "Lista las propiedades de variante del componente y sus valores posibles. Úsalo para saber qué se puede configurar y cómo se combinan las variantes.",
-  layout: "Muestra cómo se organiza el contenido: dirección, alineación, padding, espaciado entre ítems (gap) y dimensiones de cada frame con Auto Layout. Las cotas sobre el diseño marcan las medidas en su lugar; el panel de la derecha las detalla con sus variables. Úsalo para reproducir el espaciado y el comportamiento de redimensionado.",
-  data: "Representa el elemento como datos estructurados (JSON). Úsalo para entender su jerarquía y conectarlo con código.",
-  styling: "Inventario de los estilos y variables de color, tipografía y efecto que usa el elemento. Úsalo para auditar qué tokens del sistema aplica.",
-  modes: "Muestra los valores de cada variable en sus distintos modos (ej. Light/Dark). Úsalo para ver cómo cambia el elemento entre temas.",
-  twoway: "Cruza dos propiedades de variante en una matriz. Úsalo para revisar todas las combinaciones de dos ejes a la vez.",
-  complete: "Vista completa que combina anatomía y layout de todas las variantes. Úsalo como referencia integral del componente.",
+  anatomy: "Breaks the element down into its layers. Each layer is numbered over the design (on the left) and detailed on the right with its type and attributes —color, dimensions, typography and the variables applied. Use it to understand what the element is made of and which design-system tokens each part uses.",
+  properties: "Lists the component's variant properties and their possible values. Use it to know what can be configured and how the variants combine.",
+  layout: "Shows how the content is organized: direction, alignment, padding, item spacing (gap) and the dimensions of each Auto Layout frame. The dimension lines over the design mark the measurements in place; the panel on the right details them with their variables. Use it to reproduce the spacing and the resizing behavior.",
+  data: "Represents the element as structured data (JSON). Use it to understand its hierarchy and connect it with code.",
+  styling: "Inventory of the color, typography and effect styles and variables the element uses. Use it to audit which design-system tokens it applies.",
+  modes: "Shows the value of each variable across its modes (e.g. Light/Dark). Use it to see how the element changes between themes.",
+  twoway: "Crosses two variant properties in a matrix. Use it to review every combination of two axes at once.",
+  complete: "A complete view combining the anatomy and layout of every variant. Use it as an all-in-one reference for the component.",
 };
 
 figma.ui.onmessage = async (msg: MensajeUI) => {

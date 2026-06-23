@@ -1,6 +1,6 @@
 import type { LayoutSpec, NodoLike, Unidad } from "../modelo/tipos.ts";
 import { hexARgb } from "../utils/color.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor, FONT_MEDIUM } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor, FONT_MEDIUM, textoHeaderCard } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing } from "../utils/espaciado.ts";
@@ -50,28 +50,51 @@ async function filaPropiedad(iconoKey: string, label: string, partes: ParteValor
   return filaPill(nodos);
 }
 
-const ANCHO_BREADCRUMB = 160;
+const BORDE_E1: RGB = { r: 0.882, g: 0.882, b: 0.882 }; // #E1E1E1
 const GRIS_ANCESTRO: RGB = { r: 0.6, g: 0.6, b: 0.6 };
 
 // Columna de jerarquía: una fila por ancestro (raíz→elemento), con icono de tipo
 // e indentación progresiva. Los ancestros van en gris; el último en color normal.
 // Ancho fijo para alinear los artworks.
+// Card "Layers": header con el título + body con el árbol de capas (Hierarchy),
+// cada capa indentada 20px por nivel de profundidad.
 async function breadcrumb(camino: { nombre: string; tipo: string }[]): Promise<FrameNode> {
-  const col = frameVertical("Hierarchy", 4);
-  col.counterAxisSizingMode = "FIXED";
-  col.resize(ANCHO_BREADCRUMB, col.height);
+  const card = frameVertical("Card", 0);
+  card.strokes = [{ type: "SOLID", color: BORDE_E1 }];
+  card.strokeWeight = 1;
+  card.cornerRadius = 8;
+  card.fills = fillTematizado(varsTema().fondoSpec);
+  card.clipsContent = true;
+
+  const header = frameHorizontal("Header", 8);
+  header.counterAxisAlignItems = "CENTER";
+  header.paddingTop = header.paddingBottom = 8;
+  header.paddingLeft = header.paddingRight = 16;
+  header.strokes = [{ type: "SOLID", color: BORDE_E1 }];
+  header.strokeTopWeight = header.strokeLeftWeight = header.strokeRightWeight = 0;
+  header.strokeBottomWeight = 1;
+  header.appendChild(await textoHeaderCard("Layers"));
+  card.appendChild(header);
+  header.layoutSizingHorizontal = "FILL";
+
+  const body = frameVertical("Body", 0);
+  body.paddingTop = body.paddingBottom = body.paddingLeft = body.paddingRight = 24;
+  const hierarchy = frameVertical("Hierarchy", 8);
   for (let i = 0; i < camino.length; i++) {
     const fila = frameHorizontal("Capa", 4);
     fila.counterAxisAlignItems = "CENTER";
-    fila.paddingLeft = i * 12;
+    fila.paddingLeft = i * 20;
     const icono = nodoIconoTipo(camino[i].tipo, 16);
     if (icono) fila.appendChild(icono);
-    const t = await texto(camino[i].nombre, 12);
+    const t = await texto(camino[i].nombre, 14);
     if (i < camino.length - 1) t.fills = [{ type: "SOLID", color: GRIS_ANCESTRO }];
     fila.appendChild(t);
-    col.appendChild(fila);
+    hierarchy.appendChild(fila);
   }
-  return col;
+  body.appendChild(hierarchy);
+  card.appendChild(body);
+  body.layoutSizingHorizontal = "FILL";
+  return card;
 }
 
 // Filas de padding del panel: una sola "Padding" si los 4 lados son uniformes; si no,
@@ -107,7 +130,7 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
     filas.push(...await filasPadding(spec.padding, sv, u));
     if (spec.cornerRadius) filas.push(await filaPropiedad("corner", "Corner radius", valorSpacing(spec.cornerRadius, u, spec.cornerRadiusVar)));
     if (spec.textStyle) filas.push(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
-    return tarjeta([await texto(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`, 16, FONT_BOLD)], filas);
+    return tarjeta([await textoHeaderCard(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`)], filas);
   }
 
   const dirKey = spec.direccion === "HORIZONTAL" ? "dir-horizontal" : "dir-vertical";
@@ -120,7 +143,7 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   if (spec.cornerRadius) filas.push(await filaPropiedad("corner", "Corner radius", valorSpacing(spec.cornerRadius, u, spec.cornerRadiusVar)));
   for (const g of spec.grids) filas.push(await filaPropiedad("columns", "Grid", [{ texto: textoGrid(g) }]));
   if (spec.textStyle) filas.push(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
-  return tarjeta([await texto(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`, 16, FONT_BOLD)], filas);
+  return tarjeta([await textoHeaderCard(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`)], filas);
 }
 
 // Dibuja un rect de overlay (semitransparente) en el artwork.

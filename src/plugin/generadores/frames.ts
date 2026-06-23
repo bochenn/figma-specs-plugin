@@ -76,6 +76,22 @@ export async function texto(contenido: string, fontSize: number, font: FontName 
   t.characters = contenido;
   t.fontSize = fontSize;
   t.fills = fillTematizado(varsTema().texto);
+  // Definición completa de estilo de texto (no dejar nada en "auto"): line-height
+  // 1.5×, sin tracking, alineado arriba-izquierda, sin decoración ni transformación.
+  t.lineHeight = { value: 150, unit: "PERCENT" };
+  t.letterSpacing = { value: 0, unit: "PERCENT" };
+  t.textAlignHorizontal = "LEFT";
+  t.textAlignVertical = "TOP";
+  t.textDecoration = "NONE";
+  t.textCase = "ORIGINAL";
+  return t;
+}
+
+// Texto del header de una Card: Inter Medium 16, line-height 32px, sin tracking.
+export async function textoHeaderCard(contenido: string): Promise<TextNode> {
+  const t = await texto(contenido, 16, FONT_MEDIUM);
+  t.lineHeight = { value: 32, unit: "PIXELS" };
+  t.letterSpacing = { value: 0, unit: "PERCENT" };
   return t;
 }
 

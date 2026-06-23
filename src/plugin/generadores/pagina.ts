@@ -102,7 +102,9 @@ export async function hero(titulo: string, descripcion: string): Promise<FrameNo
 
   const desc = await textoDesc(descripcion, 18);
   heroHeader.appendChild(desc);
-  desc.layoutSizingHorizontal = "FILL";
+  // Ancho máximo 75% del ancho útil del heroHeader (1780 → 1335).
+  desc.layoutSizingHorizontal = "FIXED";
+  desc.resize(Math.round((ANCHO_PAGINA - 200) * 0.75), desc.height);
   return cont;
 }
 

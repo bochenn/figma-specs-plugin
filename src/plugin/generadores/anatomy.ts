@@ -1,6 +1,6 @@
 import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor, FONT_MEDIUM } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor, FONT_MEDIUM, textoHeaderCard } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
@@ -73,7 +73,7 @@ async function entradaLista(indice: number, el: ElementoAnatomy, color: RGB): Pr
   const headerNodos: SceneNode[] = [await badgePanel(indice, color)];
   const icono = nodoIconoTipo(el.tipo);
   if (icono) headerNodos.push(icono);
-  headerNodos.push(await texto(`${el.nombre} · ${el.tipo}`, 16, FONT_BOLD));
+  headerNodos.push(await textoHeaderCard(`${el.nombre} · ${el.tipo}`));
 
   const filas: FrameNode[] = [];
   const variantes = parseVariantes(el.dependeDe);

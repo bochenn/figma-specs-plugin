@@ -1,5 +1,5 @@
 import type { ElementoAdicional, VarianteLayout } from "../modelo/tipos.ts";
-import { frameVertical, texto, enColumnas, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
+import { frameVertical, texto, enColumnas, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor, textoHeaderCard } from "./frames.ts";
 import { agruparPorVariante } from "../utils/agrupar-variante.ts";
 import { etiquetaSpacing, unidadActual, textoPadding } from "../utils/espaciado.ts";
 
@@ -46,7 +46,7 @@ export async function seccionDeComplete(
   }
   const bloquesA: FrameNode[] = [];
   for (const grupo of agruparPorVariante(anatomy)) {
-    const headerNodos: SceneNode[] = [await texto(grupo.variante, 16, FONT_BOLD)];
+    const headerNodos: SceneNode[] = [await textoHeaderCard(grupo.variante)];
     const filas: FrameNode[] = [];
     for (const el of grupo.elementos) {
       filas.push(filaPill([await textoValor(`${el.nombre} · ${el.tipo}`)]));
@@ -66,7 +66,7 @@ export async function seccionDeComplete(
     const s = v.spec;
     const dir = s.direccion === "HORIZONTAL" ? "Horizontal" : s.direccion === "GRID" ? "Grid" : "Vertical";
     const sv = s.spacingVars;
-    const headerNodos: SceneNode[] = [await texto(v.variante, 16, FONT_BOLD)];
+    const headerNodos: SceneNode[] = [await textoHeaderCard(v.variante)];
     const filas: FrameNode[] = [
       filaPill([await textoClave(`Direction:`), await textoValor(dir)]),
       filaPill([await textoClave(`Align:`), await textoValor(`${s.alineacionPrimaria}/${s.alineacionContraria}`)]),
