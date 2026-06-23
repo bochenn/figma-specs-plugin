@@ -92,9 +92,13 @@ export function leerAtributos(nodo: NodoLike): Atributo[] {
   }
 
   if (nodo.fontFamily && typeof nodo.fontSize === "number") {
-    const valorTipo = nodo.textStyleName ??
-      formatearTipografia({ family: nodo.fontFamily, style: nodo.fontStyle ?? "", size: nodo.fontSize, lineHeight: nodo.lineHeight, letterSpacing: nodo.letterSpacing }, formatoTipoActual());
-    atributos.push({ clave: "typography", valor: valorTipo, formato: "HARDCODED" });
+    // Si hay un text style aplicado, nombrarlo como "Text Style" (token) y, debajo,
+    // el detalle de la tipografía. Sin style asignado: solo el detalle de Typography.
+    if (nodo.textStyleName) {
+      atributos.push({ clave: "Text Style", valor: nodo.textStyleName, formato: "STYLE" });
+    }
+    const detalle = formatearTipografia({ family: nodo.fontFamily, style: nodo.fontStyle ?? "", size: nodo.fontSize, lineHeight: nodo.lineHeight, letterSpacing: nodo.letterSpacing }, formatoTipoActual());
+    atributos.push({ clave: "typography", valor: detalle, formato: "HARDCODED" });
   }
 
   return atributos;

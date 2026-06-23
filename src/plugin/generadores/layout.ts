@@ -65,6 +65,7 @@ async function breadcrumb(camino: { nombre: string; tipo: string }[]): Promise<F
   card.cornerRadius = 8;
   card.fills = fillTematizado(varsTema().fondoSpec);
   card.clipsContent = true;
+  card.minWidth = 312; // ancho mínimo de la card de capas
 
   const header = frameHorizontal("Header", 8);
   header.counterAxisAlignItems = "CENTER";
