@@ -541,7 +541,7 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
 
 // Construye solo la sección Layout and Spacing (sin Specifications ni título de nodo).
 export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<FrameNode> {
-  const seccion = frameVertical("Layout and Spacing", 24);
+  const seccion = frameVertical("Layout and Spacing", 0);
   seccion.clipsContent = false; // los chips/cotas asoman del margen del artwork
 
   const recorridos = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar);
@@ -553,7 +553,8 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   const filas: FrameNode[] = [];
   const n = Math.min(contenedores.length, specs.length);
   for (let i = inicio; i < n; i++) {
-    const fila = frameHorizontal(`Layout ${specs[i].elementoNombre}`, 48);
+    const fila = frameHorizontal("layoutItem", 48);
+    fila.paddingTop = fila.paddingBottom = 72; // imita el respiro vertical del anatomyItem
     fila.clipsContent = false; // los chips/cotas del artwork pueden asomar del margen
     fila.appendChild(await breadcrumb(recorridos[i].camino ?? [{ nombre: specs[i].elementoNombre, tipo: specs[i].tipo }]));
     fila.appendChild(await artworkDe(contenedores[i], specs[i], medirHijos));
@@ -571,7 +572,8 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   if (!raizEnFilas && Array.isArray(gridsRaizRaw)) {
     const gridsRaiz = gridsRaizRaw.map(gridSpecDe);
     if (gridsRaiz.length > 0) {
-      const fila = frameHorizontal(`Layout ${seleccionado.name}`, 48);
+      const fila = frameHorizontal("layoutItem", 48);
+      fila.paddingTop = fila.paddingBottom = 72; // imita el respiro vertical del anatomyItem
       fila.clipsContent = false;
       fila.appendChild(await breadcrumb([{ nombre: seleccionado.name, tipo: seleccionado.type }]));
       fila.appendChild(await artworkGrids(seleccionado as FrameNode, gridsRaiz));
