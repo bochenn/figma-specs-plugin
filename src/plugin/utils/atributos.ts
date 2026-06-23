@@ -1,8 +1,22 @@
-import type { NodoLike, Atributo } from "../modelo/tipos.ts";
+import type { NodoLike, Atributo, AlturaLinea, EspaciadoLetra } from "../modelo/tipos.ts";
 import { formatearColor, formatoColorActual } from "./color.ts";
 import { formatoRawActual, mostrarRawActual, preferenciaActual } from "./valores.ts";
 import { formatearEspaciado, unidadActual } from "./espaciado.ts";
-import { formatearTipografia, formatoTipoActual } from "./tipografia.ts";
+
+// Altura de línea para una fila propia: "Auto", "150%" o "20px".
+function alturaLineaTexto(lh?: AlturaLinea): string | undefined {
+  if (!lh) return undefined;
+  if (lh.unidad === "auto") return "Auto";
+  if (lh.unidad === "percent") return `${lh.valor}%`;
+  return formatearEspaciado(lh.valor, unidadActual(), true);
+}
+
+// Tracking (letter-spacing) para una fila propia: "0%" o "0.5px".
+function espaciadoLetraTexto(ls?: EspaciadoLetra): string | undefined {
+  if (!ls) return undefined;
+  if (ls.unidad === "percent") return `${ls.valor}%`;
+  return formatearEspaciado(ls.valor, unidadActual(), true);
+}
 
 // Convierte un canal de color (0..1) a dos dígitos hex.
 function canalHex(canal: number): string {
@@ -92,13 +106,18 @@ export function leerAtributos(nodo: NodoLike): Atributo[] {
   }
 
   if (nodo.fontFamily && typeof nodo.fontSize === "number") {
-    // Si hay un text style aplicado, nombrarlo como "Text Style" (token) y, debajo,
-    // el detalle de la tipografía. Sin style asignado: solo el detalle de Typography.
-    if (nodo.textStyleName) {
-      atributos.push({ clave: "Text Style", valor: nodo.textStyleName, formato: "STYLE" });
-    }
-    const detalle = formatearTipografia({ family: nodo.fontFamily, style: nodo.fontStyle ?? "", size: nodo.fontSize, lineHeight: nodo.lineHeight, letterSpacing: nodo.letterSpacing }, formatoTipoActual());
-    atributos.push({ clave: "typography", valor: detalle, formato: "HARDCODED" });
+    // Text Style: el token aplicado, o "N/A" si el texto no tiene estilo asignado.
+    atributos.push(nodo.textStyleName
+      ? { clave: "Text Style", valor: nodo.textStyleName, formato: "STYLE" }
+      : { clave: "Text Style", valor: "N/A", formato: "HARDCODED" });
+    // Detalle de la tipografía: una propiedad por fila.
+    atributos.push({ clave: "Font Family", valor: nodo.fontFamily, formato: "HARDCODED" });
+    if (nodo.fontStyle) atributos.push({ clave: "Font Weight", valor: nodo.fontStyle, formato: "HARDCODED" });
+    atributos.push({ clave: "Font Size", valor: formatearEspaciado(nodo.fontSize, unidadActual(), true), formato: "HARDCODED" });
+    const lh = alturaLineaTexto(nodo.lineHeight);
+    if (lh) atributos.push({ clave: "Line Height", valor: lh, formato: "HARDCODED" });
+    const ls = espaciadoLetraTexto(nodo.letterSpacing);
+    if (ls) atributos.push({ clave: "Letter Spacing", valor: ls, formato: "HARDCODED" });
   }
 
   return atributos;

@@ -26,6 +26,15 @@ function bordeInferior(f: FrameNode): void {
   f.strokeBottomWeight = 1;
 }
 
+// Solo borde superior #E1E1E1, weight 1.
+function bordeSuperior(f: FrameNode): void {
+  f.strokes = [{ type: "SOLID", color: BORDE_SHELL }];
+  f.strokeTopWeight = 1;
+  f.strokeLeftWeight = 0;
+  f.strokeRightWeight = 0;
+  f.strokeBottomWeight = 0;
+}
+
 // Texto gris de descripción (Inter Regular), preparado para FILL con wrap.
 async function textoDesc(contenido: string, fontSize: number): Promise<TextNode> {
   const t = await texto(contenido, fontSize, FONT_REG);
@@ -34,21 +43,21 @@ async function textoDesc(contenido: string, fontSize: number): Promise<TextNode>
   return t;
 }
 
-// Barra horizontal de 1980 con fill de tema y borde shell.
+// Barra horizontal de 1980 con fill de tema (sin borde; lo pone cada caller).
 function barraShell(nombre: string, gap: number): FrameNode {
   const barra = frameHorizontal(nombre, gap);
   barra.counterAxisAlignItems = "CENTER";
   barra.paddingTop = barra.paddingBottom = 32;
   barra.paddingLeft = barra.paddingRight = 100;
   barra.fills = fillTematizado(varsTema().fondoSpec);
-  bordeShell(barra);
   barra.primaryAxisSizingMode = "FIXED";
   return barra;
 }
 
-// Header: nombre del plugin (FILL a la izquierda) + etiqueta de sección a la derecha.
+// pageHeader: nombre del plugin (FILL a la izquierda) + etiqueta de sección a la derecha. Solo borde inferior.
 export async function header(etiquetaSeccion: string): Promise<FrameNode> {
-  const barra = barraShell("Header", 32);
+  const barra = barraShell("pageHeader", 32);
+  bordeInferior(barra);
 
   const izq = await texto(NOMBRE_PLUGIN, 16, FONT_MEDIUM);
   barra.appendChild(izq);
@@ -59,9 +68,10 @@ export async function header(etiquetaSeccion: string): Promise<FrameNode> {
   return barra;
 }
 
-// Footer: nombre del plugin centrado.
+// pageFooter: nombre del plugin centrado. Solo borde superior.
 export async function footer(): Promise<FrameNode> {
-  const barra = barraShell("Footer", 32);
+  const barra = barraShell("pageFooter", 32);
+  bordeSuperior(barra);
   barra.primaryAxisAlignItems = "CENTER";
   barra.appendChild(await texto(NOMBRE_PLUGIN, 16, FONT_MEDIUM));
   barra.resize(ANCHO_PAGINA, barra.height);

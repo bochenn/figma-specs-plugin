@@ -130,7 +130,6 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
     if (spec.gridRowGap !== undefined) filas.push(await filaPropiedad("spacing-v", "Row gap", valorSpacing(spec.gridRowGap, u, spec.gridRowGapVar)));
     filas.push(...await filasPadding(spec.padding, sv, u));
     if (spec.cornerRadius) filas.push(await filaPropiedad("corner", "Corner radius", valorSpacing(spec.cornerRadius, u, spec.cornerRadiusVar)));
-    if (spec.textStyle) filas.push(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
     return tarjeta([await textoHeaderCard(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`)], filas);
   }
 
@@ -143,7 +142,6 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   filas.push(await filaPropiedad(gapKey, "Item spacing", valorSpacing(spec.itemSpacing, u, sv.itemSpacing)));
   if (spec.cornerRadius) filas.push(await filaPropiedad("corner", "Corner radius", valorSpacing(spec.cornerRadius, u, spec.cornerRadiusVar)));
   for (const g of spec.grids) filas.push(await filaPropiedad("columns", "Grid", [{ texto: textoGrid(g) }]));
-  if (spec.textStyle) filas.push(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
   return tarjeta([await textoHeaderCard(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`)], filas);
 }
 

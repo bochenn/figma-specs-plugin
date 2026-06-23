@@ -79,7 +79,7 @@ test("opacity 1 (totalmente opaco) no se incluye", () => {
   assert.equal(leerAtributos(nodo).find((a) => a.clave === "opacity"), undefined);
 });
 
-test("typography con estilo aplicado → fila 'Text Style' (nombre) + detalle de la fuente", () => {
+test("typography con estilo aplicado → fila 'Text Style' (nombre) + propiedades de la fuente", () => {
   const nodo: NodoLike = {
     id: "x", name: "x", type: "TEXT",
     fontFamily: "Inter", fontStyle: "Medium", fontSize: 14,
@@ -90,19 +90,28 @@ test("typography con estilo aplicado → fila 'Text Style' (nombre) + detalle de
     attrs.find((a) => a.clave === "Text Style"),
     { clave: "Text Style", valor: "Text SM/Medium", formato: "STYLE" },
   );
-  const tipo = attrs.find((a) => a.clave === "typography");
-  assert.equal(tipo?.formato, "HARDCODED");
-  assert.match(tipo?.valor ?? "", /Inter/);
+  assert.deepEqual(
+    attrs.find((a) => a.clave === "Font Family"),
+    { clave: "Font Family", valor: "Inter", formato: "HARDCODED" },
+  );
+  assert.deepEqual(
+    attrs.find((a) => a.clave === "Font Weight"),
+    { clave: "Font Weight", valor: "Medium", formato: "HARDCODED" },
+  );
+  assert.equal(attrs.find((a) => a.clave === "Font Size")?.valor, "14px");
 });
 
-test("typography sin estilo → usa el raw de la fuente", () => {
+test("typography sin estilo → Text Style N/A + propiedades de la fuente", () => {
   const nodo: NodoLike = {
     id: "x", name: "x", type: "TEXT",
     fontFamily: "Inter", fontStyle: "Medium", fontSize: 14,
   };
-  const attr = leerAtributos(nodo).find((a) => a.clave === "typography");
-  assert.equal(attr?.formato, "HARDCODED");
-  assert.match(attr?.valor ?? "", /Inter/);
+  const attrs = leerAtributos(nodo);
+  assert.deepEqual(
+    attrs.find((a) => a.clave === "Text Style"),
+    { clave: "Text Style", valor: "N/A", formato: "HARDCODED" },
+  );
+  assert.equal(attrs.find((a) => a.clave === "Font Family")?.valor, "Inter");
 });
 
 test("width con layoutSizing FIXED → incluye prefijo Fixed", () => {
