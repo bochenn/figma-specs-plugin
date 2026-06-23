@@ -1,7 +1,7 @@
 import type { MensajeUI, MensajePlugin, SetNorm, Seccion } from "./modelo/tipos.ts";
 import { aNodoLike } from "./extraccion/adaptador.ts";
 import { asegurarVariablesTema, varsTema } from "./utils/variables-tema.ts";
-import { fillTematizado, frameVertical, texto } from "./generadores/frames.ts";
+import { frameVertical, texto } from "./generadores/frames.ts";
 import { clampColumnas } from "./utils/columnas.ts";
 import { aplicarFormatoColor } from "./utils/color.ts";
 import { aplicarFormatoRaw, aplicarMostrarRaw, aplicarPreferencia } from "./utils/valores.ts";
@@ -26,7 +26,7 @@ import { extraerDosWay } from "./extraccion/properties.ts";
 import { seccionDeDosWay } from "./generadores/properties.ts";
 import { extraerCompleteAnatomy, extraerCompleteLayout } from "./extraccion/properties.ts";
 import { seccionDeComplete } from "./generadores/complete.ts";
-import { tituloYEncabezado } from "./generadores/encabezado.ts";
+import { header, hero, feature, footer, envolverItem } from "./generadores/pagina.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
@@ -47,7 +47,6 @@ function finalizar(frame: FrameNode, nodo: SceneNode): void {
     frame.x = caja.x + caja.width + 100;
     frame.y = caja.y;
   }
-  frame.fills = fillTematizado(varsTema().fondoSpec);
   if (modoOscuro) {
     frame.setExplicitVariableModeForCollection(varsTema().coleccion, varsTema().modoDark);
   }
@@ -188,6 +187,30 @@ const ETIQUETA_SECCION: Record<Seccion, string> = {
   complete: "COMPLETE",
 };
 
+// Título grande del Hero por sección.
+const TITULO_SECCION: Record<Seccion, string> = {
+  anatomy: "Anatomy",
+  properties: "Properties",
+  layout: "Layout & Spacing",
+  data: "Data",
+  styling: "Styling Inventory",
+  modes: "Modes",
+  twoway: "Two-Way",
+  complete: "Complete",
+};
+
+// Párrafo descriptivo del Hero por sección.
+const DESCRIPCION_SECCION: Record<Seccion, string> = {
+  anatomy: "Desglosa el elemento en sus capas. Cada capa se numera sobre el diseño (a la izquierda) y se detalla a la derecha con su tipo y sus atributos —color, dimensiones, tipografía y las variables aplicadas—. Úsalo para entender de qué está compuesto el elemento y qué tokens del sistema usa cada parte.",
+  properties: "Lista las propiedades de variante del componente y sus valores posibles. Úsalo para saber qué se puede configurar y cómo se combinan las variantes.",
+  layout: "Muestra cómo se organiza el contenido: dirección, alineación, padding, espaciado entre ítems (gap) y dimensiones de cada frame con Auto Layout. Las cotas sobre el diseño marcan las medidas en su lugar; el panel de la derecha las detalla con sus variables. Úsalo para reproducir el espaciado y el comportamiento de redimensionado.",
+  data: "Representa el elemento como datos estructurados (JSON). Úsalo para entender su jerarquía y conectarlo con código.",
+  styling: "Inventario de los estilos y variables de color, tipografía y efecto que usa el elemento. Úsalo para auditar qué tokens del sistema aplica.",
+  modes: "Muestra los valores de cada variable en sus distintos modos (ej. Light/Dark). Úsalo para ver cómo cambia el elemento entre temas.",
+  twoway: "Cruza dos propiedades de variante en una matriz. Úsalo para revisar todas las combinaciones de dos ejes a la vez.",
+  complete: "Vista completa que combina anatomía y layout de todas las variantes. Úsalo como referencia integral del componente.",
+};
+
 figma.ui.onmessage = async (msg: MensajeUI) => {
   if (msg.tipo !== "generar") return;
 
@@ -220,25 +243,36 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     anatomyDepth: msg.anatomyDepth ?? "children",
   };
   try {
-    const specifications = frameVertical("Specifications", 64, 0);
+    const specs = frameVertical("Specs", 80, 0);
     let primeraSeccion = true;
     for (const seccion of ORDEN) {
       if (!msg.secciones.includes(seccion)) continue;
-      const header = await tituloYEncabezado(nodo.name, ETIQUETA_SECCION[seccion]);
-      specifications.appendChild(header);
-      header.layoutSizingHorizontal = "FILL";
 
-      const cuerpo = frameVertical(`${nodo.name} Spec`, 64);
-      cuerpo.paddingLeft = cuerpo.paddingRight = cuerpo.paddingBottom = 64;
-      if (primeraSeccion && msg.leyenda) cuerpo.appendChild(await seccionLeyenda());
-      for (const f of await seccionPara(nodo, seccion, opts)) cuerpo.appendChild(f);
-      specifications.appendChild(cuerpo);
-      cuerpo.layoutSizingHorizontal = "FILL";
+      const pagina = frameVertical("Specifications", 0, 0);
+      pagina.cornerRadius = 40;
 
+      pagina.appendChild(await header(ETIQUETA_SECCION[seccion]));
+      pagina.appendChild(await hero(TITULO_SECCION[seccion], DESCRIPCION_SECCION[seccion]));
+      pagina.appendChild(await feature(nodo.name));
+
+      if (primeraSeccion && msg.leyenda) {
+        const it = envolverItem(await seccionLeyenda());
+        pagina.appendChild(it);
+        it.layoutSizingHorizontal = "FILL";
+      }
+      for (const contenido of await seccionPara(nodo, seccion, opts)) {
+        const it = envolverItem(contenido);
+        pagina.appendChild(it);
+        it.layoutSizingHorizontal = "FILL";
+      }
+
+      pagina.appendChild(await footer());
+
+      specs.appendChild(pagina);
       primeraSeccion = false;
     }
-    figma.currentPage.appendChild(specifications);
-    finalizar(specifications, nodo);
+    figma.currentPage.appendChild(specs);
+    finalizar(specs, nodo);
   } catch (e) {
     responder({ tipo: "resultado", ok: false, error: String(e) });
   }
