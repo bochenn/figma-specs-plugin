@@ -17,6 +17,15 @@ function bordeShell(f: FrameNode): void {
   f.strokeWeight = 1;
 }
 
+// Solo borde inferior #E1E1E1, weight 1.
+function bordeInferior(f: FrameNode): void {
+  f.strokes = [{ type: "SOLID", color: BORDE_SHELL }];
+  f.strokeTopWeight = 0;
+  f.strokeLeftWeight = 0;
+  f.strokeRightWeight = 0;
+  f.strokeBottomWeight = 1;
+}
+
 // Texto gris de descripción (Inter Regular), preparado para FILL con wrap.
 async function textoDesc(contenido: string, fontSize: number): Promise<TextNode> {
   const t = await texto(contenido, fontSize, FONT_REG);
@@ -68,7 +77,7 @@ export async function badgeSpecifications(): Promise<FrameNode> {
   badge.cornerRadius = 8;
   badge.fills = fillTematizado(varsTema().fondoSpec);
   bordeShell(badge);
-  badge.appendChild(await texto("specifications", 14, FONT_MEDIUM));
+  badge.appendChild(await texto("SPECIFICATIONS", 14, FONT_MEDIUM));
   return badge;
 }
 
@@ -77,7 +86,7 @@ export async function hero(titulo: string, descripcion: string): Promise<FrameNo
   const cont = frameVertical("Hero", 56);
   cont.paddingTop = cont.paddingBottom = cont.paddingLeft = cont.paddingRight = 100;
   cont.fills = fillTematizado(varsTema().fondoSpec);
-  bordeShell(cont);
+  bordeInferior(cont);
   cont.counterAxisSizingMode = "FIXED";
   cont.resize(ANCHO_PAGINA, cont.height);
 
@@ -104,13 +113,14 @@ export async function feature(nombreElemento: string): Promise<FrameNode> {
   cont.paddingBottom = 0;
   cont.paddingLeft = cont.paddingRight = 100;
   cont.fills = fillTematizado(varsTema().fondoSpec);
-  bordeShell(cont);
   cont.counterAxisSizingMode = "FIXED";
   cont.resize(ANCHO_PAGINA, cont.height);
 
   const title = frameVertical("Title", 8);
+  title.paddingBottom = 72;
   cont.appendChild(title);
   title.layoutSizingHorizontal = "FILL";
+  bordeInferior(title);
   title.appendChild(await texto(nombreElemento, 32, FONT_MEDIUM));
 
   const desc = await textoDesc(DESCRIPCION_ELEMENTO, 16);
