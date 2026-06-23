@@ -189,7 +189,8 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
   const ARTWORK_MIN = 440;
   const clon = seleccionado.clone();
   artwork.appendChild(clon);
-  const canvasW = Math.max(ARTWORK_MIN, clon.width + 2 * (MARGEN_ARTWORK + MARGEN_MARCA));
+  // 1.5x de ancho extra para que los elementos respiren mejor a los lados.
+  const canvasW = Math.max(ARTWORK_MIN, clon.width + 2 * (MARGEN_ARTWORK + MARGEN_MARCA)) * 1.5;
   const canvasH = Math.max(ARTWORK_MIN, clon.height + 2 * (MARGEN_ARTWORK + MARGEN_MARCA));
   artwork.resize(canvasW, canvasH);
   const offsetX = (canvasW - clon.width) / 2;
