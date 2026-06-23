@@ -141,7 +141,7 @@ export async function parrafoSeccion(descripcion: string, ancho = 720): Promise<
 
 // Fila en pill con borde (cada atributo/propiedad). Appendea los nodos provistos.
 export function filaPill(nodos: SceneNode[]): FrameNode {
-  const fila = frameHorizontal("Fila", 6);
+  const fila = frameHorizontal("itemValue", 6);
   fila.counterAxisAlignItems = "CENTER";
   fila.paddingTop = fila.paddingBottom = 6;
   fila.paddingLeft = fila.paddingRight = 8;
