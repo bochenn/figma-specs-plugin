@@ -1,6 +1,6 @@
 import type { LayoutSpec, NodoLike, Unidad } from "../modelo/tipos.ts";
 import { hexARgb } from "../utils/color.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor, tagSeccion, FONT_MEDIUM, parrafoSeccion } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor, FONT_MEDIUM } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
 import { unidadActual, etiquetaSpacing } from "../utils/espaciado.ts";
@@ -543,8 +543,6 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
 export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<FrameNode> {
   const seccion = frameVertical("Layout and Spacing", 24);
   seccion.clipsContent = false; // los chips/cotas asoman del margen del artwork
-  seccion.appendChild(await tagSeccion("Layout and Spacing"));
-  seccion.appendChild(await parrafoSeccion("Muestra cómo se organiza el contenido: dirección, alineación, padding, espaciado entre ítems (gap) y dimensiones de cada frame con Auto Layout. Las cotas sobre el diseño marcan las medidas en su lugar; el panel de la derecha las detalla con sus variables. Úsalo para reproducir el espaciado y el comportamiento de redimensionado."));
 
   const recorridos = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar);
   const contenedores = recorridos.map((r) => r.nodo) as unknown as FrameNode[];
