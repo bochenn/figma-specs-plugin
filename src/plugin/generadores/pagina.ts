@@ -9,7 +9,7 @@ const BORDE_SHELL: RGB = { r: 0.882, g: 0.882, b: 0.882 }; // #E1E1E1
 const GRIS_DESC: RGB = { r: 0.420, g: 0.447, b: 0.502 };   // #6B7280
 const DESCRIPCION_ELEMENTO =
   "This is a placeholder description of what this element does in the project.";
-const ANCHO_PAGINA = 1980;
+export const ANCHO_PAGINA = 1980; // ancho mínimo de la página (puede crecer si el contenido es más ancho)
 
 // Borde completo #E1E1E1, weight 1.
 function bordeShell(f: FrameNode): void {
@@ -35,9 +35,16 @@ function bordeSuperior(f: FrameNode): void {
   f.strokeBottomWeight = 0;
 }
 
+// Une las dos últimas palabras con un espacio duro para evitar que la última
+// línea quede con una sola palabra huérfana al hacer wrap.
+function sinHuerfano(s: string): string {
+  const i = s.lastIndexOf(" ");
+  return i < 0 ? s : s.slice(0, i) + " " + s.slice(i + 1);
+}
+
 // Texto gris de descripción (Inter Regular), preparado para FILL con wrap.
 async function textoDesc(contenido: string, fontSize: number): Promise<TextNode> {
-  const t = await texto(contenido, fontSize, FONT_REG);
+  const t = await texto(sinHuerfano(contenido), fontSize, FONT_REG);
   t.fills = [{ type: "SOLID", color: GRIS_DESC }];
   t.textAutoResize = "HEIGHT";
   return t;
@@ -93,7 +100,7 @@ export async function badgeSpecifications(): Promise<FrameNode> {
 
 // Hero: Badge + título de sección (Inter Medium 56) + descripción (Inter Regular 18).
 export async function hero(titulo: string, descripcion: string): Promise<FrameNode> {
-  const cont = frameVertical("Hero", 56);
+  const cont = frameVertical("pageHero", 56);
   cont.paddingTop = cont.paddingBottom = cont.paddingLeft = cont.paddingRight = 100;
   cont.fills = fillTematizado(varsTema().fondoSpec);
   bordeInferior(cont);
@@ -112,9 +119,9 @@ export async function hero(titulo: string, descripcion: string): Promise<FrameNo
 
   const desc = await textoDesc(descripcion, 18);
   heroHeader.appendChild(desc);
-  // Ancho máximo 75% del ancho útil del heroHeader (1780 → 1335).
+  // Ancho 50% del ancho útil del heroHeader (1780 → 890).
   desc.layoutSizingHorizontal = "FIXED";
-  desc.resize(Math.round((ANCHO_PAGINA - 200) * 0.75), desc.height);
+  desc.resize(Math.round((ANCHO_PAGINA - 200) * 0.50), desc.height);
   return cont;
 }
 
@@ -141,10 +148,11 @@ export async function feature(nombreElemento: string): Promise<FrameNode> {
   return cont;
 }
 
-// Envuelve el contenido de una sección en un anatomyItem (padding 72/100, gap 48).
-// El contenido queda hug a la izquierda; el anatomyItem se estira a FILL desde main.ts.
-export function envolverItem(contenido: FrameNode): FrameNode {
-  const item = frameVertical("anatomyItem", 48);
+// Envuelve el contenido de una sección en un item (padding 72/100, gap 48).
+// El contenido queda hug a la izquierda; el item se estira a FILL desde main.ts.
+// `nombre` permite un id único por sección (ej. anatomyItem01, layoutspecItem01).
+export function envolverItem(contenido: FrameNode, nombre = "anatomyItem"): FrameNode {
+  const item = frameVertical(nombre, 48);
   item.paddingTop = item.paddingBottom = 72;
   item.paddingLeft = item.paddingRight = 100;
   item.fills = fillTematizado(varsTema().fondoSpec);

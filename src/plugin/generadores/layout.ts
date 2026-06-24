@@ -9,7 +9,7 @@ import { marcasLayout, estiloCota, iconoDireccion, iconoAlineacion, valorDim, va
 import { rectsGrid, textoGrid, gridSpecDe, franjasGridAutolayout } from "../utils/grilla.ts";
 import { prefijoProfundidad } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
-import { nodoIcono, nodoIconoTipo } from "./iconos.ts";
+import { nodoIcono, nodoIconoTipo, iconoResizingKey, indicadorDimension } from "./iconos.ts";
 
 const AZUL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
 const VERDE: RGB = { r: 0.1, g: 0.7, b: 0.3 };
@@ -41,12 +41,14 @@ async function valorConChips(partes: ParteValor[]): Promise<FrameNode> {
 }
 
 // Fila del panel: pill con ícono + label + partes (textos y chips).
-async function filaPropiedad(iconoKey: string, label: string, partes: ParteValor[]): Promise<FrameNode> {
+async function filaPropiedad(iconoKey: string, label: string, partes: ParteValor[], modo?: string): Promise<FrameNode> {
   const nodos: SceneNode[] = [nodoIcono(iconoKey), await textoClave(`${label}:`)];
   for (const p of partes) {
     if ("chip" in p) nodos.push(await chipVariable(p.chip));
     else nodos.push(await textoValor(p.texto));
   }
+  // width/height: el modo (Fixed/Hug/Fill) va al final como cajita-ícono + texto.
+  if (modo && iconoResizingKey(iconoKey, modo)) nodos.push(await indicadorDimension(iconoKey, modo));
   return filaPill(nodos);
 }
 
@@ -117,8 +119,8 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const u = unidadActual();
   const sv = spec.spacingVars;
   const filas: FrameNode[] = [];
-  filas.push(await filaPropiedad("width", "Width", valorDim(spec.resizingHorizontal, spec.width, u, spec.widthVar)));
-  filas.push(await filaPropiedad("height", "Height", valorDim(spec.resizingVertical, spec.height, u, spec.heightVar)));
+  filas.push(await filaPropiedad("width", "Width", valorDim(spec.width, u, spec.widthVar), spec.resizingHorizontal));
+  filas.push(await filaPropiedad("height", "Height", valorDim(spec.height, u, spec.heightVar), spec.resizingVertical));
   if (spec.fill) filas.push(await filaPropiedad("fill", "Fill", valorColor(spec.fill)));
   if (spec.stroke) filas.push(await filaPropiedad("stroke", "Stroke", valorColor(spec.stroke)));
 
@@ -563,8 +565,13 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
 
 // Construye solo la sección Layout and Spacing (sin Specifications ni título de nodo).
 export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<FrameNode> {
+  // Esta sección ES el item (antes la envolvía un layoutspecItem aparte): lleva
+  // el padding de página y el fondo del spec; main.ts solo la nombra y la estira.
   const seccion = frameVertical("Layout and Spacing", 0);
   seccion.clipsContent = false; // los chips/cotas asoman del margen del artwork
+  seccion.paddingTop = seccion.paddingBottom = 72;
+  seccion.paddingLeft = seccion.paddingRight = 100;
+  seccion.fills = fillTematizado(varsTema().fondoSpec);
 
   const recorridos = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar);
   const contenedores = recorridos.map((r) => r.nodo) as unknown as FrameNode[];
@@ -604,8 +611,11 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
     }
   }
 
+  // Id único por fila, en orden visual final (incluida la fila de grid raíz).
+  filas.forEach((f, i) => { f.name = `layoutItem${String(i + 1).padStart(2, "0")}`; });
+
   if (filas.length === 0) {
-    seccion.appendChild(await texto("No se detectaron capas con Auto Layout.", 16));
+    seccion.appendChild(await texto("No Auto Layout layers found.", 16));
   } else if (columnas > 1) {
     const cont = enColumnas(filas, columnas);
     cont.clipsContent = false;

@@ -67,3 +67,7 @@ test("extraerAnatomy: sin opts → solo descendientes, sin entrar a instancias (
   const els = extraerAnatomy(arbol);
   assert.deepEqual(els.map((e) => e.id), ["c"]); // no entra a la instancia card sin itemizar
 });
+test("extraerAnatomy: textosProfundos surfacea el texto interno de una instancia", () => {
+  const els = extraerAnatomy(arbol, false, { nivelMax: 1, incluirRaiz: true, textosProfundos: true });
+  assert.deepEqual(els.map((e) => e.id), ["r", "c", "t"]); // el title interno de la card aparece
+});

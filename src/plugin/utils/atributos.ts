@@ -18,6 +18,23 @@ function espaciadoLetraTexto(ls?: EspaciadoLetra): string | undefined {
   return formatearEspaciado(ls.valor, unidadActual(), true);
 }
 
+// Alineación horizontal del texto en texto legible.
+function alineacionTexto(valor: string): string {
+  if (valor === "CENTER") return "Center";
+  if (valor === "RIGHT") return "Right";
+  if (valor === "JUSTIFIED") return "Justified";
+  return "Left"; // "LEFT"
+}
+
+// Transformación de caja (text case) en texto legible.
+function casoTexto(valor: string): string {
+  if (valor === "UPPER") return "Uppercase";
+  if (valor === "LOWER") return "Lowercase";
+  if (valor === "TITLE") return "Title case";
+  if (valor === "SMALL_CAPS" || valor === "SMALL_CAPS_FORCED") return "Small caps";
+  return "Original"; // "ORIGINAL"
+}
+
 // Convierte un canal de color (0..1) a dos dígitos hex.
 function canalHex(canal: number): string {
   return Math.round(canal * 255).toString(16).padStart(2, "0").toUpperCase();
@@ -118,6 +135,8 @@ export function leerAtributos(nodo: NodoLike): Atributo[] {
     if (lh) atributos.push({ clave: "Line Height", valor: lh, formato: "HARDCODED" });
     const ls = espaciadoLetraTexto(nodo.letterSpacing);
     if (ls) atributos.push({ clave: "Letter Spacing", valor: ls, formato: "HARDCODED" });
+    if (nodo.textAlign) atributos.push({ clave: "Alignment", valor: alineacionTexto(nodo.textAlign), formato: "HARDCODED" });
+    if (nodo.textCase) atributos.push({ clave: "Case", valor: casoTexto(nodo.textCase), formato: "HARDCODED" });
   }
 
   return atributos;

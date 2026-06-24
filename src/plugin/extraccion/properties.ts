@@ -23,8 +23,11 @@ export function extraerProperties(set: SetNorm): PropiedadSpec[] {
     for (const opcion of set.propiedades[nombreProp]) {
       if (opcion === valorDefault) continue;
       const target = { ...set.defaultProps, [nombreProp]: opcion };
-      const varianteOpcion = buscarVariante(set, target);
-      if (!varianteOpcion) continue; // variante inexistente: se saltea
+      // Primero el variante "default con solo esta prop cambiada"; si no existe
+      // (matriz dispersa), cualquiera con ese valor, para mostrar cada versión.
+      const varianteOpcion = buscarVariante(set, target)
+        ?? set.variantes.find((v) => v.variantProperties[nombreProp] === opcion);
+      if (!varianteOpcion) continue;
       const cambios = compararVariante(varianteDefault.raiz, varianteOpcion.raiz);
       opciones.push({ nombre: opcion, cambios });
     }

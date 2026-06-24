@@ -29,7 +29,17 @@ test("stroke style → Border color", () => {
   ]);
 });
 
-test("recorre descendientes y frena en instancias", () => {
+test("color style con fill sólido → incluye swatchHex", () => {
+  const raiz: NodoLike = {
+    id: "r", name: "Card", type: "FRAME", fillStyleName: "Surface",
+    fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }], children: [],
+  };
+  assert.deepEqual(recolectarEstilos(raiz), [
+    { tabla: "color", nombre: "Surface", appliedAs: "Background color", capa: "Card", swatchHex: "#000000" },
+  ]);
+});
+
+test("recorre descendientes, también dentro de instancias", () => {
   const raiz: NodoLike = {
     id: "r", name: "Root", type: "FRAME", fillStyleName: "A",
     children: [
@@ -40,8 +50,8 @@ test("recorre descendientes y frena en instancias", () => {
     ],
   };
   const nombres = recolectarEstilos(raiz).map((e) => e.nombre);
-  // A (raíz), B (Inner), C (Deep), D (instancia sí); E NO (dentro de instancia)
-  assert.deepEqual(nombres, ["A", "B", "C", "D"]);
+  // A (raíz), B (Inner), C (Deep), D (instancia) y E (dentro de la instancia)
+  assert.deepEqual(nombres, ["A", "B", "C", "D", "E"]);
 });
 
 test("fill con variable → entrada variable con swatchHex (prioridad sobre style)", () => {

@@ -4,7 +4,7 @@ import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta
 import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
-import { nodoIconoTipo } from "./iconos.ts";
+import { nodoIconoTipo, iconoResizingKey, indicadorDimension } from "./iconos.ts";
 import { parseVariantes } from "../utils/anatomy-variantes.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
@@ -58,13 +58,14 @@ async function filaAtributo(attr: Atributo): Promise<FrameNode> {
     nodos.push(swatch);
   }
   nodos.push(await textoClave(`${attr.clave}:`));
-  if (attr.prefijo) nodos.push(await textoValor(attr.prefijo));
   if (attr.formato !== "HARDCODED") {
     nodos.push(await chipVariable(attr.valor));
     if (attr.rawValue) nodos.push(await textoValor(`(${attr.rawValue})`));
   } else {
     nodos.push(await textoValor(attr.valor));
   }
+  // width/height: el modo (Fixed/Hug/Fill) va al final como cajita-ícono + texto.
+  if (iconoResizingKey(attr.clave, attr.prefijo)) nodos.push(await indicadorDimension(attr.clave, attr.prefijo!));
   return filaPill(nodos);
 }
 
@@ -130,16 +131,6 @@ async function marcador(numero: number, x: number, y: number, color: RGB): Promi
   return cont;
 }
 
-// Línea guía vertical recta (del color del marcador): de `desdeY` a `haciaY` en la X dada.
-function lineaGuiaV(artwork: FrameNode, x: number, desdeY: number, haciaY: number, color: RGB): void {
-  const v = figma.createRectangle();
-  v.x = x - 0.5;
-  v.y = Math.min(desdeY, haciaY);
-  v.resize(1, Math.max(Math.abs(haciaY - desdeY), 0.01));
-  v.fills = [{ type: "SOLID", color }];
-  artwork.appendChild(v);
-}
-
 // Línea guía horizontal recta (del color del marcador): de `desdeX` a `haciaX` en la Y dada.
 function lineaGuiaH(artwork: FrameNode, desdeX: number, y: number, haciaX: number, color: RGB): void {
   const h = figma.createRectangle();
@@ -148,6 +139,16 @@ function lineaGuiaH(artwork: FrameNode, desdeX: number, y: number, haciaX: numbe
   h.resize(Math.max(Math.abs(haciaX - desdeX), 0.01), 1);
   h.fills = [{ type: "SOLID", color }];
   artwork.appendChild(h);
+}
+
+// Línea guía vertical recta (del color del marcador): de `desdeY` a `haciaY` en la X dada.
+function lineaGuiaV(artwork: FrameNode, x: number, desdeY: number, haciaY: number, color: RGB): void {
+  const v = figma.createRectangle();
+  v.x = x - 0.5;
+  v.y = Math.min(desdeY, haciaY);
+  v.resize(1, Math.max(Math.abs(haciaY - desdeY), 0.01));
+  v.fills = [{ type: "SOLID", color }];
+  artwork.appendChild(v);
 }
 
 // Construye el [Nombre] Spec (heading + sección Anatomy con lista + artwork).
@@ -184,13 +185,14 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
   const MARGEN_ARTWORK = 20;
   // Distancia del marcador al borde de su box, y margen reservado para los marcadores.
   const OFFSET_MARCA = 48;
-  const MARGEN_MARCA = OFFSET_MARCA + TAM_MARCADOR;
+  // Margen generoso y simétrico en los 4 lados: aloja el badge (a OFFSET del borde)
+  // y varios corridos cuando se acumulan, para que todo entre cómodo y respire.
+  const MARGEN_MARCA = OFFSET_MARCA + TAM_MARCADOR * 3;
   // Tamaño mínimo del canvas gris: un elemento chico queda centrado en una caja amplia.
   const ARTWORK_MIN = 440;
   const clon = seleccionado.clone();
   artwork.appendChild(clon);
-  // 1.5x de ancho extra para que los elementos respiren mejor a los lados.
-  const canvasW = Math.max(ARTWORK_MIN, clon.width + 2 * (MARGEN_ARTWORK + MARGEN_MARCA)) * 1.5;
+  const canvasW = Math.max(ARTWORK_MIN, clon.width + 2 * (MARGEN_ARTWORK + MARGEN_MARCA));
   const canvasH = Math.max(ARTWORK_MIN, clon.height + 2 * (MARGEN_ARTWORK + MARGEN_MARCA));
   artwork.resize(canvasW, canvasH);
   const offsetX = (canvasW - clon.width) / 2;
@@ -198,44 +200,63 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
   clon.x = offsetX;
   clon.y = offsetY;
 
-  // Cada marcador va JUSTO AFUERA de su box con una línea recta corta:
-  // por defecto a la izquierda (línea horizontal); si colisiona con otro ya puesto, arriba
-  // (línea vertical). El número es el índice del elemento (coincide con la lista).
+  // Badges en los 4 LADOS del elemento. Se elige el lado cuyo badge NO caiga sobre
+  // otro elemento hermano (el contenedor no obstruye); orden de preferencia
+  // izq → der → arriba → abajo. Si el lado libre choca con un badge ya puesto, se
+  // aleja el badge sobre su eje. La línea es perpendicular: del borde del elemento
+  // al badge. Así, en filas horizontales los badges van arriba/abajo y en pilas
+  // verticales a los costados, sin amontonarse.
   const cajas = cajasRelativas(seleccionado);
+  type Caja = { x: number; y: number; w: number; h: number };
+  const boxes: (Caja | null)[] = elementos.map((e) => {
+    const c = cajas.get(e.id);
+    return c ? { x: c.x + offsetX, y: c.y + offsetY, w: c.width, h: c.height } : null;
+  });
+  const contiene = (a: Caja, b: Caja): boolean =>
+    a.x <= b.x && a.y <= b.y && a.x + a.w >= b.x + b.w && a.y + a.h >= b.y + b.h;
+  // ¿El punto cae dentro de un elemento hermano de i (ni su contenedor ni su contenido)?
+  const sobreOtro = (x: number, y: number, i: number, bi: Caja): boolean =>
+    boxes.some((bj, j) => bj != null && j !== i && !contiene(bj, bi) && !contiene(bi, bj)
+      && x >= bj.x && x <= bj.x + bj.w && y >= bj.y && y <= bj.y + bj.h);
   const colocados: { x: number; y: number }[] = [];
-  const colisiona = (cx: number, cy: number): boolean =>
-    colocados.some((m) => Math.abs(m.x - cx) < TAM_MARCADOR + 4 && Math.abs(m.y - cy) < TAM_MARCADOR + 4);
+  const colisiona = (x: number, y: number): boolean =>
+    colocados.some((p) => Math.abs(p.x - x) < TAM_MARCADOR + 4 && Math.abs(p.y - y) < TAM_MARCADOR + 4);
+  const R = TAM_MARCADOR / 2;
   for (let i = 0; i < elementos.length; i++) {
-    const caja = cajas.get(elementos[i].id);
-    if (!caja) continue;
+    const bi = boxes[i];
+    if (!bi) continue;
     const color = COLORES_MARCA[i % COLORES_MARCA.length];
-    const bx = caja.x + offsetX;
-    const by = caja.y + offsetY;
-    bordeMarca({ x: bx, y: by, width: caja.width, height: caja.height }, color, artwork);
-    // Lado izquierdo (default): centro del marcador a la izquierda del box, en su centro vertical.
-    let mcx = bx - OFFSET_MARCA - TAM_MARCADOR / 2;
-    let mcy = by + caja.height / 2;
-    let arriba = false;
-    if (colisiona(mcx, mcy)) {
-      // Lado superior: centro del marcador arriba del box, en su centro horizontal.
-      mcx = bx + caja.width / 2;
-      mcy = by - OFFSET_MARCA - TAM_MARCADOR / 2;
-      arriba = true;
-    }
-    // 3+ marcadores en el mismo box: correrlo en el eje libre del carril hasta despejar.
+    bordeMarca({ x: bi.x, y: bi.y, width: bi.w, height: bi.h }, color, artwork);
+    const cx = bi.x + bi.w / 2;
+    const cy = bi.y + bi.h / 2;
+    const lados = [
+      { lado: "left",   x: bi.x - OFFSET_MARCA - R,        y: cy },
+      { lado: "right",  x: bi.x + bi.w + OFFSET_MARCA + R, y: cy },
+      { lado: "top",    x: cx,                             y: bi.y - OFFSET_MARCA - R },
+      { lado: "bottom", x: cx,                             y: bi.y + bi.h + OFFSET_MARCA + R },
+    ];
+    let validos = lados.filter((l) => !sobreOtro(l.x, l.y, i, bi));
+    if (validos.length === 0) validos = lados;
+    const elegido = validos.find((l) => !colisiona(l.x, l.y)) ?? validos[0];
+    let mcx = elegido.x;
+    let mcy = elegido.y;
     while (colisiona(mcx, mcy)) {
-      if (arriba) mcx += TAM_MARCADOR + 4;
+      if (elegido.lado === "left") mcx -= TAM_MARCADOR + 4;
+      else if (elegido.lado === "right") mcx += TAM_MARCADOR + 4;
+      else if (elegido.lado === "top") mcy -= TAM_MARCADOR + 4;
       else mcy += TAM_MARCADOR + 4;
     }
-    if (arriba) lineaGuiaV(artwork, mcx, mcy + TAM_MARCADOR / 2, by, color);
-    else lineaGuiaH(artwork, mcx + TAM_MARCADOR / 2, mcy, bx, color);
-    artwork.appendChild(await marcador(i + 1, mcx - TAM_MARCADOR / 2, mcy - TAM_MARCADOR / 2, color));
     colocados.push({ x: mcx, y: mcy });
+    if (elegido.lado === "left") lineaGuiaH(artwork, mcx + R, cy, bi.x, color);
+    else if (elegido.lado === "right") lineaGuiaH(artwork, bi.x + bi.w, cy, mcx - R, color);
+    else if (elegido.lado === "top") lineaGuiaV(artwork, cx, mcy + R, bi.y, color);
+    else lineaGuiaV(artwork, cx, bi.y + bi.h, mcy - R, color);
+    artwork.appendChild(await marcador(i + 1, mcx - R, mcy - R, color));
   }
 
   // Contenido: tabla o lista (va a la DERECHA).
   if (elementos.length === 0) {
-    display.appendChild(await texto("Sin elementos detectados", 16));
+    display.appendChild(await texto("No elements found", 16));
   } else if (tabla) {
     display.appendChild(await tablaDe(HEADERS_ANATOMY, elementos.map((e, i) => filaAnatomy(i + 1, e))));
   } else {

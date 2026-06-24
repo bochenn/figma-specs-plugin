@@ -97,9 +97,16 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
       else base.lineHeight = { unidad: "px", valor: lh.value };
     }
     const ls = nodo.letterSpacing;
-    if (ls !== figma.mixed && ls.value !== 0) {
+    if (ls !== figma.mixed) {
       base.letterSpacing = { unidad: ls.unit === "PERCENT" ? "percent" : "px", valor: ls.value };
     }
+    base.textAlign = nodo.textAlignHorizontal;
+    if (nodo.textCase !== figma.mixed) base.textCase = nodo.textCase;
+    // layoutSizing del texto (Hug/Fixed/Fill) cuando vive dentro de un Auto Layout.
+    try {
+      base.layoutSizingHorizontal = nodo.layoutSizingHorizontal;
+      base.layoutSizingVertical = nodo.layoutSizingVertical;
+    } catch { /* texto suelto, sin padre Auto Layout: sin modo de resizing */ }
   }
   if ("boundVariables" in nodo && nodo.boundVariables) {
     const bv = nodo.boundVariables as {

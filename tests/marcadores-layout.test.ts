@@ -95,11 +95,11 @@ test("nombreCorto: último segmento tras la barra", () => {
   assert.equal(nombreCorto("simple"), "simple");
 });
 
-test("valorDim: con variable → resizing + chip + (valor)", () => {
-  assert.deepEqual(valorDim("Fixed", 240, "px", "sizing/card-width"), [{ texto: "Fixed" }, { chip: "sizing/card-width" }, { texto: "(240px)" }]);
+test("valorDim: con variable → chip + (valor), sin el modo", () => {
+  assert.deepEqual(valorDim(240, "px", "sizing/card-width"), [{ chip: "sizing/card-width" }, { texto: "(240px)" }]);
 });
-test("valorDim: sin variable → resizing + valor en texto", () => {
-  assert.deepEqual(valorDim("Hug", 88, "px"), [{ texto: "Hug 88px" }]);
+test("valorDim: sin variable → solo el valor en texto", () => {
+  assert.deepEqual(valorDim(88, "px"), [{ texto: "88px" }]);
 });
 test("valorColor: variable/style → chip + (raw)", () => {
   assert.deepEqual(valorColor({ clave: "fill", valor: "color/surface", formato: "VARIABLE", rawValue: "#FFFFFF" }), [{ chip: "color/surface" }, { texto: "(#FFFFFF)" }]);

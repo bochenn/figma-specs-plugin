@@ -1,5 +1,12 @@
+import { frameHorizontal, textoValor, BORDE_PILL } from "./frames.ts";
 import iconWidth from "../../../resources/figma-UI3/icon.24.prop-width.svg";
 import iconHeight from "../../../resources/figma-UI3/icon.24.prop-height.svg";
+import iconWidthFixed from "../../../resources/figma-UI3/icon.24.al.constrain-horiz.svg";
+import iconHeightFixed from "../../../resources/figma-UI3/icon.24.al.constrain-vert.svg";
+import iconWidthFill from "../../../resources/figma-UI3/icon.24.al.width-fill.svg";
+import iconHeightFill from "../../../resources/figma-UI3/icon.24.al.height-fill.svg";
+import iconWidthHug from "../../../resources/figma-UI3/icon.24.al.width-hug.svg";
+import iconHeightHug from "../../../resources/figma-UI3/icon.24.al.height-hug.svg";
 import iconDirH from "../../../resources/figma-UI3/icon.24.al.layout-horizontal.svg";
 import iconDirV from "../../../resources/figma-UI3/icon.24.al.layout-vertical.svg";
 import iconDirGrid from "../../../resources/figma-UI3/icon.24.grid.svg";
@@ -49,20 +56,54 @@ const ICONOS_UI3: Record<string, string> = {
   "align-h-center": iconAlignHCenter,
   "align-h-bottom": iconAlignHBottom,
   "align-baseline": iconAlignBaseline,
+  "width-fixed": iconWidthFixed,
+  "height-fixed": iconHeightFixed,
+  "width-fill": iconWidthFill,
+  "height-fill": iconHeightFill,
+  "width-hug": iconWidthHug,
+  "height-hug": iconHeightHug,
 };
+
+// Key del ícono de resizing (Fixed/Hug/Fill) para una fila de width/height,
+// o undefined si el atributo no es dimensional o no tiene modo de resizing.
+export function iconoResizingKey(clave: string, prefijo?: string): string | undefined {
+  if (!prefijo || (clave !== "width" && clave !== "height")) return undefined;
+  return `${clave}-${prefijo.toLowerCase()}`; // ej. "width-hug"
+}
+
+// Indicador del modo de dimensión que va al FINAL de una fila de width/height:
+// cajita con borde + ícono del modo, seguida del texto ("Fixed" | "Hug" | "Fill").
+export async function indicadorDimension(clave: string, modo: string): Promise<FrameNode> {
+  const cont = frameHorizontal("dimMode", 6);
+  cont.counterAxisAlignItems = "CENTER";
+  const key = iconoResizingKey(clave, modo);
+  if (key) {
+    const caja = frameHorizontal("dimIcon", 0);
+    caja.counterAxisAlignItems = "CENTER";
+    caja.primaryAxisAlignItems = "CENTER";
+    caja.paddingTop = caja.paddingBottom = caja.paddingLeft = caja.paddingRight = 3;
+    caja.cornerRadius = 4;
+    caja.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+    caja.strokeWeight = 1;
+    caja.appendChild(nodoIcono(key, 16));
+    cont.appendChild(caja);
+  }
+  cont.appendChild(await textoValor(modo));
+  return cont;
+}
 
 const GRIS_ICONO = "#666666";
 
 // Crea el nodo del ícono normalizado a 24px y recoloreado al gris del panel.
 // Los íconos UI3 vienen en negro (fill="black") o azul de acento (#007BE5); se
 // recolorean al gris del panel manteniendo white/none y las opacidades.
-export function nodoIcono(key: string): SceneNode {
+export function nodoIcono(key: string, tam = 24): SceneNode {
   const raw = ICONOS_UI3[key] ?? ICONOS_UI3.width;
   // Se quita el `style` inline porque puede traer un override en P3
   // (`fill:color(display-p3 ...)`) que pisa al atributo `fill` recoloreado.
   const svg = raw
-    .replace(/width="\d+"/, 'width="24"')
-    .replace(/height="\d+"/, 'height="24"')
+    .replace(/width="\d+"/, `width="${tam}"`)
+    .replace(/height="\d+"/, `height="${tam}"`)
     .replace(/\s*style="[^"]*"/g, "")
     .split("black").join(GRIS_ICONO)
     .split("#171717").join(GRIS_ICONO)

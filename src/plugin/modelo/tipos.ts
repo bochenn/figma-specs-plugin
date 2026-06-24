@@ -52,6 +52,8 @@ export interface NodoLike {
   fontSize?: number;
   lineHeight?: AlturaLinea;
   letterSpacing?: EspaciadoLetra;
+  textAlign?: string;            // alineación horizontal del texto ("LEFT" | "CENTER" | ...)
+  textCase?: string;             // transformación de caja ("ORIGINAL" | "UPPER" | ...)
   // variables de color resueltas (Variable Formatting):
   fillVariableName?: string;     // "Colección/Variable" del fill
   strokeVariableName?: string;   // idem stroke
@@ -108,6 +110,10 @@ export interface AtributoCambiado {
   rawValueDefault?: string; // valor resuelto del default (variables/styles)
   rawValueOpcion?: string;  // valor resuelto de la opción
   swatchHex?: string;     // color del swatch (el de la opción; solo atributos de color)
+  formatoDefault?: "VARIABLE" | "STYLE"; // presente solo si es token (para usar ChipVar)
+  formatoOpcion?: "VARIABLE" | "STYLE";
+  prefijoDefault?: string; // modo de resizing del default (width/height): Fixed/Hug/Fill
+  prefijoOpcion?: string;
 }
 
 export interface ElementoCambiado {

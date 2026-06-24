@@ -26,7 +26,7 @@ import { extraerDosWay } from "./extraccion/properties.ts";
 import { seccionDeDosWay } from "./generadores/properties.ts";
 import { extraerCompleteAnatomy, extraerCompleteLayout } from "./extraccion/properties.ts";
 import { seccionDeComplete } from "./generadores/complete.ts";
-import { header, hero, feature, footer, envolverItem } from "./generadores/pagina.ts";
+import { header, hero, feature, footer, envolverItem, ANCHO_PAGINA } from "./generadores/pagina.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
@@ -118,19 +118,19 @@ async function aviso(mensaje: string): Promise<FrameNode> {
 // Devuelve la(s) sección(es) de un tipo para el nodo, o un aviso si no aplica.
 async function seccionPara(nodo: SceneNode, seccion: Seccion, opts: OpcionesGen): Promise<FrameNode[]> {
   if (seccion === "anatomy") {
-    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Anatomy necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET.")];
+    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Anatomy needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
     const nivelMax = opts.anatomyDepth === "self" ? 0 : opts.anatomyDepth === "all" ? Infinity : 1;
-    const secciones = [await seccionDeAnatomy(nodo, extraerAnatomy(aNodoLike(nodo), opts.itemizar, { nivelMax, incluirRaiz: true }), opts.tabla)];
+    const secciones = [await seccionDeAnatomy(nodo, extraerAnatomy(aNodoLike(nodo), opts.itemizar, { nivelMax, incluirRaiz: true, textosProfundos: true }), opts.tabla)];
     if (opts.nested) {
       for (const inst of instanciasAnidadas(nodo)) {
-        secciones.push(await seccionDeAnatomy(inst, extraerAnatomy(aNodoLike(inst), opts.itemizar, { nivelMax, incluirRaiz: true }), opts.tabla));
+        secciones.push(await seccionDeAnatomy(inst, extraerAnatomy(aNodoLike(inst), opts.itemizar, { nivelMax, incluirRaiz: true, textosProfundos: true }), opts.tabla));
       }
     }
     return secciones;
   }
   if (seccion === "properties") {
     const componentSet = resolverComponentSet(nodo);
-    if (!componentSet) return [await aviso("Properties necesita un componente con variantes.")];
+    if (!componentSet) return [await aviso("Properties needs a component with variants.")];
     const setNorm = normalizarSet(componentSet);
     const secciones = [await seccionDeProperties(componentSet, extraerProperties(setNorm), setNorm.defaultProps, opts.columnas)];
     if (opts.nested) {
@@ -142,38 +142,44 @@ async function seccionPara(nodo: SceneNode, seccion: Seccion, opts: OpcionesGen)
     return secciones;
   }
   if (seccion === "layout") {
-    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Layout and Spacing necesita un FRAME, COMPONENT o INSTANCE.")];
+    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Layout and Spacing needs a FRAME, COMPONENT or INSTANCE.")];
     return [await seccionDeLayout(nodo, extraerLayout(aNodoLike(nodo), opts.itemizar), opts.columnas, opts.hideOuter, opts.itemizar, opts.medirHijos)];
   }
   if (seccion === "data") {
-    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Data necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET.")];
+    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Data needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
     return [await seccionDeData(nodo.name, serializarAnatomy(extraerAnatomy(aNodoLike(nodo))))];
   }
   if (seccion === "styling") {
-    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Styling Inventory necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET.")];
+    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Styling Inventory needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
     return [await seccionDeStyling(nodo.name, agruparInventario(recolectarEstilos(aNodoLike(nodo))))];
   }
   if (seccion === "modes") {
-    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Modes necesita un FRAME, COMPONENT, INSTANCE o COMPONENT_SET.")];
+    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Modes needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
     return [await seccionDeModes(nodo, agruparModes(recolectarModes(nodo)), opts.columnas)];
   }
   if (seccion === "twoway") {
     const componentSet = resolverComponentSet(nodo);
-    if (!componentSet) return [await aviso("Two-Way necesita un componente con variantes.")];
+    if (!componentSet) return [await aviso("Two-Way needs a component with variants.")];
     const setNorm = normalizarSet(componentSet);
     const dosway = extraerDosWay(setNorm);
-    if (!dosway) return [await aviso("Two-Way necesita al menos dos propiedades de variante.")];
+    if (!dosway) return [await aviso("Two-Way needs at least two variant properties.")];
     return [await seccionDeDosWay(componentSet, dosway, setNorm.defaultProps, opts.columnas)];
   }
   // complete
   const componentSet = resolverComponentSet(nodo);
-  if (!componentSet) return [await aviso("Complete necesita un componente con variantes.")];
+  if (!componentSet) return [await aviso("Complete needs a component with variants.")];
   const setNorm = normalizarSet(componentSet);
   return await seccionDeComplete(componentSet.name, extraerCompleteAnatomy(setNorm), extraerCompleteLayout(setNorm), opts.columnas);
 }
 
 // Orden fijo en el que se apilan las secciones elegidas.
 const ORDEN: Seccion[] = ["anatomy", "properties", "layout", "data", "styling", "modes", "twoway", "complete"];
+
+// Nombre base del item-envoltorio por sección (se numera: anatomyItem01, …).
+// Las secciones sin entrada conservan el nombre por defecto de envolverItem.
+const NOMBRE_ITEM: Partial<Record<Seccion, string>> = {
+  anatomy: "anatomyItem",
+};
 
 // Etiqueta (mayúsculas) que muestra la barra del encabezado por cada sección.
 const ETIQUETA_SECCION: Record<Seccion, string> = {
@@ -216,11 +222,11 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
 
   const seleccion = figma.currentPage.selection;
   if (seleccion.length === 0) {
-    responder({ tipo: "resultado", ok: false, error: "Seleccioná algo para generar specs." });
+    responder({ tipo: "resultado", ok: false, error: "Select something to generate specs." });
     return;
   }
   if (!msg.secciones || msg.secciones.length === 0) {
-    responder({ tipo: "resultado", ok: false, error: "Elegí al menos una sección." });
+    responder({ tipo: "resultado", ok: false, error: "Choose at least one section." });
     return;
   }
 
@@ -244,6 +250,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
   };
   try {
     const specs = frameVertical("Specs", 80, 0);
+    specs.minWidth = ANCHO_PAGINA; // piso de ancho; crece si alguna sección es más ancha
     let primeraSeccion = true;
     for (const seccion of ORDEN) {
       if (!msg.secciones.includes(seccion)) continue;
@@ -251,24 +258,44 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
       const pagina = frameVertical("Specifications", 0, 0);
       pagina.cornerRadius = 40;
 
-      pagina.appendChild(await header(ETIQUETA_SECCION[seccion]));
-      pagina.appendChild(await hero(TITULO_SECCION[seccion], DESCRIPCION_SECCION[seccion]));
-      pagina.appendChild(await feature(nodo.name));
+      const barraHeader = await header(ETIQUETA_SECCION[seccion]);
+      pagina.appendChild(barraHeader);
+      barraHeader.layoutSizingHorizontal = "FILL";
+      const barraHero = await hero(TITULO_SECCION[seccion], DESCRIPCION_SECCION[seccion]);
+      pagina.appendChild(barraHero);
+      barraHero.layoutSizingHorizontal = "FILL";
+      const barraFeature = await feature(nodo.name);
+      pagina.appendChild(barraFeature);
+      barraFeature.layoutSizingHorizontal = "FILL";
 
       if (primeraSeccion && msg.leyenda) {
-        const it = envolverItem(await seccionLeyenda());
+        const it = envolverItem(await seccionLeyenda(), "leyendaItem");
         pagina.appendChild(it);
         it.layoutSizingHorizontal = "FILL";
       }
+      const baseItem = NOMBRE_ITEM[seccion];
+      let itemN = 0;
       for (const contenido of await seccionPara(nodo, seccion, opts)) {
-        const it = envolverItem(contenido);
+        itemN++;
+        const nombreItem = baseItem ? `${baseItem}${String(itemN).padStart(2, "0")}` : undefined;
+        // Layout ya devuelve su propio frame-item con padding/fondo: no se re-envuelve.
+        let it: FrameNode;
+        if (seccion === "layout") {
+          it = contenido;
+          it.name = "Layout&Spacing";
+        } else {
+          it = envolverItem(contenido, nombreItem);
+        }
         pagina.appendChild(it);
         it.layoutSizingHorizontal = "FILL";
       }
 
-      pagina.appendChild(await footer());
+      const barraFooter = await footer();
+      pagina.appendChild(barraFooter);
+      barraFooter.layoutSizingHorizontal = "FILL";
 
       specs.appendChild(pagina);
+      pagina.layoutSizingHorizontal = "FILL"; // la página llena el ancho de specs (chrome alineado)
       primeraSeccion = false;
     }
     figma.currentPage.appendChild(specs);

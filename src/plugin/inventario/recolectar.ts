@@ -14,13 +14,19 @@ function emitir(nodo: NodoLike, entradas: EntradaEstilo[]): void {
   if (nodo.fillVariableName) {
     entradas.push({ tabla: "variable", nombre: nodo.fillVariableName, appliedAs: appliedFill, capa: nodo.name, swatchHex: hexSolido(nodo.fills) });
   } else if (nodo.fillStyleName) {
-    entradas.push({ tabla: "color", nombre: nodo.fillStyleName, appliedAs: appliedFill, capa: nodo.name });
+    const entrada: EntradaEstilo = { tabla: "color", nombre: nodo.fillStyleName, appliedAs: appliedFill, capa: nodo.name };
+    const hex = hexSolido(nodo.fills);
+    if (hex) entrada.swatchHex = hex; // los gradientes no tienen un color sólido único
+    entradas.push(entrada);
   }
 
   if (nodo.strokeVariableName) {
     entradas.push({ tabla: "variable", nombre: nodo.strokeVariableName, appliedAs: "Border color", capa: nodo.name, swatchHex: hexSolido(nodo.strokes) });
   } else if (nodo.strokeStyleName) {
-    entradas.push({ tabla: "color", nombre: nodo.strokeStyleName, appliedAs: "Border color", capa: nodo.name });
+    const entrada: EntradaEstilo = { tabla: "color", nombre: nodo.strokeStyleName, appliedAs: "Border color", capa: nodo.name };
+    const hex = hexSolido(nodo.strokes);
+    if (hex) entrada.swatchHex = hex;
+    entradas.push(entrada);
   }
 
   if (nodo.textStyleName) {
@@ -28,10 +34,10 @@ function emitir(nodo: NodoLike, entradas: EntradaEstilo[]): void {
   }
 }
 
-// Visita un nodo: emite sus estilos y baja por sus hijos, salvo en instancias.
+// Visita un nodo: emite sus estilos y baja por sus hijos, también dentro de las
+// instancias (para inventariar los tokens que usan los componentes anidados).
 function visitar(nodo: NodoLike, entradas: EntradaEstilo[]): void {
   emitir(nodo, entradas);
-  if (nodo.type === "INSTANCE") return;
   for (const hijo of nodo.children ?? []) {
     visitar(hijo, entradas);
   }

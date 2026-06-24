@@ -42,7 +42,7 @@ export async function seccionDeComplete(
   const secA = frameVertical("Complete Anatomy", 64);
   secA.appendChild(await texto("Complete Anatomy", 48));
   if (anatomy.length === 0) {
-    secA.appendChild(await texto("No se detectaron elementos adicionales en otras variantes.", 16));
+    secA.appendChild(await texto("No additional elements found in other variants.", 16));
   }
   const bloquesA: FrameNode[] = [];
   for (const grupo of agruparPorVariante(anatomy)) {
@@ -59,7 +59,7 @@ export async function seccionDeComplete(
   const secL = frameVertical("Complete Layout", 64);
   secL.appendChild(await texto("Complete Layout", 48));
   if (layout.length === 0) {
-    secL.appendChild(await texto("No se detectaron layouts adicionales en otras variantes.", 16));
+    secL.appendChild(await texto("No additional layouts found in other variants.", 16));
   }
   const bloquesL: FrameNode[] = [];
   for (const v of layout) {

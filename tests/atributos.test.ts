@@ -137,3 +137,23 @@ test("width sin layoutSizing → sin prefijo (igual que antes)", () => {
     { clave: "width", valor: "240px", formato: "HARDCODED" },
   );
 });
+
+test("texto con layoutSizing HUG → su width incluye prefijo Hug", () => {
+  const nodo: NodoLike = { id: "t", name: "t", type: "TEXT", width: 86, fontFamily: "Inter", fontSize: 14, layoutSizingHorizontal: "HUG" };
+  assert.deepEqual(
+    leerAtributos(nodo).find((a) => a.clave === "width"),
+    { clave: "width", valor: "86px", formato: "HARDCODED", prefijo: "Hug" },
+  );
+});
+
+test("texto: agrega filas Alignment y Case", () => {
+  const nodo: NodoLike = { id: "t", name: "t", type: "TEXT", fontFamily: "Inter", fontSize: 14, textAlign: "CENTER", textCase: "UPPER" };
+  const attrs = leerAtributos(nodo);
+  assert.equal(attrs.find((a) => a.clave === "Alignment")?.valor, "Center");
+  assert.equal(attrs.find((a) => a.clave === "Case")?.valor, "Uppercase");
+});
+
+test("texto con letter-spacing 0 → muestra la fila Letter Spacing", () => {
+  const nodo: NodoLike = { id: "t", name: "t", type: "TEXT", fontFamily: "Inter", fontSize: 14, letterSpacing: { unidad: "px", valor: 0 } };
+  assert.equal(leerAtributos(nodo).find((a) => a.clave === "Letter Spacing")?.valor, "0px");
+});

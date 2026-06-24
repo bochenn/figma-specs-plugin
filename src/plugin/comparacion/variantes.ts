@@ -57,6 +57,12 @@ export function diffAtributos(attrsDefault: Atributo[], attrsOpcion: Atributo[])
       if (aOpc?.rawValue) cambio.rawValueOpcion = aOpc.rawValue;
       const swatch = aOpc?.swatchHex ?? aDef?.swatchHex;
       if (swatch) cambio.swatchHex = swatch;
+      // Solo se guarda el formato si es token (VARIABLE/STYLE): así el generador
+      // muestra ChipVar solo para tokens y texto plano para valores hardcoded.
+      if (aDef && aDef.formato !== "HARDCODED") cambio.formatoDefault = aDef.formato;
+      if (aOpc && aOpc.formato !== "HARDCODED") cambio.formatoOpcion = aOpc.formato;
+      if (aDef?.prefijo) cambio.prefijoDefault = aDef.prefijo;
+      if (aOpc?.prefijo) cambio.prefijoOpcion = aOpc.prefijo;
       cambios.push(cambio);
     }
   }

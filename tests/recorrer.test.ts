@@ -97,3 +97,31 @@ test("recorrer: nivelMax 0 → vacío", () => {
   const raiz: NodoLike = { id: "r", name: "R", type: "FRAME", children: [{ id: "a", name: "A", type: "FRAME" }] };
   assert.deepEqual(recorrer(raiz, false, 0, 0, 0), []);
 });
+
+test("textosProfundos: una instancia muestra sus TEXT internos (no sus shapes)", () => {
+  const raiz: NodoLike = { id: "r", name: "R", type: "FRAME", children: [
+    { id: "boton", name: "boton", type: "INSTANCE", children: [
+      { id: "icono", name: "icono", type: "VECTOR" },
+      { id: "label", name: "label", type: "TEXT" },
+    ] },
+  ] };
+  const r = recorrer(raiz, false, 0, 0, Infinity, true);
+  assert.deepEqual(r.map((x) => [x.nodo.id, x.profundidad]), [["boton", 0], ["label", 1]]);
+});
+
+test("textosProfundos: el TEXT anidado aparece aunque supere nivelMax", () => {
+  const raiz: NodoLike = { id: "r", name: "R", type: "FRAME", children: [
+    { id: "a", name: "A", type: "FRAME", children: [
+      { id: "wrapper", name: "wrapper", type: "FRAME", children: [{ id: "txt", name: "txt", type: "TEXT" }] },
+    ] },
+  ] };
+  const r = recorrer(raiz, false, 0, 0, 1, true);
+  assert.deepEqual(r.map((x) => x.nodo.id), ["a", "txt"]);
+});
+
+test("textosProfundos false: no rescata texto interno de instancias (compat)", () => {
+  const raiz: NodoLike = { id: "r", name: "R", type: "FRAME", children: [
+    { id: "boton", name: "boton", type: "INSTANCE", children: [{ id: "label", name: "label", type: "TEXT" }] },
+  ] };
+  assert.deepEqual(recorrer(raiz, false, 0, 0, Infinity, false).map((x) => x.nodo.id), ["boton"]);
+});

@@ -1,9 +1,11 @@
 import type { PropiedadSpec, ElementoCambiado, AtributoCambiado, DosWaySpec } from "../modelo/tipos.ts";
 import { mismasProps } from "../comparacion/variantes.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, tarjeta, filaPill, chipVariable, FONT_MEDIUM, textoClave, textoValor } from "./frames.ts";
+import { indicadorDimension, iconoResizingKey } from "./iconos.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { hexARgb } from "../utils/color.ts";
 import { nombrePropiedad } from "../utils/propiedades.ts";
+import { parseVariantes } from "../utils/anatomy-variantes.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
 const AZUL_HL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
@@ -41,7 +43,7 @@ async function subseccionBoolean(componentSet: ComponentSetNode, nombre: string,
     artwork.layoutMode = "NONE";
     artwork.clipsContent = false;
     artwork.fills = fillTematizado(varsTema().fondoArtwork);
-    const clon = defaultVariant.clone();
+    const clon = defaultVariant.createInstance(); // instancia del variante, no un clon-componente
     artwork.appendChild(clon);
     clon.x = 0;
     clon.y = 0;
@@ -76,50 +78,99 @@ function lineaAtributo(c: AtributoCambiado): string {
   return `${c.clave}: ${op} (default: ${def})`;
 }
 
-// Dibuja un cambio de atributo como filaPill: swatch (si color) + clave + valores.
+// Dibuja un cambio de atributo como DOS pills horizontales: itemValue-current
+// (clave + valor de la opción, a la izquierda) e itemValue-default (default +
+// su valor, a la derecha). Separa visualmente el valor actual del default.
 async function filaAtributoCambiado(c: AtributoCambiado): Promise<FrameNode> {
-  const nodos: SceneNode[] = [];
+  // itemValue-current: swatch + clave + valor de la opción
+  const current: SceneNode[] = [];
   if (c.swatchHex) {
     const swatch = figma.createRectangle();
     swatch.resize(12, 12);
     swatch.fills = [{ type: "SOLID", color: hexARgb(c.swatchHex) }];
     swatch.strokes = [{ type: "SOLID", color: { r: 0.8, g: 0.8, b: 0.8 } }];
     swatch.strokeWeight = 1;
-    nodos.push(swatch);
+    current.push(swatch);
   }
-  // clave:
-  nodos.push(await textoClave(`${c.clave}:`));
-  // valor opción
+  current.push(await textoClave(`${c.clave}:`));
+  // ChipVar solo si es token; si no, texto plano
   if (c.valorOpcion && c.valorOpcion !== "—") {
-    nodos.push(await chipVariable(c.valorOpcion));
+    current.push(c.formatoOpcion ? await chipVariable(c.valorOpcion) : await textoValor(c.valorOpcion));
   } else {
-    nodos.push(await textoValor("—"));
+    current.push(await textoValor("—"));
   }
-  if (c.rawValueOpcion) nodos.push(await textoValor(`(${c.rawValueOpcion})`));
-  // default
-  nodos.push(await textoClave("default:"));
+  if (c.rawValueOpcion) current.push(await textoValor(`(${c.rawValueOpcion})`));
+  if (iconoResizingKey(c.clave, c.prefijoOpcion)) current.push(await indicadorDimension(c.clave, c.prefijoOpcion!));
+  const pillCurrent = filaPill(current);
+  pillCurrent.name = "itemValue-current";
+
+  // itemValue-default: default: + valor del default
+  const def: SceneNode[] = [await textoClave("default:")];
   if (c.valorDefault && c.valorDefault !== "—") {
-    nodos.push(await chipVariable(c.valorDefault));
+    def.push(c.formatoDefault ? await chipVariable(c.valorDefault) : await textoValor(c.valorDefault));
   } else {
-    nodos.push(await textoValor("—"));
+    def.push(await textoValor("—"));
   }
-  if (c.rawValueDefault) nodos.push(await textoValor(`(${c.rawValueDefault})`));
-  return filaPill(nodos);
+  if (c.rawValueDefault) def.push(await textoValor(`(${c.rawValueDefault})`));
+  if (iconoResizingKey(c.clave, c.prefijoDefault)) def.push(await indicadorDimension(c.clave, c.prefijoDefault!));
+  const pillDefault = filaPill(def);
+  pillDefault.name = "itemValue-default";
+
+  const fila = frameHorizontal("cambio", 8);
+  fila.counterAxisAlignItems = "CENTER";
+  fila.appendChild(pillCurrent);
+  fila.appendChild(pillDefault);
+  return fila;
 }
 
+// Etiqueta en inglés del estado de un elemento cambiado (el valor interno queda en español).
+const ETIQUETA_ESTADO: Record<ElementoCambiado["estado"], string> = {
+  modificado: "Modified",
+  agregado: "Added",
+  removido: "Removed",
+};
+
 // Construye la lista de cambios de una opción. Cada elemento cambiado es una tarjeta.
-async function listaCambios(cambios: ElementoCambiado[]): Promise<FrameNode> {
+// `nombreBase` es el nombre del componente (para la card raíz del variante).
+async function listaCambios(cambios: ElementoCambiado[], nombreBase: string): Promise<FrameNode> {
   const lista = frameVertical("Cambios", 8);
   if (cambios.length === 0) {
-    lista.appendChild(await texto("Sin cambios respecto al default", 16));
+    lista.appendChild(await texto("No changes from the default", 16));
     return lista;
   }
-  for (const cambio of cambios) {
-    const sufijo = cambio.estado === "modificado" ? "" : ` · ${cambio.estado}`;
-    const headerNodos: SceneNode[] = [await texto(`${cambio.elementoNombre}${sufijo}`, 16, FONT_BOLD)];
+  // Consolida added/removed repetidos (misma capa nombre+estado, ej. varios "Vector")
+  // en una sola card con cantidad.
+  const cuenta = new Map<string, number>();
+  const orden: ElementoCambiado[] = [];
+  for (const c of cambios) {
+    if (c.atributos.length === 0) {
+      const k = `${c.elementoNombre}|${c.estado}`;
+      cuenta.set(k, (cuenta.get(k) ?? 0) + 1);
+      if (cuenta.get(k) === 1) orden.push(c);
+    } else {
+      orden.push(c);
+    }
+  }
+  for (const cambio of orden) {
+    const props = parseVariantes(cambio.elementoNombre); // no vacío solo en la raíz (variante)
+    const headerNodos: SceneNode[] = [];
     const filas: FrameNode[] = [];
+    if (props.length > 0) {
+      // Raíz del variante: nombre del componente + sus props en vertical (estilo panel de Figma).
+      headerNodos.push(await texto(nombreBase, 16, FONT_MEDIUM));
+      for (const p of props) filas.push(filaPill([await textoClave(`${p.clave}:`), await textoValor(p.valor)]));
+    } else {
+      const n = cuenta.get(`${cambio.elementoNombre}|${cambio.estado}`) ?? 1;
+      const sufijo = cambio.estado === "modificado" ? "" : ` · ${ETIQUETA_ESTADO[cambio.estado]}${n > 1 ? ` ×${n}` : ""}`;
+      headerNodos.push(await texto(`${cambio.elementoNombre}${sufijo}`, 16, FONT_MEDIUM));
+    }
     for (const attr of cambio.atributos) {
       filas.push(await filaAtributoCambiado(attr));
+    }
+    // Added/removed sin atributos: una nota, en vez de una caja vacía.
+    if (cambio.atributos.length === 0 && props.length === 0) {
+      const nota = cambio.estado === "agregado" ? "Added in this variant" : "Removed from this variant";
+      filas.push(filaPill([await textoValor(nota)]));
     }
     lista.appendChild(tarjeta(headerNodos, filas));
   }
@@ -140,7 +191,7 @@ async function displayOpcion(
     artwork.name = "Artwork";
     artwork.layoutMode = "NONE";
     artwork.fills = fillTematizado(varsTema().fondoArtwork);
-    const clon = componente.clone();
+    const clon = componente.createInstance(); // instancia del variante, no un clon-componente
     artwork.appendChild(clon);
     clon.x = 0;
     clon.y = 0;
@@ -148,7 +199,7 @@ async function displayOpcion(
     display.appendChild(artwork);
   }
 
-  display.appendChild(await listaCambios(cambios));
+  display.appendChild(await listaCambios(cambios, componentSet.name));
   return display;
 }
 
@@ -174,19 +225,26 @@ export async function seccionDeProperties(
   columnas: number,
 ): Promise<FrameNode> {
   const seccion = frameVertical("Properties", 64);
-  seccion.appendChild(await texto("Properties", 48));
 
   if (propiedades.length === 0) {
-    seccion.appendChild(await texto("Sin propiedades de variante para comparar", 16));
+    seccion.appendChild(await texto("No variant properties to compare", 16));
   }
 
   for (const prop of propiedades) {
     const subseccion = frameVertical(prop.nombre, 40);
     subseccion.appendChild(await texto(prop.nombre, 36));
+    // Sin opciones comparables: no existe ninguna variante que sea el default con
+    // solo esta propiedad cambiada (matriz de variantes dispersa). Se aclara en vez
+    // de dejar la subsección vacía.
+    if (prop.opciones.length === 0) {
+      subseccion.appendChild(await texto(`No variant matches the default with a different ${prop.nombre}.`, 16));
+      seccion.appendChild(subseccion);
+      continue;
+    }
     const bloques: FrameNode[] = [];
     for (const opcion of prop.opciones) {
       const target = { ...defaultProps, [prop.nombre]: opcion.nombre };
-      const headerNodos: SceneNode[] = [await texto(opcion.nombre, 16, FONT_BOLD)];
+      const headerNodos: SceneNode[] = [await texto(opcion.nombre, 16, FONT_MEDIUM)];
       // displayOpcion (artwork + listaCambios) va dentro del body de la tarjeta como nodo único
       const display = await displayOpcion(componentSet, target, opcion.cambios);
       bloques.push(tarjeta(headerNodos, [display]));
@@ -270,13 +328,12 @@ export async function seccionDeDosWay(
   columnas: number,
 ): Promise<FrameNode> {
   const seccion = frameVertical("Two-Way", 64);
-  seccion.appendChild(await texto("Two-Way", 48));
   seccion.appendChild(await texto(`${dosway.prop1} × ${dosway.prop2}`, 24));
 
   const bloques: FrameNode[] = [];
   for (const comb of dosway.combinaciones) {
     const target = { ...defaultProps, [dosway.prop1]: comb.valor1, [dosway.prop2]: comb.valor2 };
-    const headerNodos: SceneNode[] = [await texto(`${comb.valor1} + ${comb.valor2}`, 16, FONT_BOLD)];
+    const headerNodos: SceneNode[] = [await texto(`${comb.valor1} + ${comb.valor2}`, 16, FONT_MEDIUM)];
     const display = await displayOpcion(componentSet, target, comb.cambios);
     bloques.push(tarjeta(headerNodos, [display]));
   }

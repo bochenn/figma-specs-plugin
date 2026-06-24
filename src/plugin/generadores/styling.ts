@@ -1,67 +1,126 @@
 import type { FilaInventario } from "../modelo/tipos.ts";
-import { frameVertical, frameHorizontal, texto } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, textoValor, textoClave, chipVariable, fillTematizado, BORDE_PILL } from "./frames.ts";
+import { varsTema } from "../utils/variables-tema.ts";
 import { hexARgb } from "../utils/color.ts";
 
-const COL_NAME = 280;
 const COL_AS = 160;
 const COL_TO = 280;
 const CHIP = 12;
+const GRIS_DESC: RGB = { r: 0.420, g: 0.447, b: 0.502 }; // #6B7280
 
-// Crea una celda de texto con ancho fijo y wrap.
+// Texto gris chico para la descripción/observación bajo el título de cada tabla.
+async function notaTabla(contenido: string): Promise<TextNode> {
+  const t = await texto(contenido, 14);
+  t.fills = [{ type: "SOLID", color: GRIS_DESC }];
+  return t;
+}
+
+// Celda de datos: texto valor (mono, estilo itemValue), ancho fijo y wrap.
 async function celda(contenido: string, ancho: number): Promise<TextNode> {
-  const t = await texto(contenido, 12);
+  const t = await textoValor(contenido);
   t.textAutoResize = "HEIGHT";
   t.resize(ancho, t.height);
   return t;
 }
 
-// Celda Name: con chip (variables) o solo texto. Ancho total ≈ COL_NAME.
-async function celdaNombre(nombre: string, swatchHex: string | undefined): Promise<SceneNode> {
-  if (!swatchHex) return await celda(nombre, COL_NAME);
+// Celda de header: etiqueta de columna en estilo clave (gris mono), ancho fijo.
+async function celdaHeader(label: string, ancho: number): Promise<TextNode> {
+  const t = await textoClave(label);
+  t.textAutoResize = "HEIGHT";
+  t.resize(ancho, t.height);
+  return t;
+}
+
+// Celda Name: nombre del token como ChipVar en UNA línea (hug), con el swatch de
+// color delante y el hex explícito detrás cuando hay color. La columna se alinea
+// después fijando todas las celdas al ancho máximo (ver `tabla`).
+async function celdaNombre(nombre: string, swatchHex: string | undefined): Promise<FrameNode> {
   const cont = frameHorizontal("Name", 8);
   cont.counterAxisAlignItems = "CENTER";
-  const chip = figma.createRectangle();
-  chip.resize(CHIP, CHIP);
-  chip.fills = [{ type: "SOLID", color: hexARgb(swatchHex) }];
-  chip.strokes = [{ type: "SOLID", color: { r: 0.8, g: 0.8, b: 0.8 } }];
-  chip.strokeWeight = 1;
-  cont.appendChild(chip);
-  cont.appendChild(await celda(nombre, COL_NAME - CHIP - 8));
+  if (swatchHex) {
+    const sw = figma.createRectangle();
+    sw.resize(CHIP, CHIP);
+    sw.fills = [{ type: "SOLID", color: hexARgb(swatchHex) }];
+    sw.strokes = [{ type: "SOLID", color: { r: 0.8, g: 0.8, b: 0.8 } }];
+    sw.strokeWeight = 1;
+    cont.appendChild(sw);
+  }
+  cont.appendChild(await chipVariable(nombre));
+  if (swatchHex) cont.appendChild(await textoValor(`(${swatchHex})`));
   return cont;
 }
 
-// Fila de header (3 textos).
-async function filaHeader(): Promise<FrameNode> {
-  const f = frameHorizontal("Header", 16);
-  f.appendChild(await celda("Name", COL_NAME));
-  f.appendChild(await celda("Applied as", COL_AS));
-  f.appendChild(await celda("Applied to", COL_TO));
-  return f;
+// Fija el ancho de una celda (texto o frame) dejando el contenido a la izquierda.
+function fijarAncho(nodo: FrameNode | TextNode, ancho: number): void {
+  if (nodo.type === "TEXT") {
+    nodo.resize(ancho, nodo.height);
+  } else {
+    nodo.primaryAxisSizingMode = "FIXED";
+    nodo.resize(ancho, nodo.height);
+  }
 }
 
-// Fila de datos: celda Name (con chip si hay) + applied as + applied to.
-async function filaDatos(fila: FilaInventario): Promise<FrameNode> {
-  const f = frameHorizontal("Fila", 16);
-  f.appendChild(await celdaNombre(fila.nombre, fila.swatchHex));
-  f.appendChild(await celda(fila.appliedAs, COL_AS));
-  f.appendChild(await celda(fila.appliedTo, COL_TO));
-  return f;
-}
-
-// Subsección con su tabla (o nota si no hay filas).
-async function tabla(titulo: string, filas: FilaInventario[], vacio: string): Promise<FrameNode> {
+// Subsección con su tabla, o nota si no hay filas. La tabla se arma como Card
+// (borde + radius + header con divisor inferior + body con padding), igual que
+// las cards de Anatomy y Layout & Spacing. `nombreTabla` da el id del frame.
+async function tabla(titulo: string, descripcion: string, filas: FilaInventario[], vacio: string, nombreTabla: string, observacion?: string): Promise<FrameNode> {
   const sub = frameVertical(titulo, 16);
-  sub.appendChild(await texto(titulo, 36));
+  // Encabezado: título + descripción (+ observación si hay), juntos.
+  const head = frameVertical("head", 8);
+  head.appendChild(await texto(titulo, 36));
+  head.appendChild(await notaTabla(descripcion));
+  if (observacion) head.appendChild(await notaTabla(`Note: ${observacion}`));
+  sub.appendChild(head);
   if (filas.length === 0) {
     sub.appendChild(await texto(vacio, 16));
     return sub;
   }
-  const cuerpo = frameVertical("Tabla", 8);
-  cuerpo.appendChild(await filaHeader());
-  for (const f of filas) {
-    cuerpo.appendChild(await filaDatos(f));
+  // Celdas Name (chip en 1 línea); se mide el ancho máximo para alinear la columna.
+  const headerName = await textoClave("Name");
+  const nameCells = await Promise.all(filas.map((f) => celdaNombre(f.nombre, f.swatchHex)));
+  let colName = headerName.width;
+  for (const c of nameCells) colName = Math.max(colName, c.width);
+
+  const card = frameVertical(nombreTabla, 0);
+  card.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+  card.strokeWeight = 1;
+  card.cornerRadius = 8;
+  card.fills = fillTematizado(varsTema().fondoSpec);
+  card.clipsContent = true;
+
+  // Header: etiquetas de columna (gris), con padding y divisor inferior.
+  const header = frameHorizontal("Header", 16);
+  header.counterAxisAlignItems = "CENTER";
+  header.paddingTop = header.paddingBottom = 8;
+  header.paddingLeft = header.paddingRight = 16;
+  header.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+  header.strokeTopWeight = 0;
+  header.strokeLeftWeight = 0;
+  header.strokeRightWeight = 0;
+  header.strokeBottomWeight = 1;
+  fijarAncho(headerName, colName);
+  header.appendChild(headerName);
+  header.appendChild(await celdaHeader("Applied as", COL_AS));
+  header.appendChild(await celdaHeader("Applied to", COL_TO));
+  card.appendChild(header);
+  header.layoutSizingHorizontal = "FILL";
+
+  // Body: filas de datos, con padding.
+  const body = frameVertical("Body", 8);
+  body.paddingTop = body.paddingBottom = body.paddingLeft = body.paddingRight = 16;
+  for (let i = 0; i < filas.length; i++) {
+    const f = frameHorizontal("Fila", 16);
+    f.counterAxisAlignItems = "CENTER";
+    fijarAncho(nameCells[i], colName);
+    f.appendChild(nameCells[i]);
+    f.appendChild(await celda(filas[i].appliedAs, COL_AS));
+    f.appendChild(await celda(filas[i].appliedTo, COL_TO));
+    body.appendChild(f);
   }
-  sub.appendChild(cuerpo);
+  card.appendChild(body);
+  body.layoutSizingHorizontal = "FILL";
+
+  sub.appendChild(card);
   return sub;
 }
 
@@ -81,9 +140,30 @@ export async function seccionDeStyling(nombre: string, filas: FilaInventario[]):
   const seccion = frameVertical("Styling Inventory", 64);
   seccion.appendChild(await texto("Styling Inventory", 48));
 
-  seccion.appendChild(await tabla("Variables", filas.filter((f) => f.tabla === "variable"), "Sin variables"));
-  seccion.appendChild(await tabla("Color styles", filas.filter((f) => f.tabla === "color"), "Sin color styles"));
-  seccion.appendChild(await tabla("Text styles", filas.filter((f) => f.tabla === "text"), "Sin text styles"));
+  const variables = filas.filter((f) => f.tabla === "variable");
+  const colorStyles = filas.filter((f) => f.tabla === "color");
+  const textStyles = filas.filter((f) => f.tabla === "text");
+
+  // Observación cuando algún token de color no tiene un swatch (gradiente / no sólido).
+  const sinSwatch = "gradient or non-solid styles don't show a color swatch";
+  const obsVariables = variables.some((f) => !f.swatchHex) ? sinSwatch : undefined;
+  const obsColor = colorStyles.some((f) => !f.swatchHex) ? sinSwatch : undefined;
+
+  seccion.appendChild(await tabla(
+    "Variables",
+    "Variables (design tokens) bound to this element and its layers, with their resolved value.",
+    variables, "No variables", "variablesTable", obsVariables,
+  ));
+  seccion.appendChild(await tabla(
+    "Color styles",
+    "Color styles applied to the fills and strokes of this element.",
+    colorStyles, "No color styles", "colorStylesTable", obsColor,
+  ));
+  seccion.appendChild(await tabla(
+    "Text styles",
+    "Text styles applied to the text layers of this element.",
+    textStyles, "No text styles", "textStylesTable",
+  ));
 
   return seccion;
 }

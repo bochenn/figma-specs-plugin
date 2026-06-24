@@ -95,9 +95,9 @@ export async function textoHeaderCard(contenido: string): Promise<TextNode> {
   return t;
 }
 
-const BORDE_PILL: RGB = { r: 0.819, g: 0.835, b: 0.859 }; // #D1D5DB
-const FONDO_CHIP: RGB = { r: 0.898, g: 0.906, b: 0.922 };  // #E5E7EB
-const TEXTO_CHIP: RGB = { r: 0.2, g: 0.2, b: 0.2 };
+export const BORDE_PILL: RGB = { r: 0.819, g: 0.835, b: 0.859 }; // #D1D5DB
+const FONDO_CHIP: RGB = { r: 1, g: 0.878, b: 0.988 };       // #FFE0FC
+const TEXTO_CHIP: RGB = { r: 0.918, g: 0.063, b: 0.675 };   // #EA10AC
 const COLOR_CLAVE: RGB = { r: 0.420, g: 0.447, b: 0.502 }; // #6B7280
 const COLOR_VALOR: RGB = { r: 0.216, g: 0.255, b: 0.318 }; // #374151
 

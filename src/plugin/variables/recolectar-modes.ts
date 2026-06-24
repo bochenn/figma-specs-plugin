@@ -32,8 +32,8 @@ function valorColor(variable: Variable, modeId: string): string {
   return "—";
 }
 
-// Visita un nodo: emite entradas de sus variables de color y baja por sus hijos
-// (salvo en instancias).
+// Visita un nodo: emite entradas de sus variables de color y baja por sus hijos,
+// también dentro de las instancias (para alcanzar los componentes anidados).
 function visitar(nodo: SceneNode, entradas: EntradaModo[]): void {
   for (const { id, appliedAs } of variablesColorDe(nodo)) {
     const variable = figma.variables.getVariableById(id);
@@ -53,7 +53,6 @@ function visitar(nodo: SceneNode, entradas: EntradaModo[]): void {
       valores,
     });
   }
-  if (nodo.type === "INSTANCE") return;
   if ("children" in nodo) {
     for (const hijo of nodo.children) visitar(hijo, entradas);
   }
