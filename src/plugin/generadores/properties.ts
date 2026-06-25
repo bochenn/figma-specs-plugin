@@ -70,6 +70,63 @@ function buscarComponente(
   return undefined;
 }
 
+// Cualquier variante que tenga `valor` en la propiedad `prop` (matriz dispersa).
+function buscarComponenteConValor(componentSet: ComponentSetNode, prop: string, valor: string): ComponentNode | undefined {
+  for (const hijo of componentSet.children) {
+    if (hijo.type === "COMPONENT" && (hijo.variantProperties ?? {})[prop] === valor) return hijo;
+  }
+  return undefined;
+}
+
+// Marcador ◆ que precede a cada valor en la tabla de propiedades.
+function diamante(): PolygonNode {
+  const p = figma.createPolygon();
+  p.pointCount = 4;
+  p.resize(8, 8);
+  p.fills = [{ type: "SOLID", color: GRIS(0.1) }];
+  return p;
+}
+
+// Fila de la tabla de propiedades: label (gris, ancho fijo) + ◆ + valor.
+async function filaPropTabla(label: string, valor: string): Promise<FrameNode> {
+  const fila = frameHorizontal("prop", 12);
+  fila.counterAxisAlignItems = "CENTER";
+  const lbl = await textoClave(label);
+  lbl.textAutoResize = "HEIGHT";
+  lbl.resize(160, lbl.height);
+  fila.appendChild(lbl);
+  fila.appendChild(diamante());
+  fila.appendChild(await textoValor(valor));
+  return fila;
+}
+
+// Card de un variante (estilo Spectral): header + [artwork (instancia) | tabla de propiedades].
+async function cardVariante(header: string, comp: ComponentNode, nombresProps: string[]): Promise<FrameNode> {
+  const display = frameHorizontal("Display", 64);
+  display.counterAxisAlignItems = "MIN";
+
+  const artwork = figma.createFrame();
+  artwork.name = "Artwork";
+  artwork.layoutMode = "NONE";
+  artwork.fills = fillTematizado(varsTema().fondoArtwork);
+  const inst = comp.createInstance();
+  artwork.appendChild(inst);
+  inst.x = 0;
+  inst.y = 0;
+  artwork.resize(inst.width, inst.height);
+  display.appendChild(artwork);
+
+  const props = comp.variantProperties ?? {};
+  const tabla = frameVertical("PropsTable", 8);
+  for (const name of nombresProps) {
+    if (props[name] === undefined) continue;
+    tabla.appendChild(await filaPropTabla(name, props[name]));
+  }
+  display.appendChild(tabla);
+
+  return tarjeta([await texto(header, 16, FONT_MEDIUM)], [display]);
+}
+
 // Texto legible de un atributo cambiado: "valorOpcion (raw) (default: valorDefault (raw))".
 // El (raw) aparece solo cuando el valor es una variable/style con valor resuelto.
 function lineaAtributo(c: AtributoCambiado): string {
@@ -218,36 +275,38 @@ async function specDeProperties(
 }
 
 // Construye solo la sección Properties (sin Specifications ni título de nodo).
+// Estilo Spectral: por cada valor de cada propiedad, una card con el preview del
+// variante + su tabla de propiedades completa. `_propiedades` ya no se usa (la
+// info se toma directo del component set).
 export async function seccionDeProperties(
   componentSet: ComponentSetNode,
-  propiedades: PropiedadSpec[],
+  _propiedades: PropiedadSpec[],
   defaultProps: Record<string, string>,
   columnas: number,
 ): Promise<FrameNode> {
   const seccion = frameVertical("Properties", 64);
+  const grupos = componentSet.variantGroupProperties;
+  const nombresProps = Object.keys(grupos);
 
-  if (propiedades.length === 0) {
+  if (nombresProps.length === 0) {
     seccion.appendChild(await texto("No variant properties to compare", 16));
+    return seccion;
   }
 
-  for (const prop of propiedades) {
-    const subseccion = frameVertical(prop.nombre, 40);
-    subseccion.appendChild(await texto(prop.nombre, 36));
-    // Sin opciones comparables: no existe ninguna variante que sea el default con
-    // solo esta propiedad cambiada (matriz de variantes dispersa). Se aclara en vez
-    // de dejar la subsección vacía.
-    if (prop.opciones.length === 0) {
-      subseccion.appendChild(await texto(`No variant matches the default with a different ${prop.nombre}.`, 16));
-      seccion.appendChild(subseccion);
-      continue;
-    }
+  // Card del variante default arriba.
+  const defComp = buscarComponente(componentSet, defaultProps);
+  if (defComp) seccion.appendChild(await cardVariante(componentSet.name, defComp, nombresProps));
+
+  // Una subsección por propiedad: una card por cada valor (preview + tabla).
+  for (const prop of nombresProps) {
+    const subseccion = frameVertical(prop, 40);
+    subseccion.appendChild(await texto(prop, 36));
     const bloques: FrameNode[] = [];
-    for (const opcion of prop.opciones) {
-      const target = { ...defaultProps, [prop.nombre]: opcion.nombre };
-      const headerNodos: SceneNode[] = [await texto(opcion.nombre, 16, FONT_MEDIUM)];
-      // displayOpcion (artwork + listaCambios) va dentro del body de la tarjeta como nodo único
-      const display = await displayOpcion(componentSet, target, opcion.cambios);
-      bloques.push(tarjeta(headerNodos, [display]));
+    for (const valor of grupos[prop].values) {
+      const comp = buscarComponente(componentSet, { ...defaultProps, [prop]: valor })
+        ?? buscarComponenteConValor(componentSet, prop, valor);
+      if (!comp) continue;
+      bloques.push(await cardVariante(valor, comp, nombresProps));
     }
     if (columnas > 1) {
       subseccion.appendChild(enColumnas(bloques, columnas));
@@ -257,6 +316,7 @@ export async function seccionDeProperties(
     seccion.appendChild(subseccion);
   }
 
+  // Propiedades booleanas (se mantienen).
   const defs = componentSet.componentPropertyDefinitions;
   for (const clave of Object.keys(defs)) {
     if (defs[clave].type === "BOOLEAN") {

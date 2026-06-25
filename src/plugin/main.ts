@@ -10,7 +10,6 @@ import { aplicarFormatoTipo } from "./utils/tipografia.ts";
 import { extraerAnatomy } from "./extraccion/anatomy.ts";
 import { seccionDeAnatomy } from "./generadores/anatomy.ts";
 import { resolverComponentSet } from "./extraccion/resolver.ts";
-import { extraerProperties } from "./extraccion/properties.ts";
 import { seccionDeProperties } from "./generadores/properties.ts";
 import { extraerLayout } from "./extraccion/layout.ts";
 import { seccionDeLayout, seccionLeyenda } from "./generadores/layout.ts";
@@ -132,11 +131,11 @@ async function seccionPara(nodo: SceneNode, seccion: Seccion, opts: OpcionesGen)
     const componentSet = resolverComponentSet(nodo);
     if (!componentSet) return [await aviso("Properties needs a component with variants.")];
     const setNorm = normalizarSet(componentSet);
-    const secciones = [await seccionDeProperties(componentSet, extraerProperties(setNorm), setNorm.defaultProps, opts.columnas)];
+    // Properties ya no usa el diff (toma la info del component set); se pasa [].
+    const secciones = [await seccionDeProperties(componentSet, [], setNorm.defaultProps, opts.columnas)];
     if (opts.nested) {
       for (const set of setsAnidados(componentSet)) {
-        const norm = normalizarSet(set);
-        secciones.push(await seccionDeProperties(set, extraerProperties(norm), norm.defaultProps, opts.columnas));
+        secciones.push(await seccionDeProperties(set, [], normalizarSet(set).defaultProps, opts.columnas));
       }
     }
     return secciones;
