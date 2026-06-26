@@ -45,7 +45,7 @@ test("incluye atributos visuales del elemento", () => {
   const elementos = extraerAnatomy(raiz);
   assert.deepEqual(elementos[0].atributos, [
     { clave: "background-color", valor: "#000000", formato: "HARDCODED", swatchHex: "#000000" },
-    { clave: "width", valor: "100", formato: "HARDCODED" },
+    { clave: "width", valor: "100px", formato: "HARDCODED" },
   ]);
 });
 
@@ -66,4 +66,8 @@ test("extraerAnatomy: incluirRaiz + children → raíz + hijos directos", () => 
 test("extraerAnatomy: sin opts → solo descendientes, sin entrar a instancias (compat Data)", () => {
   const els = extraerAnatomy(arbol);
   assert.deepEqual(els.map((e) => e.id), ["c"]); // no entra a la instancia card sin itemizar
+});
+test("extraerAnatomy: textosProfundos surfacea el texto interno de una instancia", () => {
+  const els = extraerAnatomy(arbol, false, { nivelMax: 1, incluirRaiz: true, textosProfundos: true });
+  assert.deepEqual(els.map((e) => e.id), ["r", "c", "t"]); // el title interno de la card aparece
 });

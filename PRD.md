@@ -28,14 +28,13 @@
 
 ## RESUMEN EJECUTIVO
 
-**Specs Plugin** (anteriormente EightShapes Specs) es un plugin de Figma que genera automáticamente especificaciones visuales completas de componentes, instancias y frames seleccionados.
+**Blueprint Specs & Handoff** es un plugin de Figma que genera automáticamente especificaciones visuales completas de componentes, instancias y frames seleccionados.
 
-**Creado por:** Nathan Curtis (con ayuda de Kevin Powell)
+**Creado por:** bochenn
 **Distribución:** Figma Community
 **Soporte:**
 
-- GitHub Issues: https://github.com/EightShapes/specs-plugin/issues
-- Slack: https://join.slack.com/t/eightshapes-specs/shared_invite/zt-1w4k19pj7-viPHKW8045zak64u~lH4yA
+- GitHub: https://github.com/bochenn/figma-specs-plugin
 
 **Propuesta de valor:** Transformar diseños de Figma en documentación visual utilizable para comunicación, claridad de implementación y mejora de calidad entre equipos de diseño y desarrollo, sin esfuerzo manual tedioso.
 
@@ -545,7 +544,7 @@ Label
 
 **Referencia visual:**
 
-- Color format settings → ver página (panel EightShapes Specs con variables)
+- Color format settings → ver página (panel Specs con variables)
 - Color format applied → ver página (Marker fill aplicado)
 - Color format result → ver página (tabla Light/Dark)
 
@@ -555,13 +554,13 @@ Genera, personaliza y aplica variables personalizadas para formatear colores de 
 **Cómo funciona:**
 
 1. En Settings → Format, seleccionar **Color**
-2. Plugin busca/crea variables en collection **`EightShapes Specs`**
+2. Plugin busca/crea variables en collection **`Specs`**
 3. Aplica colores a frames y textos relevantes en el output
 
 **Variables gestionadas:**
 
 ```
-EightShapes Specs
+Specs
 ├── Text
 │   ├── Background
 │   ├── Artwork background
@@ -601,7 +600,7 @@ Cada variable tiene valores separados para modes **light** y **dark**.
 - Artwork frame dark mode → ver página (comparativa DS Color Light/Dark)
 
 **Descripción:**
-Permite cambiar el output del plugin al modo oscuro de EightShapes Specs.
+Permite cambiar el output del plugin al modo oscuro de Specs.
 
 **Tres niveles de aplicación:**
 
@@ -609,7 +608,7 @@ Permite cambiar el output del plugin al modo oscuro de EightShapes Specs.
 
 - Deseleccionar todo
 - Click en Mode icon en sección Page del panel Design
-- Elegir Light o Dark para EightShapes Specs
+- Elegir Light o Dark para Specs
 
 **2. Specification-level (frame Specifications o spec individual):**
 
@@ -790,7 +789,7 @@ Elements with attributes
 **Referencia visual:**
 
 - Custom typography overview → ver página (spec Lightning Button con tipografía personalizada)
-- Typography format settings → ver página (panel Text styles con EightShapes Spec seleccionado)
+- Typography format settings → ver página (panel Text styles con Specs seleccionado)
 - Typography format example → ver página (diálogo Edit text style con IBM Plex Sans)
 - Typography format result → ver página (Local styles completo con jerarquía)
 
@@ -800,13 +799,13 @@ Genera, personaliza y aplica text styles personalizados para formatear tipograf�
 **Cómo funciona:**
 
 1. En Settings → Format, seleccionar **Typography**
-2. Plugin busca/crea text styles locales que comienzan con **`EightShapes Spec`**
+2. Plugin busca/crea text styles locales que comienzan con **`Specs`**
 3. Aplica text styles a frames relevantes en el output
 
 **Text styles gestionados:**
 
 ```
-EightShapes Spec
+Specs
 ├── Annotations
 │   ├── Marker · 14/Auto
 │   ├── Marker small · 12/Auto
@@ -838,7 +837,7 @@ Los text styles pueden editarse directamente en Figma. Ejemplo: cambiar `Font na
 **Ocultación de publicación:**
 
 - Text styles con prefijo `.` se ocultan automáticamente
-- El plugin detecta ambos: `EightShapes Specs/...` y `.EightShapes Specs/...`
+- El plugin detecta ambos: `Specs/...` y `.Specs/...`
 
 ***
 
@@ -947,12 +946,12 @@ specs-plugin/
 
 **Pro Formatting (pago):**
 
-1. **Color formatter:** aplicar variable collection EightShapes Specs
-2. **Dark mode:** aplicar mode dark de EightShapes Specs
+1. **Color formatter:** aplicar variable collection Specs
+2. **Dark mode:** aplicar mode dark de Specs
 3. **Multi-column layout:** reorganizar en 2/3/4 columnas con spacers
 4. **Spacing formatter:** aplicar variable collection Specs Layout
 5. **Tabular anatomy:** formatear como tabla debajo de artwork
-6. **Typography formatter:** aplicar text styles EightShapes Spec
+6. **Typography formatter:** aplicar text styles Specs
 7. **Value formatter:** configurar preferencias de display de valores
 
 ### APIs de Figma requeridas

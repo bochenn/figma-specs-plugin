@@ -1,10 +1,10 @@
 import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
 import { TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
+import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor, FONT_MEDIUM, textoHeaderCard } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
 import { hexARgb } from "../utils/color.ts";
-import { nodoIconoTipo } from "./iconos.ts";
+import { nodoIconoTipo, iconoResizingKey, indicadorDimension } from "./iconos.ts";
 import { parseVariantes } from "../utils/anatomy-variantes.ts";
 
 const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
@@ -22,10 +22,16 @@ function cajasRelativas(raiz: SceneNode): Map<string, { x: number; y: number; wi
   return mapa;
 }
 
-// Paleta de colores de marcador (badge + borde), cicla por índice.
+// Paleta de colores de marcador (badge + borde), cicla por índice. Texto blanco.
 const COLORES_MARCA: RGB[] = [
-  { r: 0.05, g: 0.4, b: 0.85 }, { r: 0.9, g: 0.2, b: 0.5 }, { r: 0.45, g: 0.3, b: 0.8 },
-  { r: 0.95, g: 0.45, b: 0.1 }, { r: 0.1, g: 0.6, b: 0.4 },
+  hexARgb("#0D80FF"), // azul
+  hexARgb("#FF2D9C"), // magenta
+  hexARgb("#9747FF"), // violeta
+  hexARgb("#F0411E"), // rojo
+  hexARgb("#F5C518"), // amarillo
+  hexARgb("#1FA855"), // verde
+  hexARgb("#5E6B8A"), // slate
+  hexARgb("#F5921E"), // naranja
 ];
 
 // Borde punteado alrededor de la caja, del color del marcador.
@@ -58,6 +64,8 @@ async function filaAtributo(attr: Atributo): Promise<FrameNode> {
   } else {
     nodos.push(await textoValor(attr.valor));
   }
+  // width/height: el modo (Fixed/Hug/Fill) va al final como cajita-ícono + texto.
+  if (iconoResizingKey(attr.clave, attr.prefijo)) nodos.push(await indicadorDimension(attr.clave, attr.prefijo!));
   return filaPill(nodos);
 }
 
@@ -66,7 +74,7 @@ async function entradaLista(indice: number, el: ElementoAnatomy, color: RGB): Pr
   const headerNodos: SceneNode[] = [await badgePanel(indice, color)];
   const icono = nodoIconoTipo(el.tipo);
   if (icono) headerNodos.push(icono);
-  headerNodos.push(await texto(`${el.nombre} · ${el.tipo}`, 16, FONT_BOLD));
+  headerNodos.push(await textoHeaderCard(`${el.nombre} · ${el.tipo}`));
 
   const filas: FrameNode[] = [];
   const variantes = parseVariantes(el.dependeDe);
@@ -84,7 +92,7 @@ async function badgePanel(numero: number, color: RGB): Promise<FrameNode> {
   const circulo = figma.createEllipse();
   circulo.resize(TAM_MARCADOR, TAM_MARCADOR);
   circulo.fills = [{ type: "SOLID", color }];
-  const num = await texto(String(numero), 11);
+  const num = await texto(String(numero), 11, FONT_MEDIUM);
   num.fills = [{ type: "SOLID", color: GRIS(1) }];
   const cont = figma.createFrame();
   cont.name = `Badge ${numero}`;
@@ -105,7 +113,7 @@ async function marcador(numero: number, x: number, y: number, color: RGB): Promi
   circulo.resize(TAM_MARCADOR, TAM_MARCADOR);
   circulo.fills = [{ type: "SOLID", color }];
 
-  const num = await texto(String(numero), 14);
+  const num = await texto(String(numero), 14, FONT_MEDIUM);
   num.fills = [{ type: "SOLID", color: GRIS(1) }];
 
   const cont = figma.createFrame();
@@ -123,6 +131,26 @@ async function marcador(numero: number, x: number, y: number, color: RGB): Promi
   return cont;
 }
 
+// Línea guía horizontal recta (del color del marcador): de `desdeX` a `haciaX` en la Y dada.
+function lineaGuiaH(artwork: FrameNode, desdeX: number, y: number, haciaX: number, color: RGB): void {
+  const h = figma.createRectangle();
+  h.x = Math.min(desdeX, haciaX);
+  h.y = y - 0.5;
+  h.resize(Math.max(Math.abs(haciaX - desdeX), 0.01), 1);
+  h.fills = [{ type: "SOLID", color }];
+  artwork.appendChild(h);
+}
+
+// Línea guía vertical recta (del color del marcador): de `desdeY` a `haciaY` en la X dada.
+function lineaGuiaV(artwork: FrameNode, x: number, desdeY: number, haciaY: number, color: RGB): void {
+  const v = figma.createRectangle();
+  v.x = x - 0.5;
+  v.y = Math.min(desdeY, haciaY);
+  v.resize(1, Math.max(Math.abs(haciaY - desdeY), 0.01));
+  v.fills = [{ type: "SOLID", color }];
+  artwork.appendChild(v);
+}
+
 // Construye el [Nombre] Spec (heading + sección Anatomy con lista + artwork).
 async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
   const spec = frameVertical(`${seleccionado.name} Spec`, 48);
@@ -133,8 +161,7 @@ async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy
 
 // Construye solo la sección Anatomy (sin Specifications ni título de nodo).
 export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
-  const seccion = frameVertical("Anatomy", 64);
-  seccion.appendChild(await texto("Anatomy", 48));
+  const seccion = frameVertical("Anatomy", 24);
 
   // Display horizontal: lista a la izquierda, artwork a la derecha.
   const display = figma.createFrame();
@@ -156,27 +183,80 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
 
   // Margen para que los badges de las capas pegadas al borde no se corten.
   const MARGEN_ARTWORK = 20;
+  // Distancia del marcador al borde de su box, y margen reservado para los marcadores.
+  const OFFSET_MARCA = 48;
+  // Margen generoso y simétrico en los 4 lados: aloja el badge (a OFFSET del borde)
+  // y varios corridos cuando se acumulan, para que todo entre cómodo y respire.
+  const MARGEN_MARCA = OFFSET_MARCA + TAM_MARCADOR * 3;
+  // Tamaño mínimo del canvas gris: un elemento chico queda centrado en una caja amplia.
+  const ARTWORK_MIN = 440;
   const clon = seleccionado.clone();
   artwork.appendChild(clon);
-  clon.x = MARGEN_ARTWORK;
-  clon.y = MARGEN_ARTWORK;
-  artwork.resize(clon.width + 2 * MARGEN_ARTWORK, clon.height + 2 * MARGEN_ARTWORK);
+  const canvasW = Math.max(ARTWORK_MIN, clon.width + 2 * (MARGEN_ARTWORK + MARGEN_MARCA));
+  const canvasH = Math.max(ARTWORK_MIN, clon.height + 2 * (MARGEN_ARTWORK + MARGEN_MARCA));
+  artwork.resize(canvasW, canvasH);
+  const offsetX = (canvasW - clon.width) / 2;
+  const offsetY = (canvasH - clon.height) / 2;
+  clon.x = offsetX;
+  clon.y = offsetY;
 
-  // Un marcador por elemento, posicionado sobre la caja real de la capa.
+  // Badges en los 4 LADOS del elemento. Se elige el lado cuyo badge NO caiga sobre
+  // otro elemento hermano (el contenedor no obstruye); orden de preferencia
+  // izq → der → arriba → abajo. Si el lado libre choca con un badge ya puesto, se
+  // aleja el badge sobre su eje. La línea es perpendicular: del borde del elemento
+  // al badge. Así, en filas horizontales los badges van arriba/abajo y en pilas
+  // verticales a los costados, sin amontonarse.
   const cajas = cajasRelativas(seleccionado);
+  type Caja = { x: number; y: number; w: number; h: number };
+  const boxes: (Caja | null)[] = elementos.map((e) => {
+    const c = cajas.get(e.id);
+    return c ? { x: c.x + offsetX, y: c.y + offsetY, w: c.width, h: c.height } : null;
+  });
+  const contiene = (a: Caja, b: Caja): boolean =>
+    a.x <= b.x && a.y <= b.y && a.x + a.w >= b.x + b.w && a.y + a.h >= b.y + b.h;
+  // ¿El punto cae dentro de un elemento hermano de i (ni su contenedor ni su contenido)?
+  const sobreOtro = (x: number, y: number, i: number, bi: Caja): boolean =>
+    boxes.some((bj, j) => bj != null && j !== i && !contiene(bj, bi) && !contiene(bi, bj)
+      && x >= bj.x && x <= bj.x + bj.w && y >= bj.y && y <= bj.y + bj.h);
+  const colocados: { x: number; y: number }[] = [];
+  const colisiona = (x: number, y: number): boolean =>
+    colocados.some((p) => Math.abs(p.x - x) < TAM_MARCADOR + 4 && Math.abs(p.y - y) < TAM_MARCADOR + 4);
+  const R = TAM_MARCADOR / 2;
   for (let i = 0; i < elementos.length; i++) {
-    const caja = cajas.get(elementos[i].id);
-    if (!caja) continue;
+    const bi = boxes[i];
+    if (!bi) continue;
     const color = COLORES_MARCA[i % COLORES_MARCA.length];
-    const x = caja.x + MARGEN_ARTWORK;
-    const y = caja.y + MARGEN_ARTWORK;
-    bordeMarca({ x, y, width: caja.width, height: caja.height }, color, artwork);
-    artwork.appendChild(await marcador(i + 1, x - 8, y - 8, color));
+    bordeMarca({ x: bi.x, y: bi.y, width: bi.w, height: bi.h }, color, artwork);
+    const cx = bi.x + bi.w / 2;
+    const cy = bi.y + bi.h / 2;
+    const lados = [
+      { lado: "left",   x: bi.x - OFFSET_MARCA - R,        y: cy },
+      { lado: "right",  x: bi.x + bi.w + OFFSET_MARCA + R, y: cy },
+      { lado: "top",    x: cx,                             y: bi.y - OFFSET_MARCA - R },
+      { lado: "bottom", x: cx,                             y: bi.y + bi.h + OFFSET_MARCA + R },
+    ];
+    let validos = lados.filter((l) => !sobreOtro(l.x, l.y, i, bi));
+    if (validos.length === 0) validos = lados;
+    const elegido = validos.find((l) => !colisiona(l.x, l.y)) ?? validos[0];
+    let mcx = elegido.x;
+    let mcy = elegido.y;
+    while (colisiona(mcx, mcy)) {
+      if (elegido.lado === "left") mcx -= TAM_MARCADOR + 4;
+      else if (elegido.lado === "right") mcx += TAM_MARCADOR + 4;
+      else if (elegido.lado === "top") mcy -= TAM_MARCADOR + 4;
+      else mcy += TAM_MARCADOR + 4;
+    }
+    colocados.push({ x: mcx, y: mcy });
+    if (elegido.lado === "left") lineaGuiaH(artwork, mcx + R, cy, bi.x, color);
+    else if (elegido.lado === "right") lineaGuiaH(artwork, bi.x + bi.w, cy, mcx - R, color);
+    else if (elegido.lado === "top") lineaGuiaV(artwork, cx, mcy + R, bi.y, color);
+    else lineaGuiaV(artwork, cx, bi.y + bi.h, mcy - R, color);
+    artwork.appendChild(await marcador(i + 1, mcx - R, mcy - R, color));
   }
 
   // Contenido: tabla o lista (va a la DERECHA).
   if (elementos.length === 0) {
-    display.appendChild(await texto("Sin elementos detectados", 16));
+    display.appendChild(await texto("No elements found", 16));
   } else if (tabla) {
     display.appendChild(await tablaDe(HEADERS_ANATOMY, elementos.map((e, i) => filaAnatomy(i + 1, e))));
   } else {

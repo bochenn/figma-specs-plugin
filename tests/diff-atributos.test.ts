@@ -54,6 +54,7 @@ test("atributos VARIABLE con rawValue → cambio incluye el valor resuelto de am
       valorDefault: "color/border", valorOpcion: "color/surface",
       rawValueDefault: "#A6ACB0", rawValueOpcion: "#FFFFFF",
       swatchHex: "#FFFFFF",
+      formatoDefault: "VARIABLE", formatoOpcion: "VARIABLE",
     },
   ]);
 });

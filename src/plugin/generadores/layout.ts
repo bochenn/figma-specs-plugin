@@ -1,26 +1,26 @@
-import type { LayoutSpec, NodoLike } from "../modelo/tipos.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
+import type { LayoutSpec, NodoLike, Unidad } from "../modelo/tipos.ts";
+import { hexARgb } from "../utils/color.ts";
+import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, chipVariable, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor, FONT_MEDIUM, textoHeaderCard, BORDE_PILL } from "./frames.ts";
 import { varsTema } from "../utils/variables-tema.ts";
 import { rectsPadding, rectsSpacing, type Rect } from "../utils/overlays.ts";
-import { unidadActual, etiquetaSpacing, textoPadding } from "../utils/espaciado.ts";
+import { unidadActual, etiquetaSpacing } from "../utils/espaciado.ts";
 import { recorrerAutoLayout } from "../traversal/recorrer-autolayout.ts";
 import { marcasLayout, estiloCota, iconoDireccion, iconoAlineacion, valorDim, valorColor, valorSpacing, separarColisiones, carrilDeMarca, esChico, nombreCorto, type ParteValor, type Marca } from "../utils/marcadores-layout.ts";
 import { rectsGrid, textoGrid, gridSpecDe, franjasGridAutolayout } from "../utils/grilla.ts";
 import { prefijoProfundidad } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
-import { nodoIcono } from "./iconos.ts";
+import { nodoIcono, nodoIconoTipo, iconoResizingKey, indicadorDimension } from "./iconos.ts";
 
 const AZUL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
 const VERDE: RGB = { r: 0.1, g: 0.7, b: 0.3 };
 const NARANJA: RGB = { r: 1, g: 0.5, b: 0.1 };
 const ROJO: RGB = { r: 1, g: 0.1, b: 0.3 };
 
-// Color semántico estilo DesignDoc: padding azul, gap rosa, dimensión rojo.
-const CHIP_PADDING: RGB = { r: 0.05, g: 0.5, b: 1 };
-const CHIP_GAP: RGB = { r: 0.9, g: 0.2, b: 0.5 };
-const CHIP_DIM: RGB = { r: 0.95, g: 0.25, b: 0.15 };
-const PADDING_BANDA: RGB = { r: 0.6, g: 0.78, b: 1 };
-const GAP_BANDA: RGB = { r: 1, g: 0.7, b: 0.85 };
+// Cotas: pill/fondo oscuro + cápsula del nombre de variable en claro + texto.
+interface ParCota { oscuro: RGB; claro: RGB; texto: RGB; }
+const COTA_PADDING: ParCota = { oscuro: hexARgb("#007BE5"), claro: hexARgb("#62ACFF"), texto: hexARgb("#FFFFFF") }; // azul
+const COTA_GAP: ParCota     = { oscuro: hexARgb("#FF24BD"), claro: hexARgb("#FF84DA"), texto: hexARgb("#FFFFFF") }; // magenta
+const COTA_DIM: ParCota     = { oscuro: hexARgb("#F24822"), claro: hexARgb("#F6866D"), texto: hexARgb("#FFFFFF") }; // rojo
 
 // Margen del artwork reservado para las anotaciones (arriba e izquierda).
 // 80px: la cota vertical (44) + el número de la medida (hasta ~3 dígitos) deben
@@ -41,31 +41,77 @@ async function valorConChips(partes: ParteValor[]): Promise<FrameNode> {
 }
 
 // Fila del panel: pill con ícono + label + partes (textos y chips).
-async function filaPropiedad(iconoKey: string, label: string, partes: ParteValor[]): Promise<FrameNode> {
+async function filaPropiedad(iconoKey: string, label: string, partes: ParteValor[], modo?: string): Promise<FrameNode> {
   const nodos: SceneNode[] = [nodoIcono(iconoKey), await textoClave(`${label}:`)];
   for (const p of partes) {
     if ("chip" in p) nodos.push(await chipVariable(p.chip));
     else nodos.push(await textoValor(p.texto));
   }
+  // width/height: el modo (Fixed/Hug/Fill) va al final como cajita-ícono + texto.
+  if (modo && iconoResizingKey(iconoKey, modo)) nodos.push(await indicadorDimension(iconoKey, modo));
   return filaPill(nodos);
 }
 
-const ANCHO_BREADCRUMB = 160;
+const BORDE_E1: RGB = { r: 0.882, g: 0.882, b: 0.882 }; // #E1E1E1
 const GRIS_ANCESTRO: RGB = { r: 0.6, g: 0.6, b: 0.6 };
 
-// Columna de jerarquía: un texto por ancestro (raíz→elemento), indentado por
-// nivel. Los ancestros van en gris; el último (el elemento de la fila) en el
-// color de texto normal, para resaltarlo. Ancho fijo para alinear los artworks.
-async function breadcrumb(camino: string[]): Promise<FrameNode> {
-  const col = frameVertical("Hierarchy", 4);
-  col.counterAxisSizingMode = "FIXED";
-  col.resize(ANCHO_BREADCRUMB, col.height);
+// Columna de jerarquía: una fila por ancestro (raíz→elemento), con icono de tipo
+// e indentación progresiva. Los ancestros van en gris; el último en color normal.
+// Ancho fijo para alinear los artworks.
+// Card "Layers": header con el título + body con el árbol de capas (Hierarchy),
+// cada capa indentada 20px por nivel de profundidad.
+async function breadcrumb(camino: { nombre: string; tipo: string }[]): Promise<FrameNode> {
+  const card = frameVertical("Card", 0);
+  card.strokes = [{ type: "SOLID", color: BORDE_E1 }];
+  card.strokeWeight = 1;
+  card.cornerRadius = 8;
+  card.fills = fillTematizado(varsTema().fondoSpec);
+  card.clipsContent = true;
+  card.minWidth = 312; // ancho mínimo de la card de capas
+
+  const header = frameHorizontal("Header", 8);
+  header.counterAxisAlignItems = "CENTER";
+  header.paddingTop = header.paddingBottom = 8;
+  header.paddingLeft = header.paddingRight = 16;
+  header.strokes = [{ type: "SOLID", color: BORDE_E1 }];
+  header.strokeTopWeight = header.strokeLeftWeight = header.strokeRightWeight = 0;
+  header.strokeBottomWeight = 1;
+  header.appendChild(await textoHeaderCard("Layers"));
+  card.appendChild(header);
+  header.layoutSizingHorizontal = "FILL";
+
+  const body = frameVertical("Body", 0);
+  body.paddingTop = body.paddingBottom = body.paddingLeft = body.paddingRight = 24;
+  const hierarchy = frameVertical("Hierarchy", 8);
   for (let i = 0; i < camino.length; i++) {
-    const t = await texto("  ".repeat(i) + camino[i], 12);
+    const fila = frameHorizontal("Capa", 4);
+    fila.counterAxisAlignItems = "CENTER";
+    fila.paddingLeft = i * 20;
+    const icono = nodoIconoTipo(camino[i].tipo, 16);
+    if (icono) fila.appendChild(icono);
+    const t = await texto(camino[i].nombre, 14);
     if (i < camino.length - 1) t.fills = [{ type: "SOLID", color: GRIS_ANCESTRO }];
-    col.appendChild(t);
+    fila.appendChild(t);
+    hierarchy.appendChild(fila);
   }
-  return col;
+  body.appendChild(hierarchy);
+  card.appendChild(body);
+  body.layoutSizingHorizontal = "FILL";
+  return card;
+}
+
+// Filas de padding del panel: una sola "Padding" si los 4 lados son uniformes; si no,
+// una fila por lado (Top/Right/Bottom/Left).
+async function filasPadding(p: LayoutSpec["padding"], sv: LayoutSpec["spacingVars"], u: Unidad): Promise<FrameNode[]> {
+  const uniforme = p.left === p.top && p.top === p.right && p.right === p.bottom
+    && sv.paddingLeft === sv.paddingTop && sv.paddingTop === sv.paddingRight && sv.paddingRight === sv.paddingBottom;
+  if (uniforme) return [await filaPropiedad("padding", "Padding", valorSpacing(p.left, u, sv.paddingLeft))];
+  return [
+    await filaPropiedad("padding", "Padding top", valorSpacing(p.top, u, sv.paddingTop)),
+    await filaPropiedad("padding", "Padding right", valorSpacing(p.right, u, sv.paddingRight)),
+    await filaPropiedad("padding", "Padding bottom", valorSpacing(p.bottom, u, sv.paddingBottom)),
+    await filaPropiedad("padding", "Padding left", valorSpacing(p.left, u, sv.paddingLeft)),
+  ];
 }
 
 // Construye el exhibit (bloque de texto) de una capa con Auto Layout como tarjeta.
@@ -73,15 +119,10 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const u = unidadActual();
   const sv = spec.spacingVars;
   const filas: FrameNode[] = [];
-  filas.push(await filaPropiedad("width", "Width", valorDim(spec.resizingHorizontal, spec.width, u, spec.widthVar)));
-  filas.push(await filaPropiedad("height", "Height", valorDim(spec.resizingVertical, spec.height, u, spec.heightVar)));
+  filas.push(await filaPropiedad("width", "Width", valorDim(spec.width, u, spec.widthVar), spec.resizingHorizontal));
+  filas.push(await filaPropiedad("height", "Height", valorDim(spec.height, u, spec.heightVar), spec.resizingVertical));
   if (spec.fill) filas.push(await filaPropiedad("fill", "Fill", valorColor(spec.fill)));
   if (spec.stroke) filas.push(await filaPropiedad("stroke", "Stroke", valorColor(spec.stroke)));
-
-  // Padding: chip si los 4 lados comparten variable y valor; si no, texto colapsado.
-  const p = spec.padding;
-  const padUniforme = !!sv.paddingLeft && sv.paddingLeft === sv.paddingTop && sv.paddingTop === sv.paddingRight && sv.paddingRight === sv.paddingBottom && p.left === p.top && p.top === p.right && p.right === p.bottom;
-  const partesPadding: ParteValor[] = padUniforme ? valorSpacing(p.left, u, sv.paddingLeft) : [{ texto: textoPadding(p, u, sv) }];
 
   if (spec.direccion === "GRID") {
     filas.push(await filaPropiedad("dir-grid", "Direction", [{ texto: "Grid" }]));
@@ -89,10 +130,9 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
     if (spec.gridFilas !== undefined) filas.push(await filaPropiedad("rows", "Rows", [{ texto: String(spec.gridFilas) }]));
     if (spec.gridColumnGap !== undefined) filas.push(await filaPropiedad("spacing-h", "Column gap", valorSpacing(spec.gridColumnGap, u, spec.gridColumnGapVar)));
     if (spec.gridRowGap !== undefined) filas.push(await filaPropiedad("spacing-v", "Row gap", valorSpacing(spec.gridRowGap, u, spec.gridRowGapVar)));
-    filas.push(await filaPropiedad("padding", "Padding", partesPadding));
+    filas.push(...await filasPadding(spec.padding, sv, u));
     if (spec.cornerRadius) filas.push(await filaPropiedad("corner", "Corner radius", valorSpacing(spec.cornerRadius, u, spec.cornerRadiusVar)));
-    if (spec.textStyle) filas.push(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
-    return tarjeta([await texto(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`, 16, FONT_BOLD)], filas);
+    return tarjeta([await textoHeaderCard(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`)], filas);
   }
 
   const dirKey = spec.direccion === "HORIZONTAL" ? "dir-horizontal" : "dir-vertical";
@@ -100,12 +140,11 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   const gapKey = spec.direccion === "HORIZONTAL" ? "spacing-h" : "spacing-v";
   filas.push(await filaPropiedad(dirKey, "Direction", [{ texto: direccion }]));
   filas.push(await filaPropiedad(iconoAlineacion(spec.direccion, spec.alineacionContraria), "Alignment", [{ texto: `${spec.alineacionPrimaria} / ${spec.alineacionContraria}` }]));
-  filas.push(await filaPropiedad("padding", "Padding", partesPadding));
+  filas.push(...await filasPadding(spec.padding, sv, u));
   filas.push(await filaPropiedad(gapKey, "Item spacing", valorSpacing(spec.itemSpacing, u, sv.itemSpacing)));
   if (spec.cornerRadius) filas.push(await filaPropiedad("corner", "Corner radius", valorSpacing(spec.cornerRadius, u, spec.cornerRadiusVar)));
   for (const g of spec.grids) filas.push(await filaPropiedad("columns", "Grid", [{ texto: textoGrid(g) }]));
-  if (spec.textStyle) filas.push(await filaPropiedad("text", "Text style", spec.textStyle.nombre ? [{ chip: spec.textStyle.nombre }] : [{ texto: spec.textStyle.resumen ?? "" }]));
-  return tarjeta([await texto(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`, 16, FONT_BOLD)], filas);
+  return tarjeta([await textoHeaderCard(`${prefijoProfundidad(spec.profundidad ?? 0)}${spec.elementoNombre} · ${spec.tipo}`)], filas);
 }
 
 // Dibuja un rect de overlay (semitransparente) en el artwork.
@@ -132,17 +171,18 @@ function bandaPunteada(r: Rect, colorFill: RGB, colorStroke: RGB, artwork: Frame
 }
 
 const SEP_CHIP = 4;     // separación mínima entre cotas del mismo carril
+const SEP_VALOR = 4;    // separación constante entre el chip de la cota y su bracket
 const FILA_TOP = 24;    // distancia de la fila superior sobre el borde del elemento
 const FILA_BOT = 8;     // distancia de la fila inferior bajo el borde
 const COL_IZQ = 8;      // distancia de la columna izquierda al borde
 
 // Chip de spacing (padding/gap): con variable → cotaConNombre; sin variable → cota.
-async function chipSpacing(val: number, color: RGB, artwork: FrameNode, varName?: string): Promise<FrameNode> {
+async function chipSpacing(val: number, par: ParCota, artwork: FrameNode, varName?: string): Promise<FrameNode> {
   const t = etiquetaSpacing(val, unidadActual());
-  return varName ? await cotaConNombre(nombreCorto(varName), t, color, artwork) : await cota(t, color, artwork);
+  return varName ? await cotaConNombre(nombreCorto(varName), t, par, artwork) : await cota(t, par, artwork);
 }
 
-// Ubica padding (por lado) + gaps como callouts afuera, exactamente como DesignDoc:
+// Ubica padding (por lado) + gaps como callouts afuera del elemento:
 // cada banda se mide con un BRACKET corto (la cota con topes, del color de la banda)
 // pegado al borde — vertical a la derecha para top/bottom/gaps verticales, horizontal
 // abajo para left/right/gaps horizontales — con el chip al lado.
@@ -156,24 +196,42 @@ async function dibujarSpacingCallouts(artwork: FrameNode, clon: FrameNode, spec:
   const vertical = (largo: number, y0: number, lineaColor: string, chip: FrameNode) => {
     const br = figma.createNodeFromSvg(svgCotaV("fixed", largo, lineaColor));
     br.x = xBr - 6; br.y = y0; artwork.appendChild(br);
-    chip.x = xBr + 8; chip.y = y0 + largo / 2 - chip.height / 2;
+    chip.x = xBr + 6 + SEP_VALOR; chip.y = y0 + largo / 2 - chip.height / 2;
   };
   // Bracket horizontal (mide banda de ancho `largo` desde `x0`) + chip abajo.
   const horizontal = (largo: number, x0: number, lineaColor: string, chip: FrameNode) => {
     const br = figma.createNodeFromSvg(svgCotaH("fixed", largo, lineaColor));
     br.x = x0; br.y = yBr - 6; artwork.appendChild(br);
-    chip.x = x0 + largo / 2 - chip.width / 2; chip.y = yBr + 8;
+    chip.x = x0 + largo / 2 - chip.width / 2; chip.y = yBr + 6 + SEP_VALOR;
   };
 
-  if (p.top > 0) vertical(p.top, clon.y, LINEA_PADDING, await chipSpacing(p.top, CHIP_PADDING, artwork, sv.paddingTop));
-  if (p.bottom > 0) vertical(p.bottom, clon.y + clon.height - p.bottom, LINEA_PADDING, await chipSpacing(p.bottom, CHIP_PADDING, artwork, sv.paddingBottom));
-  if (p.left > 0) horizontal(p.left, clon.x, LINEA_PADDING, await chipSpacing(p.left, CHIP_PADDING, artwork, sv.paddingLeft));
-  if (p.right > 0) horizontal(p.right, clon.x + clon.width - p.right, LINEA_PADDING, await chipSpacing(p.right, CHIP_PADDING, artwork, sv.paddingRight));
+  if (p.top > 0) vertical(p.top, clon.y, LINEA_PADDING, await chipSpacing(p.top, COTA_PADDING, artwork, sv.paddingTop));
+  if (p.bottom > 0) vertical(p.bottom, clon.y + clon.height - p.bottom, LINEA_PADDING, await chipSpacing(p.bottom, COTA_PADDING, artwork, sv.paddingBottom));
+  if (p.left > 0) horizontal(p.left, clon.x, LINEA_PADDING, await chipSpacing(p.left, COTA_PADDING, artwork, sv.paddingLeft));
+  if (p.right > 0) horizontal(p.right, clon.x + clon.width - p.right, LINEA_PADDING, await chipSpacing(p.right, COTA_PADDING, artwork, sv.paddingRight));
+  // Gap medido en su lugar: bracket sobre el gap + chip adyacente (no en el carril del borde).
+  // Dirección HORIZONTAL → gap = franja vertical, se mide el ancho con bracket horizontal
+  // ARRIBA del gap y chip encima. Dirección VERTICAL → gap = franja horizontal, se mide el alto
+  // con bracket vertical a la DERECHA del gap y chip al lado.
+  const gapHorizontal = (g: Rect, chip: FrameNode) => {
+    const yBracket = g.y - 12;
+    const br = figma.createNodeFromSvg(svgCotaH("fixed", g.width, LINEA_GAP));
+    br.x = g.x; br.y = yBracket - 6; artwork.appendChild(br);
+    chip.x = g.x + g.width / 2 - chip.width / 2;
+    chip.y = Math.max(0, yBracket - 6 - SEP_VALOR - chip.height);
+  };
+  const gapVertical = (g: Rect, chip: FrameNode) => {
+    const xBracket = g.x + g.width + 12;
+    const br = figma.createNodeFromSvg(svgCotaV("fixed", g.height, LINEA_GAP));
+    br.x = xBracket - 6; br.y = g.y; artwork.appendChild(br);
+    chip.x = xBracket + 6 + SEP_VALOR;
+    chip.y = g.y + g.height / 2 - chip.height / 2;
+  };
   for (const g of gaps) {
     const val = spec.direccion === "VERTICAL" ? g.height : g.width;
-    const chip = spec.spacingAuto ? await cota("Auto", CHIP_GAP, artwork) : await chipSpacing(val, CHIP_GAP, artwork, sv.itemSpacing);
-    if (spec.direccion === "VERTICAL") vertical(g.height, g.y, LINEA_GAP, chip);
-    else horizontal(g.width, g.x, LINEA_GAP, chip);
+    const chip = spec.spacingAuto ? await cota("Auto", COTA_GAP, artwork) : await chipSpacing(val, COTA_GAP, artwork, sv.itemSpacing);
+    if (spec.direccion === "VERTICAL") gapVertical(g, chip);
+    else gapHorizontal(g, chip);
   }
 }
 
@@ -181,13 +239,13 @@ async function dibujarSpacingCallouts(artwork: FrameNode, clon: FrameNode, spec:
 // (fuera del elemento): fila arriba (padding-top + gaps horizontales + anchos de
 // hijos), fila abajo (padding bottom/left/right), columna izquierda (gaps
 // verticales + altos de hijos). Devuelve el x mínimo a la izquierda.
-async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNode, hijos: Rect[] = []): Promise<number> {
+async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNode): Promise<number> {
   const top: { c: FrameNode; centro: number }[] = [];
   const bottom: { c: FrameNode; centro: number }[] = [];
   const left: { c: FrameNode; centro: number }[] = [];
   for (const m of marcas) {
-    const color = m.tipo === "padding" ? CHIP_PADDING : CHIP_GAP;
-    const c = m.nombre ? await cotaConNombre(m.nombre, m.valor, color, artwork) : await cota(m.valor, color, artwork);
+    const par = m.tipo === "padding" ? COTA_PADDING : COTA_GAP;
+    const c = m.nombre ? await cotaConNombre(m.nombre, m.valor, par, artwork) : await cota(m.valor, par, artwork);
     const carril = carrilDeMarca(m.lado, m.tipo);
     if (carril === "top") top.push({ c, centro: m.centro });
     else if (carril === "left") left.push({ c, centro: m.centro });
@@ -197,13 +255,6 @@ async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNod
       else if (m.tipo === "padding" && m.lado === "right") centro = clon.x + clon.width - c.width / 2; // a la inferior derecha
       bottom.push({ c, centro });
     }
-  }
-  // Medidas de hijos (Element measures): ancho al carril de arriba, alto al de la
-  // izquierda, para que compartan la separación anti-colisión con el resto.
-  const u = unidadActual();
-  for (const h of hijos) {
-    top.push({ c: await cota(etiquetaSpacing(h.width, u), CHIP_DIM, artwork), centro: h.x + h.width / 2 });
-    left.push({ c: await cota(etiquetaSpacing(h.height, u), CHIP_DIM, artwork), centro: h.y + h.height / 2 });
   }
   const filas: [{ c: FrameNode; centro: number }[], number][] = [[top, clon.y - FILA_TOP], [bottom, clon.y + clon.height + FILA_BOT]];
   for (const [grupo, y] of filas) {
@@ -225,13 +276,8 @@ async function dibujarMarcas(artwork: FrameNode, marcas: Marca[], clon: FrameNod
 }
 
 
-// Aclara un color mezclándolo con blanco (t en [0,1]).
-function aclarar(c: RGB, t: number): RGB {
-  return { r: c.r + (1 - c.r) * t, g: c.g + (1 - c.g) * t, b: c.b + (1 - c.b) * t };
-}
-
-// Cota simple: pill de color con el valor en blanco. El caller la posiciona.
-async function cota(valor: string, color: RGB, artwork: FrameNode): Promise<FrameNode> {
+// Cota simple: pill claro con el valor en color oscuro. El caller la posiciona.
+async function cota(valor: string, par: ParCota, artwork: FrameNode): Promise<FrameNode> {
   const c = figma.createFrame();
   c.name = "cota";
   c.layoutMode = "HORIZONTAL";
@@ -241,18 +287,18 @@ async function cota(valor: string, color: RGB, artwork: FrameNode): Promise<Fram
   c.paddingTop = c.paddingBottom = 1;
   c.paddingLeft = c.paddingRight = 4;
   c.cornerRadius = 4;
-  c.fills = [{ type: "SOLID", color }];
-  const t = await texto(valor, 11);
+  c.fills = [{ type: "SOLID", color: par.oscuro }];
+  const t = await texto(valor, 11, FONT_MEDIUM);
   t.lineHeight = { unit: "PIXELS", value: 16 };
-  t.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
+  t.fills = [{ type: "SOLID", color: par.texto }];
   c.appendChild(t);
   artwork.appendChild(c);
   return c;
 }
 
-// Cota de dos partes: pill exterior con sub-pill `value` (nombre de variable) +
-// el valor numérico, ambos en blanco. Estilo cota.pdf.
-async function cotaConNombre(nombre: string, valor: string, color: RGB, artwork: FrameNode): Promise<FrameNode> {
+// Cota de dos partes: pill oscuro con sub-cápsula clara `value` (nombre de variable) +
+// el valor numérico; textos en el color de texto del par. Estilo cota.pdf / subchip.pdf.
+async function cotaConNombre(nombre: string, valor: string, par: ParCota, artwork: FrameNode): Promise<FrameNode> {
   const c = figma.createFrame();
   c.name = "cota";
   c.layoutMode = "HORIZONTAL";
@@ -264,7 +310,7 @@ async function cotaConNombre(nombre: string, valor: string, color: RGB, artwork:
   c.paddingLeft = 2;
   c.paddingRight = 4;
   c.cornerRadius = 4;
-  c.fills = [{ type: "SOLID", color }];
+  c.fills = [{ type: "SOLID", color: par.oscuro }];
   const sub = figma.createFrame();
   sub.name = "value";
   sub.layoutMode = "HORIZONTAL";
@@ -273,25 +319,25 @@ async function cotaConNombre(nombre: string, valor: string, color: RGB, artwork:
   sub.paddingTop = sub.paddingBottom = 0;
   sub.paddingLeft = sub.paddingRight = 2;
   sub.cornerRadius = 2;
-  sub.fills = [{ type: "SOLID", color: aclarar(color, 0.35) }];
-  const tn = await texto(nombre, 11);
+  sub.fills = [{ type: "SOLID", color: par.claro }];
+  const tn = await texto(nombre, 11, FONT_MEDIUM);
   tn.lineHeight = { unit: "PIXELS", value: 16 };
-  tn.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
+  tn.fills = [{ type: "SOLID", color: par.texto }];
   sub.appendChild(tn);
   c.appendChild(sub);
-  const tv = await texto(valor, 11);
+  const tv = await texto(valor, 11, FONT_MEDIUM);
   tv.lineHeight = { unit: "PIXELS", value: 16 };
-  tv.fills = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
+  tv.fills = [{ type: "SOLID", color: par.texto }];
   c.appendChild(tv);
   artwork.appendChild(c);
   return c;
 }
 
-const AZUL_HEX = "#F24026"; // las cotas son de dimensión → rojo (igual que el chip CHIP_DIM)
+const COTA_DIM_HEX = "#F24822"; // las cotas de dimensión → rojo (acorde a COTA_DIM)
 const GRIS_HEX = "#444444";
 
 // Cota horizontal de `largo` px; las puntas codifican el resizing.
-function svgCotaH(estilo: "fixed" | "fill" | "hug", largo: number, color = AZUL_HEX): string {
+function svgCotaH(estilo: "fixed" | "fill" | "hug", largo: number, color = COTA_DIM_HEX): string {
   const L = largo;
   const base = `<line x1="0" y1="6" x2="${L}" y2="6" stroke="${color}"/>`;
   const topes = `<line x1="0.5" y1="0" x2="0.5" y2="12" stroke="${color}"/><line x1="${L - 0.5}" y1="0" x2="${L - 0.5}" y2="12" stroke="${color}"/>`;
@@ -305,7 +351,7 @@ function svgCotaH(estilo: "fixed" | "fill" | "hug", largo: number, color = AZUL_
 }
 
 // Cota vertical de `largo` px (misma idea, ejes intercambiados).
-function svgCotaV(estilo: "fixed" | "fill" | "hug", largo: number, color = AZUL_HEX): string {
+function svgCotaV(estilo: "fixed" | "fill" | "hug", largo: number, color = COTA_DIM_HEX): string {
   const L = largo;
   const base = `<line x1="6" y1="0" x2="6" y2="${L}" stroke="${color}"/>`;
   const topes = `<line x1="0" y1="0.5" x2="12" y2="0.5" stroke="${color}"/><line x1="0" y1="${L - 0.5}" x2="12" y2="${L - 0.5}" stroke="${color}"/>`;
@@ -318,8 +364,8 @@ function svgCotaV(estilo: "fixed" | "fill" | "hug", largo: number, color = AZUL_
   return `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="${L}">${base}${puntas}</svg>`;
 }
 
-const LINEA_PADDING = "#0D80FF"; // azul, acorde a CHIP_PADDING
-const LINEA_GAP = "#E63380";     // rosa, acorde a CHIP_GAP
+const LINEA_PADDING = "#007BE5"; // azul, acorde a COTA_PADDING
+const LINEA_GAP = "#FF24BD";     // magenta, acorde a COTA_GAP
 
 // Línea de cota vertical centrada en `xCentro`, desde `y`, de `largo` px.
 function lineaV(artwork: FrameNode, xCentro: number, y: number, largo: number, color: string): void {
@@ -374,40 +420,39 @@ async function dibujarCotas(artwork: FrameNode, clon: FrameNode, spec: LayoutSpe
   cotaH.x = clon.x;
   cotaH.y = clon.y - 44;
   artwork.appendChild(cotaH);
-  const tW = await cota(etiquetaSpacing(spec.width, u), CHIP_DIM, artwork);
+  const tW = await cota(etiquetaSpacing(spec.width, u), COTA_DIM, artwork);
   tW.x = clon.x + clon.width / 2 - tW.width / 2;
-  tW.y = clon.y - 44 - 12;
+  tW.y = clon.y - 44 - SEP_VALOR - tW.height;
   const xLinea = Math.min(clon.x - 44, minLeftX - 28);
   const cotaV = figma.createNodeFromSvg(svgCotaV(estiloCota(spec.resizingVertical), clon.height));
   cotaV.x = xLinea;
   cotaV.y = clon.y;
   artwork.appendChild(cotaV);
-  const tH = await cota(etiquetaSpacing(spec.height, u), CHIP_DIM, artwork);
-  tH.x = xLinea - tH.width - 2;
+  const tH = await cota(etiquetaSpacing(spec.height, u), COTA_DIM, artwork);
+  tH.x = xLinea - SEP_VALOR - tH.width;
   tH.y = clon.y + clon.height / 2 - tH.height / 2;
-}
-
-// Líneas de cota de ancho (arriba) y alto (izquierda) de cada hijo directo. Los
-// badges (números) los ubica dibujarMarcas en los carriles externos.
-function dibujarLineasHijos(artwork: FrameNode, hijos: Rect[]): void {
-  for (const h of hijos) {
-    const cw = figma.createNodeFromSvg(svgCotaH("fixed", h.width));
-    cw.x = h.x;
-    cw.y = h.y - 14;
-    artwork.appendChild(cw);
-    const ch = figma.createNodeFromSvg(svgCotaV("fixed", h.height));
-    ch.x = h.x - 14;
-    ch.y = h.y;
-    artwork.appendChild(ch);
-  }
 }
 
 const UMBRAL_CHICO = 48; // referencia; el umbral real vive en esChico
 
+// Agranda el artwork (a la derecha/abajo) para contener todas las anotaciones que asoman,
+// y que no queden cortadas por el borde del fondo gris ni tapadas por el exhibit.
+function ajustarArtwork(artwork: FrameNode, pad = 16): void {
+  // Asume hijos con x/y >= 0 (el clon arranca en MARGEN_IZQ/MARGEN y las anotaciones
+  // caen dentro): solo se agranda a la derecha/abajo, no se reposiciona el origen.
+  let maxX = 0;
+  let maxY = 0;
+  for (const c of artwork.children) {
+    maxX = Math.max(maxX, c.x + c.width);
+    maxY = Math.max(maxY, c.y + c.height);
+  }
+  artwork.resize(Math.max(artwork.width, maxX + pad), Math.max(artwork.height, maxY + pad));
+}
+
 // Dibuja el artwork de un contenedor en un modo: "completo" (todo), "dimensiones"
 // (solo W/H + medidas de hijos) o "spacing" (solo padding/gap). El clon va corrido
 // (MARGEN_IZQ, MARGEN) para dejar lugar a las anotaciones.
-async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: boolean, modo: "completo" | "dimensiones" | "spacing"): Promise<FrameNode> {
+async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, _medirHijos: boolean, modo: "completo" | "dimensiones" | "spacing"): Promise<FrameNode> {
   const artwork = figma.createFrame();
   artwork.name = `Artwork ${spec.elementoNombre}`;
   artwork.layoutMode = "NONE";
@@ -424,28 +469,27 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
     x: MARGEN_IZQ + c.x, y: MARGEN + c.y, width: c.width, height: c.height,
   }));
   for (const r of hijosRects) rectOverlay(r, AZUL, 0.25, artwork);
-  const hijosMedidos = medirHijos ? hijosRects : [];
-  if (medirHijos && modo !== "spacing") dibujarLineasHijos(artwork, hijosRects);
-  if (modo !== "dimensiones") for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, PADDING_BANDA, CHIP_PADDING, artwork);
+  if (modo !== "dimensiones") for (const r of rectsPadding(frameRect, spec.padding)) bandaPunteada(r, COTA_PADDING.oscuro, COTA_PADDING.oscuro, artwork);
   if (spec.direccion === "GRID") {
     const { columnas, filas } = franjasGridAutolayout(frameRect, spec.padding, spec.gridColumnas ?? 0, spec.gridFilas ?? 0, spec.gridColumnGap ?? 0, spec.gridRowGap ?? 0);
     for (const r of columnas) bandaPunteada(r, ROJO, ROJO, artwork);
     for (const r of filas) bandaPunteada(r, ROJO, ROJO, artwork);
     if (modo !== "dimensiones") await dibujarSpacingCallouts(artwork, clon, spec, []);
-    const minLeftX = await dibujarMarcas(artwork, [], clon, hijosMedidos);
+    const minLeftX = await dibujarMarcas(artwork, [], clon);
     await dibujarCotas(artwork, clon, spec, minLeftX);
+    ajustarArtwork(artwork);
     return artwork;
   }
   const gaps = rectsSpacing(hijosRects, spec.direccion);
   if (modo !== "dimensiones") {
-    for (const r of gaps) bandaPunteada(r, GAP_BANDA, CHIP_GAP, artwork);
+    for (const r of gaps) bandaPunteada(r, COTA_GAP.oscuro, COTA_GAP.oscuro, artwork);
     for (const g of spec.grids) {
       for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
     }
     await dibujarSpacingCallouts(artwork, clon, spec, gaps);
   }
 
-  const minLeftX = await dibujarMarcas(artwork, [], clon, modo === "spacing" ? [] : hijosMedidos);
+  const minLeftX = await dibujarMarcas(artwork, [], clon);
   if (modo !== "spacing") await dibujarCotas(artwork, clon, spec, minLeftX);
 
   if (modo !== "dimensiones") {
@@ -454,6 +498,7 @@ async function artworkModo(contenedor: FrameNode, spec: LayoutSpec, medirHijos: 
     icono.y = 8;
     artwork.appendChild(icono);
   }
+  ajustarArtwork(artwork);
   return artwork;
 }
 
@@ -493,7 +538,7 @@ async function artworkGrids(frame: FrameNode, grids: GridSpec[]): Promise<FrameN
   artwork.resize(clon.width + RESPIRO, clon.height + RESPIRO);
   const frameRect: Rect = { x: 0, y: 0, width: clon.width, height: clon.height };
   for (const g of grids) {
-    for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, artwork);
+    for (const r of rectsGrid(frameRect, g)) bandaPunteada(r, ROJO, ROJO, artwork);
   }
   return artwork;
 }
@@ -520,9 +565,13 @@ export async function generarLayout(seleccionado: SceneNode, specs: LayoutSpec[]
 
 // Construye solo la sección Layout and Spacing (sin Specifications ni título de nodo).
 export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec[], columnas: number, hideOuter: boolean, itemizar: boolean, medirHijos: boolean): Promise<FrameNode> {
-  const seccion = frameVertical("Layout and Spacing", 64);
+  // Esta sección ES el item (antes la envolvía un layoutspecItem aparte): lleva
+  // el padding de página y el fondo del spec; main.ts solo la nombra y la estira.
+  const seccion = frameVertical("Layout and Spacing", 0);
   seccion.clipsContent = false; // los chips/cotas asoman del margen del artwork
-  seccion.appendChild(await texto("Layout and Spacing", 48));
+  seccion.paddingTop = seccion.paddingBottom = 72;
+  seccion.paddingLeft = seccion.paddingRight = 100;
+  seccion.fills = fillTematizado(varsTema().fondoSpec);
 
   const recorridos = recorrerAutoLayout(seleccionado as unknown as NodoLike, itemizar);
   const contenedores = recorridos.map((r) => r.nodo) as unknown as FrameNode[];
@@ -533,9 +582,10 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   const filas: FrameNode[] = [];
   const n = Math.min(contenedores.length, specs.length);
   for (let i = inicio; i < n; i++) {
-    const fila = frameHorizontal(`Layout ${specs[i].elementoNombre}`, 48);
+    const fila = frameHorizontal("layoutItem", 48);
+    fila.paddingTop = fila.paddingBottom = 72; // imita el respiro vertical del anatomyItem
     fila.clipsContent = false; // los chips/cotas del artwork pueden asomar del margen
-    fila.appendChild(await breadcrumb(recorridos[i].camino ?? [specs[i].elementoNombre]));
+    fila.appendChild(await breadcrumb(recorridos[i].camino ?? [{ nombre: specs[i].elementoNombre, tipo: specs[i].tipo }]));
     fila.appendChild(await artworkDe(contenedores[i], specs[i], medirHijos));
     fila.appendChild(await exhibit(specs[i]));
     filas.push(fila);
@@ -551,17 +601,21 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   if (!raizEnFilas && Array.isArray(gridsRaizRaw)) {
     const gridsRaiz = gridsRaizRaw.map(gridSpecDe);
     if (gridsRaiz.length > 0) {
-      const fila = frameHorizontal(`Layout ${seleccionado.name}`, 48);
+      const fila = frameHorizontal("layoutItem", 48);
+      fila.paddingTop = fila.paddingBottom = 72; // imita el respiro vertical del anatomyItem
       fila.clipsContent = false;
-      fila.appendChild(await breadcrumb([seleccionado.name]));
+      fila.appendChild(await breadcrumb([{ nombre: seleccionado.name, tipo: seleccionado.type }]));
       fila.appendChild(await artworkGrids(seleccionado as FrameNode, gridsRaiz));
       fila.appendChild(await exhibitGrids(seleccionado, gridsRaiz));
       filas.unshift(fila);
     }
   }
 
+  // Id único por fila, en orden visual final (incluida la fila de grid raíz).
+  filas.forEach((f, i) => { f.name = `layoutItem${String(i + 1).padStart(2, "0")}`; });
+
   if (filas.length === 0) {
-    seccion.appendChild(await texto("No se detectaron capas con Auto Layout.", 16));
+    seccion.appendChild(await texto("No Auto Layout layers found.", 16));
   } else if (columnas > 1) {
     const cont = enColumnas(filas, columnas);
     cont.clipsContent = false;
@@ -573,8 +627,20 @@ export async function seccionDeLayout(seleccionado: SceneNode, specs: LayoutSpec
   return seccion;
 }
 
-const ANCHO_MUESTRA = 150;
+const ANCHO_MUESTRA = 150;   // ancho de la columna "Element"
 const ALTO_MUESTRA = 28;
+const ANCHO_TABLA = 656;     // ancho fijo de la tabla
+const COL_DET = ANCHO_TABLA - ANCHO_MUESTRA - 16 - 32; // columna "Detail" (resto tras Element, gap y padding)
+const FONDO_HEADER: RGB = { r: 0.953, g: 0.957, b: 0.965 }; // #F3F4F6 (header)
+const GRIS_LABEL: RGB = { r: 0.420, g: 0.447, b: 0.502 };    // #6B7280 (text-secondary)
+
+// Texto explicativo / header de la tabla: Inter Medium 12, line-height 150%, text-secondary.
+async function textoLeg(s: string): Promise<TextNode> {
+  const t = await texto(s, 12, FONT_MEDIUM);
+  t.lineHeight = { value: 150, unit: "PERCENT" };
+  t.fills = [{ type: "SOLID", color: GRIS_LABEL }];
+  return t;
+}
 
 // Caja de tamaño fijo SIN auto-layout: la muestra (chip/cota/línea) se posiciona
 // absoluta y centrada, igual que en el artwork real (así no se colapsa).
@@ -595,13 +661,54 @@ function ponerMuestra(box: FrameNode, nodo: SceneNode): void {
   nodo.y = (ALTO_MUESTRA - nodo.height) / 2;
 }
 
-// Fila de la leyenda: muestra visual (ancho fijo) + explicación.
+// Divisor inferior fino (#D1D5DB) para separar las filas de la tabla.
+function divisorFila(f: FrameNode): void {
+  f.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+  f.strokeTopWeight = 0;
+  f.strokeLeftWeight = 0;
+  f.strokeRightWeight = 0;
+  f.strokeBottomWeight = 1;
+}
+
+// Header de la tabla: "Element" | "Detail" (gris) con fondo y divisor inferior.
+async function headerLeyenda(): Promise<FrameNode> {
+  const h = frameHorizontal("legendHeader", 16);
+  h.counterAxisAlignItems = "CENTER";
+  h.paddingTop = h.paddingBottom = 10;
+  h.paddingLeft = h.paddingRight = 16;
+  h.fills = [{ type: "SOLID", color: FONDO_HEADER }];
+  divisorFila(h);
+  const e = await textoLeg("Element"); e.resize(ANCHO_MUESTRA, e.height);
+  h.appendChild(e);
+  h.appendChild(await textoLeg("Detail"));
+  return h;
+}
+
+// Fila de datos: celda Element (muestra) + celda Detail (texto que envuelve), con divisor inferior.
 async function filaLeyenda(box: FrameNode, explicacion: string): Promise<FrameNode> {
-  const fila = frameHorizontal("Item", 16);
+  const fila = frameHorizontal("legendRow", 16);
   fila.counterAxisAlignItems = "CENTER";
+  fila.paddingTop = fila.paddingBottom = 12;
+  fila.paddingLeft = fila.paddingRight = 16;
+  divisorFila(fila);
   fila.appendChild(box);
-  fila.appendChild(await texto(explicacion, 14));
+  const det = await textoLeg(explicacion);
+  det.textAutoResize = "HEIGHT";
+  det.resize(COL_DET, det.height);
+  fila.appendChild(det);
   return fila;
+}
+
+// Fila de pie a todo el ancho (sin columnas ni divisor).
+async function footerLeyenda(nota: string): Promise<FrameNode> {
+  const f = frameHorizontal("legendFooter", 0);
+  f.paddingTop = f.paddingBottom = 12;
+  f.paddingLeft = f.paddingRight = 16;
+  const t = await textoLeg(nota);
+  t.textAutoResize = "HEIGHT";
+  t.resize(ANCHO_MUESTRA + 16 + COL_DET, t.height);
+  f.appendChild(t);
+  return f;
 }
 
 // Bloque "How to read these specs": explica las convenciones del artwork de Layout
@@ -610,30 +717,47 @@ export async function seccionLeyenda(): Promise<FrameNode> {
   const sec = frameVertical("How to read these specs", 16);
   sec.appendChild(await texto("How to read these specs", 36));
 
+  // Tabla: card con borde + radius (clip), ancho fijo, header gris, filas y footer.
+  const card = frameVertical("legendTable", 0);
+  card.counterAxisSizingMode = "FIXED";
+  card.resize(ANCHO_TABLA, card.height);
+  card.cornerRadius = 8;
+  card.clipsContent = true;
+  card.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+  card.strokeWeight = 1;
+  card.fills = fillTematizado(varsTema().fondoSpec);
+
+  card.appendChild(await headerLeyenda());
+
   const b1 = muestraBox();
-  ponerMuestra(b1, await cota("240", CHIP_DIM, b1));
-  sec.appendChild(await filaLeyenda(b1, "Dimension cota: element or child width/height (red)."));
+  ponerMuestra(b1, await cota("240", COTA_DIM, b1));
+  card.appendChild(await filaLeyenda(b1, "Dimension cota: element or child width/height (red)."));
 
   const b2 = muestraBox();
-  ponerMuestra(b2, await cotaConNombre("padding-1x", "16", CHIP_PADDING, b2));
-  sec.appendChild(await filaLeyenda(b2, "Padding: distance to the edge; chip with the variable (blue) + value."));
+  ponerMuestra(b2, await cotaConNombre("padding-1x", "16", COTA_PADDING, b2));
+  card.appendChild(await filaLeyenda(b2, "Padding: distance to the edge; chip with the variable (blue) + value."));
 
   const b3 = muestraBox();
-  ponerMuestra(b3, await cotaConNombre("gap-0_5x", "8", CHIP_GAP, b3));
-  sec.appendChild(await filaLeyenda(b3, "Item spacing (gap): space between children (pink)."));
+  ponerMuestra(b3, await cotaConNombre("gap-0_5x", "8", COTA_GAP, b3));
+  card.appendChild(await filaLeyenda(b3, "Item spacing (gap): space between children (pink)."));
 
   const b4 = muestraBox();
   ponerMuestra(b4, figma.createNodeFromSvg(svgCotaH("fixed", 40)));
-  sec.appendChild(await filaLeyenda(b4, "Measurement line: marks the span of that band."));
+  card.appendChild(await filaLeyenda(b4, "Measurement line: marks the span of that band."));
 
   const b5 = muestraBox();
   ponerMuestra(b5, await chipVariable("sizing/card-width"));
-  sec.appendChild(await filaLeyenda(b5, "Grey chip in the panel: bound variable (resolved value in parentheses)."));
+  card.appendChild(await filaLeyenda(b5, "Grey chip in the panel: bound variable (resolved value in parentheses)."));
 
   const b6 = muestraBox();
   ponerMuestra(b6, await texto("card", 12));
-  sec.appendChild(await filaLeyenda(b6, "Left of each row: the layer hierarchy; the row's element is in bold."));
+  card.appendChild(await filaLeyenda(b6, "Left of each row: the layer hierarchy; the row's element is in bold."));
 
-  sec.appendChild(await texto("For small elements the artwork is split in two: Dimensions (W/H) and Spacing (padding & gap).", 14));
+  card.appendChild(await footerLeyenda("For small elements the artwork is split in two: Dimensions (W/H) and Spacing (padding & gap)."));
+
+  // Todas las filas a lo ancho del card (para que los divisores y el fondo lleguen al borde).
+  for (const child of card.children) (child as FrameNode).layoutSizingHorizontal = "FILL";
+
+  sec.appendChild(card);
   return sec;
 }

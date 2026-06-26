@@ -1,30 +1,69 @@
-const estado = document.getElementById("estado") as HTMLParagraphElement;
-const nestedCheck = document.getElementById("nested") as HTMLInputElement;
-const darkCheck = document.getElementById("dark") as HTMLInputElement;
-const tablaCheck = document.getElementById("tabla") as HTMLInputElement;
-const hideOuterCheck = document.getElementById("hideOuter") as HTMLInputElement;
-const itemizarCheck = document.getElementById("itemizar") as HTMLInputElement;
-const medirHijosCheck = document.getElementById("medirHijos") as HTMLInputElement;
-const leyendaCheck = document.getElementById("leyenda") as HTMLInputElement;
-const columnasSelect = document.getElementById("columnas") as HTMLSelectElement;
-const formatoColorSelect = document.getElementById("formatoColor") as HTMLSelectElement;
-const unidadSelect = document.getElementById("unidad") as HTMLSelectElement;
-const formatoTipoSelect = document.getElementById("formatoTipo") as HTMLSelectElement;
-const mostrarRawCheck = document.getElementById("mostrarRaw") as HTMLInputElement;
-const formatoRawSelect = document.getElementById("formatoRaw") as HTMLSelectElement;
-const preferenciaSelect = document.getElementById("preferencia") as HTMLSelectElement;
-const anatomyDepthSelect = document.getElementById("anatomyDepth") as HTMLSelectElement;
+const $ = (id: string) => document.getElementById(id) as HTMLElement;
+const inputDe = (id: string) => document.getElementById(id) as HTMLInputElement;
+const selectDe = (id: string) => document.getElementById(id) as HTMLSelectElement;
 
-const SECCIONES = ["anatomy", "properties", "layout", "data", "styling", "modes", "twoway", "complete"] as const;
+// Tabs: muestra el panel de la tab clickeada.
+const tabs = Array.from(document.querySelectorAll(".tab")) as HTMLButtonElement[];
+const panels = Array.from(document.querySelectorAll(".panel")) as HTMLElement[];
+for (const tab of tabs) {
+  tab.onclick = () => {
+    for (const t of tabs) t.classList.toggle("active", t === tab);
+    for (const p of panels) p.classList.toggle("hidden", p.dataset.panel !== tab.dataset.tab);
+  };
+}
 
-(document.getElementById("crear") as HTMLButtonElement).onclick = () => {
-  const secciones = SECCIONES.filter((s) => (document.getElementById(`sec-${s}`) as HTMLInputElement).checked);
-  parent.postMessage({ pluginMessage: { tipo: "generar", secciones, nested: nestedCheck.checked, dark: darkCheck.checked, tabla: tablaCheck.checked, hideOuter: hideOuterCheck.checked, itemizar: itemizarCheck.checked, medirHijos: medirHijosCheck.checked, leyenda: leyendaCheck.checked, columnas: parseInt(columnasSelect.value, 10), formatoColor: formatoColorSelect.value, unidad: unidadSelect.value, formatoTipo: formatoTipoSelect.value, formatoRaw: formatoRawSelect.value, mostrarRaw: mostrarRawCheck.checked, preferencia: preferenciaSelect.value, anatomyDepth: anatomyDepthSelect.value } }, "*");
+// Cards de specs: toggle de selección; habilita "Create Spec" si hay al menos una.
+const cards = Array.from(document.querySelectorAll(".spec-card")) as HTMLButtonElement[];
+const crear = $("crear") as HTMLButtonElement;
+function refrescarCrear(): void {
+  crear.disabled = !cards.some((c) => c.classList.contains("selected"));
+}
+for (const card of cards) {
+  card.onclick = () => { card.classList.toggle("selected"); refrescarCrear(); };
+}
+refrescarCrear();
+
+// Sincroniza dos checkboxes que son la misma opción mostrada en dos secciones.
+function sincronizar(a: HTMLInputElement, b: HTMLInputElement): void {
+  a.onchange = () => { b.checked = a.checked; };
+  b.onchange = () => { a.checked = b.checked; };
+}
+sincronizar(inputDe("itemizar"), inputDe("itemizar2"));
+sincronizar(inputDe("nested"), inputDe("nested2"));
+
+const estado = $("estado");
+
+($("cancelar") as HTMLButtonElement).onclick = () => parent.postMessage({ pluginMessage: { tipo: "cancelar" } }, "*");
+
+$("donate").onclick = () => parent.postMessage({ pluginMessage: { tipo: "abrir", url: "https://buymeacoffee.com/bochenn" } }, "*");
+
+crear.onclick = () => {
+  const secciones = cards.filter((c) => c.classList.contains("selected")).map((c) => c.dataset.spec);
+  parent.postMessage({ pluginMessage: {
+    tipo: "generar",
+    secciones,
+    nested: inputDe("nested").checked,
+    dark: selectDe("dark").value === "true",
+    tabla: inputDe("tabla").checked,
+    hideOuter: inputDe("hideOuter").checked,
+    itemizar: inputDe("itemizar").checked,
+    medirHijos: inputDe("medirHijos").checked,
+    leyenda: inputDe("leyenda").checked,
+    stylingTotal: inputDe("stylingTotal").checked,
+    columnas: parseInt(selectDe("columnas").value, 10),
+    formatoColor: selectDe("formatoColor").value,
+    unidad: selectDe("unidad").value,
+    formatoTipo: selectDe("formatoTipo").value,
+    formatoRaw: selectDe("formatoRaw").value,
+    mostrarRaw: inputDe("mostrarRaw").checked,
+    preferencia: selectDe("preferencia").value,
+    anatomyDepth: selectDe("anatomyDepth").value,
+  } }, "*");
 };
 
 window.onmessage = (event: MessageEvent) => {
   const msg = event.data.pluginMessage;
   if (msg && msg.tipo === "resultado") {
-    estado.textContent = msg.ok ? "✓ Generado" : "Error: " + msg.error;
+    estado.textContent = msg.ok ? "✓ Created" : "Error: " + msg.error;
   }
 };

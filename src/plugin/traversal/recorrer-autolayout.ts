@@ -10,9 +10,9 @@ function tieneAutoLayout(n: NodoLike): boolean {
 // Nodos con Auto Layout y su profundidad (instancias atravesadas). Sin itemizar
 // frena en instancias; con itemizar entra (prof +1). La raíz va con prof 0.
 // `camino` son los nombres desde la raíz hasta el nodo inclusive.
-export function recorrerAutoLayout(nodo: NodoLike, itemizar = false, prof = 0, camino: string[] = []): Recorrido[] {
+export function recorrerAutoLayout(nodo: NodoLike, itemizar = false, prof = 0, camino: { nombre: string; tipo: string }[] = []): Recorrido[] {
   const resultado: Recorrido[] = [];
-  const propio = [...camino, nodo.name];
+  const propio = [...camino, { nombre: nodo.name, tipo: nodo.type }];
   if (tieneAutoLayout(nodo)) resultado.push({ nodo, profundidad: prof, camino: propio });
   for (const hijo of nodo.children ?? []) {
     if (hijo.type === "INSTANCE") {

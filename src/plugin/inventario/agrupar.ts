@@ -21,14 +21,14 @@ export function formatearAplicadoA(capas: string[]): string {
 // es una fila, con las capas juntadas en "Applied to".
 export function agruparInventario(entradas: EntradaEstilo[]): FilaInventario[] {
   const orden: string[] = [];
-  const grupos = new Map<string, { tabla: "color" | "text" | "variable"; nombre: string; appliedAs: string; capas: string[]; swatchHex?: string }>();
+  const grupos = new Map<string, { tabla: "color" | "text" | "variable"; nombre: string; appliedAs: string; capas: string[]; swatchHex?: string; gradiente?: EntradaEstilo["gradiente"]; tipo?: EntradaEstilo["tipo"] }>();
 
   for (const e of entradas) {
     const clave = `${e.tabla}|${e.nombre}|${e.appliedAs}`;
     let grupo = grupos.get(clave);
     if (!grupo) {
       orden.push(clave);
-      grupo = { tabla: e.tabla, nombre: e.nombre, appliedAs: e.appliedAs, capas: [], swatchHex: e.swatchHex };
+      grupo = { tabla: e.tabla, nombre: e.nombre, appliedAs: e.appliedAs, capas: [], swatchHex: e.swatchHex, gradiente: e.gradiente, tipo: e.tipo };
       grupos.set(clave, grupo);
     }
     grupo.capas.push(e.capa);
@@ -38,6 +38,8 @@ export function agruparInventario(entradas: EntradaEstilo[]): FilaInventario[] {
     const g = grupos.get(clave)!;
     const fila: FilaInventario = { tabla: g.tabla, nombre: g.nombre, appliedAs: g.appliedAs, appliedTo: formatearAplicadoA(g.capas) };
     if (g.swatchHex) fila.swatchHex = g.swatchHex;
+    if (g.gradiente) fila.gradiente = g.gradiente;
+    if (g.tipo) fila.tipo = g.tipo;
     return fila;
   });
 }

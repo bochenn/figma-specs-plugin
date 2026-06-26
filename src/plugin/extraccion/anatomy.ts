@@ -22,9 +22,9 @@ function elementoDe(nodo: NodoLike, profundidad: number): ElementoAnatomy {
 export function extraerAnatomy(
   nodoRaiz: NodoLike,
   itemizar = false,
-  opts: { nivelMax?: number; incluirRaiz?: boolean } = {},
+  opts: { nivelMax?: number; incluirRaiz?: boolean; textosProfundos?: boolean } = {},
 ): ElementoAnatomy[] {
   const nivelMax = opts.nivelMax ?? Infinity;
-  const descendientes = recorrer(nodoRaiz, itemizar, 0, 0, nivelMax).map(({ nodo, profundidad }) => elementoDe(nodo, profundidad));
+  const descendientes = recorrer(nodoRaiz, itemizar, 0, 0, nivelMax, opts.textosProfundos ?? false).map(({ nodo, profundidad }) => elementoDe(nodo, profundidad));
   return opts.incluirRaiz ? [elementoDe(nodoRaiz, 0), ...descendientes] : descendientes;
 }

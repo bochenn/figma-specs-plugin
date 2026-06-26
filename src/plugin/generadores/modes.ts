@@ -81,7 +81,7 @@ export async function seccionDeModes(seleccionado: SceneNode, colecciones: Colec
   seccion.appendChild(await texto("Modes", 48));
 
   if (colecciones.length === 0) {
-    seccion.appendChild(await texto("No se detectaron variables con múltiples modes.", 16));
+    seccion.appendChild(await texto("No variables with multiple modes found.", 16));
   }
   for (const c of colecciones) {
     seccion.appendChild(await subseccionColeccion(seleccionado, c, columnas));

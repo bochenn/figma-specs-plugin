@@ -86,10 +86,7 @@ Los tests cubren toda la lógica de decisión (qué es un elemento, qué atribut
 
 ## 📐 Documentación de diseño
 
-Cada feature se construyó con su ciclo *spec → plan → implementación*, documentado en `docs/superpowers/`:
-
-- `specs/` — el diseño de cada rebanada.
-- `plans/` — el plan de implementación tarea por tarea (TDD).
+Cada feature tiene su **spec** en `specs/`: qué hace, qué muestra, su estructura de output, las opciones que la afectan y los archivos clave. Se mantienen actualizados a medida que las features evolucionan (ver `specs/README.md`).
 
 El PRD original está en `PRD.md`.
 

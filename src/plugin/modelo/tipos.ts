@@ -8,6 +8,20 @@ export interface EspaciadoLetra {
   valor: number;
 }
 
+// Stops de un gradiente (color RGBA + posición 0..1), con su transform.
+export interface GradienteData {
+  type: string; // "GRADIENT_LINEAR" | "GRADIENT_RADIAL" | ...
+  gradientStops: { position: number; color: { r: number; g: number; b: number; a: number } }[];
+  gradientTransform?: number[][];
+}
+
+// Paint mínimo: color sólido o datos del gradiente.
+export interface PaintLike {
+  type: string;
+  color?: { r: number; g: number; b: number };
+  gradiente?: GradienteData;
+}
+
 // Interfaz mínima de un nodo de Figma: solo lo que leen los módulos puros.
 // Permite testear sin cargar la API real de Figma.
 export interface NodoLike {
@@ -19,8 +33,8 @@ export interface NodoLike {
   width?: number;
   height?: number;
   opacity?: number;
-  fills?: ReadonlyArray<{ type: string; color?: { r: number; g: number; b: number } }>;
-  strokes?: ReadonlyArray<{ type: string; color?: { r: number; g: number; b: number } }>;
+  fills?: ReadonlyArray<PaintLike>;
+  strokes?: ReadonlyArray<PaintLike>;
   // solo en instancias:
   mainComponentName?: string;
   // layout (solo en nodos con Auto Layout):
@@ -52,6 +66,8 @@ export interface NodoLike {
   fontSize?: number;
   lineHeight?: AlturaLinea;
   letterSpacing?: EspaciadoLetra;
+  textAlign?: string;            // alineación horizontal del texto ("LEFT" | "CENTER" | ...)
+  textCase?: string;             // transformación de caja ("ORIGINAL" | "UPPER" | ...)
   // variables de color resueltas (Variable Formatting):
   fillVariableName?: string;     // "Colección/Variable" del fill
   strokeVariableName?: string;   // idem stroke
@@ -67,6 +83,7 @@ export interface Atributo {
   formato: "HARDCODED" | "VARIABLE" | "STYLE";
   rawValue?: string;    // hex resuelto (para variable/style)
   swatchHex?: string;   // color del swatch (presente en atributos de color)
+  prefijo?: string;     // modo de resizing para width/height ("Fixed" | "Hug" | "Fill")
 }
 
 export interface ElementoAnatomy {
@@ -90,7 +107,7 @@ export type Preferencia = "VARIABLE" | "STYLE";
 
 export type FormatoTipo = "Plain" | "CSS";
 
-export type MensajeUI = { tipo: "generar"; secciones: Seccion[]; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; hideOuter?: boolean; itemizar?: boolean; medirHijos?: boolean; leyenda?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo; formatoRaw?: FormatoColor; mostrarRaw?: boolean; preferencia?: Preferencia; anatomyDepth?: "self" | "children" | "all" };
+export type MensajeUI = { tipo: "generar"; secciones: Seccion[]; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; hideOuter?: boolean; itemizar?: boolean; medirHijos?: boolean; leyenda?: boolean; stylingTotal?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo; formatoRaw?: FormatoColor; mostrarRaw?: boolean; preferencia?: Preferencia; anatomyDepth?: "self" | "children" | "all" } | { tipo: "cancelar" } | { tipo: "abrir"; url: string };
 
 export type MensajePlugin =
   | { tipo: "resultado"; ok: true }
@@ -107,6 +124,10 @@ export interface AtributoCambiado {
   rawValueDefault?: string; // valor resuelto del default (variables/styles)
   rawValueOpcion?: string;  // valor resuelto de la opción
   swatchHex?: string;     // color del swatch (el de la opción; solo atributos de color)
+  formatoDefault?: "VARIABLE" | "STYLE"; // presente solo si es token (para usar ChipVar)
+  formatoOpcion?: "VARIABLE" | "STYLE";
+  prefijoDefault?: string; // modo de resizing del default (width/height): Fixed/Hug/Fill
+  prefijoOpcion?: string;
 }
 
 export interface ElementoCambiado {
@@ -233,12 +254,23 @@ export interface AnatomyJson {
 
 // --- Styling Inventory ---
 
+// Tipografía de un text style (para el preview y la lista de propiedades).
+export interface TipoTexto {
+  family: string;
+  estilo: string;
+  size: number;
+  lineHeight?: AlturaLinea;
+  letterSpacing?: EspaciadoLetra;
+}
+
 export interface EntradaEstilo {
   tabla: "color" | "text" | "variable";
   nombre: string;       // nombre del estilo o variable
   appliedAs: string;    // "Background color" | "Text color" | "Border color" | "Text style"
   capa: string;         // nombre de la capa
   swatchHex?: string;   // color del chip (solo variables)
+  gradiente?: GradienteData; // swatch de gradiente (color styles de gradiente)
+  tipo?: TipoTexto;     // tipografía del estilo (solo text styles)
 }
 
 export interface FilaInventario {
@@ -247,6 +279,8 @@ export interface FilaInventario {
   appliedAs: string;
   appliedTo: string;    // capas formateadas
   swatchHex?: string;   // color del chip (solo variables)
+  gradiente?: GradienteData; // swatch de gradiente (color styles de gradiente)
+  tipo?: TipoTexto;     // tipografía del estilo (solo text styles)
 }
 
 // --- Modes ---

@@ -24,30 +24,28 @@ test("formatearTipografia con letter-spacing", () => {
   assert.equal(formatearTipografia({ family: "Inter", style: "Regular", size: 16, lineHeight: { unidad: "px", valor: 24 }, letterSpacing: { unidad: "px", valor: 0.5 } }, "Plain"), "Inter Regular 16 / 24 · LS 0.5");
 });
 
-test("leerAtributos agrega typography para nodos con fuente", () => {
+test("leerAtributos agrega las propiedades de tipografía para nodos con fuente", () => {
   const nodo: NodoLike = { id: "t", name: "Text", type: "TEXT", fontFamily: "Inter", fontStyle: "Regular", fontSize: 16 };
-  const typo = leerAtributos(nodo).find((a) => a.clave === "typography");
-  assert.ok(typo);
-  assert.equal(typo.valor, "Inter Regular 16");
+  const attrs = leerAtributos(nodo);
+  assert.equal(attrs.find((a) => a.clave === "Font Family")?.valor, "Inter");
+  assert.equal(attrs.find((a) => a.clave === "Font Weight")?.valor, "Regular");
+  assert.equal(attrs.find((a) => a.clave === "Font Size")?.valor, "16px");
 });
 
-test("leerAtributos no agrega typography sin fuente", () => {
+test("leerAtributos no agrega tipografía sin fuente", () => {
   const nodo: NodoLike = { id: "f", name: "Frame", type: "FRAME" };
-  assert.equal(leerAtributos(nodo).find((a) => a.clave === "typography"), undefined);
+  assert.equal(leerAtributos(nodo).find((a) => a.clave === "Font Family"), undefined);
+  assert.equal(leerAtributos(nodo).find((a) => a.clave === "Text Style"), undefined);
 });
 
-test("leerAtributos incluye el line-height en typography", () => {
+test("leerAtributos incluye el line-height como fila propia", () => {
   const nodo: NodoLike = { id: "t", name: "Text", type: "TEXT", fontFamily: "Inter", fontStyle: "Regular", fontSize: 16, lineHeight: { unidad: "px", valor: 24 } };
-  const typo = leerAtributos(nodo).find((a) => a.clave === "typography");
-  assert.ok(typo);
-  assert.equal(typo.valor, "Inter Regular 16 / 24");
+  assert.equal(leerAtributos(nodo).find((a) => a.clave === "Line Height")?.valor, "24px");
 });
 
-test("leerAtributos incluye el letter-spacing en typography", () => {
+test("leerAtributos incluye el letter-spacing como fila propia", () => {
   const nodo: NodoLike = { id: "t", name: "Text", type: "TEXT", fontFamily: "Inter", fontStyle: "Regular", fontSize: 16, letterSpacing: { unidad: "px", valor: 0.5 } };
-  const typo = leerAtributos(nodo).find((a) => a.clave === "typography");
-  assert.ok(typo);
-  assert.equal(typo.valor, "Inter Regular 16 · LS 0.5");
+  assert.equal(leerAtributos(nodo).find((a) => a.clave === "Letter Spacing")?.valor, "0.5px");
 });
 
 test("con Units=rem, Plain convierte size, line-height y letter-spacing", () => {

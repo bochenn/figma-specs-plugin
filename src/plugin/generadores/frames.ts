@@ -37,6 +37,8 @@ export function frameHorizontal(nombre: string, gap: number): FrameNode {
 export const FONT_REG: FontName = { family: "Inter", style: "Regular" };
 export const FONT_BOLD: FontName = { family: "Inter", style: "Bold" };
 export const FONT_SEMI: FontName = { family: "Inter", style: "Semi Bold" };
+// Inter Medium (con fallback a Regular vía cargarFont).
+export const FONT_MEDIUM: FontName[] = [{ family: "Inter", style: "Medium" }, { family: "Inter", style: "Regular" }];
 // Monospace: SF Mono primero, JetBrains Mono como fallback (y al final Inter, vía cargarFont).
 export const FONT_MONO: FontName[] = [
   { family: "SF Mono", style: "Regular" },
@@ -74,12 +76,28 @@ export async function texto(contenido: string, fontSize: number, font: FontName 
   t.characters = contenido;
   t.fontSize = fontSize;
   t.fills = fillTematizado(varsTema().texto);
+  // Definición completa de estilo de texto (no dejar nada en "auto"): line-height
+  // 1.5×, sin tracking, alineado arriba-izquierda, sin decoración ni transformación.
+  t.lineHeight = { value: 150, unit: "PERCENT" };
+  t.letterSpacing = { value: 0, unit: "PERCENT" };
+  t.textAlignHorizontal = "LEFT";
+  t.textAlignVertical = "TOP";
+  t.textDecoration = "NONE";
+  t.textCase = "ORIGINAL";
   return t;
 }
 
-const BORDE_PILL: RGB = { r: 0.819, g: 0.835, b: 0.859 }; // #D1D5DB
-const FONDO_CHIP: RGB = { r: 0.898, g: 0.906, b: 0.922 };  // #E5E7EB
-const TEXTO_CHIP: RGB = { r: 0.2, g: 0.2, b: 0.2 };
+// Texto del header de una Card: Inter Medium 16, line-height 32px, sin tracking.
+export async function textoHeaderCard(contenido: string): Promise<TextNode> {
+  const t = await texto(contenido, 16, FONT_MEDIUM);
+  t.lineHeight = { value: 32, unit: "PIXELS" };
+  t.letterSpacing = { value: 0, unit: "PERCENT" };
+  return t;
+}
+
+export const BORDE_PILL: RGB = { r: 0.819, g: 0.835, b: 0.859 }; // #D1D5DB
+const FONDO_CHIP: RGB = { r: 1, g: 0.878, b: 0.988 };       // #FFE0FC
+const TEXTO_CHIP: RGB = { r: 0.918, g: 0.063, b: 0.675 };   // #EA10AC
 const COLOR_CLAVE: RGB = { r: 0.420, g: 0.447, b: 0.502 }; // #6B7280
 const COLOR_VALOR: RGB = { r: 0.216, g: 0.255, b: 0.318 }; // #374151
 
@@ -111,9 +129,35 @@ export async function chipVariable(nombre: string): Promise<FrameNode> {
   return c;
 }
 
+// Chip con borde para el nombre de una sección (ej. "ANATOMY"): sin fill, stroke #374151.
+export async function tagSeccion(etiqueta: string): Promise<FrameNode> {
+  const chip = frameHorizontal("Tag", 0);
+  chip.counterAxisAlignItems = "CENTER";
+  chip.paddingTop = chip.paddingBottom = 6;
+  chip.paddingLeft = chip.paddingRight = 16;
+  chip.cornerRadius = 6;
+  chip.fills = [];
+  chip.strokes = [{ type: "SOLID", color: COLOR_VALOR }];
+  chip.strokeWeight = 1;
+  const t = await texto(etiqueta.toUpperCase(), 12, FONT_SEMI);
+  t.fills = [{ type: "SOLID", color: COLOR_VALOR }];
+  t.letterSpacing = { value: 8, unit: "PERCENT" };
+  chip.appendChild(t);
+  return chip;
+}
+
+// Párrafo descriptivo de una sección (gris, ancho fijo con wrap). Va debajo del tag.
+export async function parrafoSeccion(descripcion: string, ancho = 720): Promise<TextNode> {
+  const t = await texto(descripcion, 14);
+  t.fills = [{ type: "SOLID", color: COLOR_CLAVE }];
+  t.textAutoResize = "HEIGHT";
+  t.resize(ancho, t.height);
+  return t;
+}
+
 // Fila en pill con borde (cada atributo/propiedad). Appendea los nodos provistos.
 export function filaPill(nodos: SceneNode[]): FrameNode {
-  const fila = frameHorizontal("Fila", 6);
+  const fila = frameHorizontal("itemValue", 6);
   fila.counterAxisAlignItems = "CENTER";
   fila.paddingTop = fila.paddingBottom = 6;
   fila.paddingLeft = fila.paddingRight = 8;

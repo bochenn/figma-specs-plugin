@@ -1,5 +1,5 @@
 import type { ElementoAdicional, VarianteLayout } from "../modelo/tipos.ts";
-import { frameVertical, texto, enColumnas, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor } from "./frames.ts";
+import { frameVertical, texto, enColumnas, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor, textoHeaderCard } from "./frames.ts";
 import { agruparPorVariante } from "../utils/agrupar-variante.ts";
 import { etiquetaSpacing, unidadActual, textoPadding } from "../utils/espaciado.ts";
 
@@ -42,11 +42,11 @@ export async function seccionDeComplete(
   const secA = frameVertical("Complete Anatomy", 64);
   secA.appendChild(await texto("Complete Anatomy", 48));
   if (anatomy.length === 0) {
-    secA.appendChild(await texto("No se detectaron elementos adicionales en otras variantes.", 16));
+    secA.appendChild(await texto("No additional elements found in other variants.", 16));
   }
   const bloquesA: FrameNode[] = [];
   for (const grupo of agruparPorVariante(anatomy)) {
-    const headerNodos: SceneNode[] = [await texto(grupo.variante, 16, FONT_BOLD)];
+    const headerNodos: SceneNode[] = [await textoHeaderCard(grupo.variante)];
     const filas: FrameNode[] = [];
     for (const el of grupo.elementos) {
       filas.push(filaPill([await textoValor(`${el.nombre} · ${el.tipo}`)]));
@@ -59,14 +59,14 @@ export async function seccionDeComplete(
   const secL = frameVertical("Complete Layout", 64);
   secL.appendChild(await texto("Complete Layout", 48));
   if (layout.length === 0) {
-    secL.appendChild(await texto("No se detectaron layouts adicionales en otras variantes.", 16));
+    secL.appendChild(await texto("No additional layouts found in other variants.", 16));
   }
   const bloquesL: FrameNode[] = [];
   for (const v of layout) {
     const s = v.spec;
     const dir = s.direccion === "HORIZONTAL" ? "Horizontal" : s.direccion === "GRID" ? "Grid" : "Vertical";
     const sv = s.spacingVars;
-    const headerNodos: SceneNode[] = [await texto(v.variante, 16, FONT_BOLD)];
+    const headerNodos: SceneNode[] = [await textoHeaderCard(v.variante)];
     const filas: FrameNode[] = [
       filaPill([await textoClave(`Direction:`), await textoValor(dir)]),
       filaPill([await textoClave(`Align:`), await textoValor(`${s.alineacionPrimaria}/${s.alineacionContraria}`)]),

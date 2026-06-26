@@ -20,7 +20,7 @@ export function formatearTipografia(
     if (lh && lh.unidad === "px") medida += `/${valorPx(lh.valor, true)}`;
     else if (lh && lh.unidad === "percent") medida += `/${lh.valor}%`;
     let s = `${medida} ${t.style} ${t.family}`;
-    if (ls) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : valorPx(ls.valor, true)}`;
+    if (ls && ls.valor !== 0) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : valorPx(ls.valor, true)}`;
     return s;
   }
   let s = `${t.family} ${t.style} ${valorPx(t.size, false)}`;
@@ -28,7 +28,7 @@ export function formatearTipografia(
     const lhStr = lh.unidad === "auto" ? "auto" : lh.unidad === "percent" ? `${lh.valor}%` : valorPx(lh.valor, false);
     s += ` / ${lhStr}`;
   }
-  if (ls) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : valorPx(ls.valor, false)}`;
+  if (ls && ls.valor !== 0) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : valorPx(ls.valor, false)}`;
   return s;
 }
 
