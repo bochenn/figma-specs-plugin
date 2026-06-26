@@ -1,10 +1,15 @@
-import type { NodoLike, EntradaEstilo } from "../modelo/tipos.ts";
+import type { NodoLike, EntradaEstilo, GradienteData } from "../modelo/tipos.ts";
 import { hexDeColor } from "../variables/modes.ts";
 
 // Hex del primer paint SOLID de una lista, o undefined.
-function hexSolido(paints: ReadonlyArray<{ type: string; color?: { r: number; g: number; b: number } }> | undefined): string | undefined {
+function hexSolido(paints: NodoLike["fills"]): string | undefined {
   const p = paints?.find((f) => f.type === "SOLID" && f.color);
   return p && p.color ? hexDeColor(p.color) : undefined;
+}
+
+// Datos del primer paint de gradiente de una lista, o undefined.
+function gradienteDe(paints: NodoLike["fills"]): GradienteData | undefined {
+  return paints?.find((f) => f.gradiente)?.gradiente;
 }
 
 // Emite las entradas de estilo/variable de un solo nodo (prioridad variable > style).
@@ -16,7 +21,8 @@ function emitir(nodo: NodoLike, entradas: EntradaEstilo[]): void {
   } else if (nodo.fillStyleName) {
     const entrada: EntradaEstilo = { tabla: "color", nombre: nodo.fillStyleName, appliedAs: appliedFill, capa: nodo.name };
     const hex = hexSolido(nodo.fills);
-    if (hex) entrada.swatchHex = hex; // los gradientes no tienen un color sólido único
+    if (hex) entrada.swatchHex = hex;
+    else { const g = gradienteDe(nodo.fills); if (g) entrada.gradiente = g; }
     entradas.push(entrada);
   }
 
@@ -26,11 +32,23 @@ function emitir(nodo: NodoLike, entradas: EntradaEstilo[]): void {
     const entrada: EntradaEstilo = { tabla: "color", nombre: nodo.strokeStyleName, appliedAs: "Border color", capa: nodo.name };
     const hex = hexSolido(nodo.strokes);
     if (hex) entrada.swatchHex = hex;
+    else { const g = gradienteDe(nodo.strokes); if (g) entrada.gradiente = g; }
     entradas.push(entrada);
   }
 
   if (nodo.textStyleName) {
-    entradas.push({ tabla: "text", nombre: nodo.textStyleName, appliedAs: "Text style", capa: nodo.name });
+    const entrada: EntradaEstilo = { tabla: "text", nombre: nodo.textStyleName, appliedAs: "Text style", capa: nodo.name };
+    // Captura la tipografía del estilo (para el preview y la lista de propiedades).
+    if (nodo.fontFamily && typeof nodo.fontSize === "number") {
+      entrada.tipo = {
+        family: nodo.fontFamily,
+        estilo: nodo.fontStyle ?? "Regular",
+        size: nodo.fontSize,
+        lineHeight: nodo.lineHeight,
+        letterSpacing: nodo.letterSpacing,
+      };
+    }
+    entradas.push(entrada);
   }
 }
 

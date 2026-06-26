@@ -17,6 +17,7 @@ import { serializarAnatomy } from "./serializacion/anatomy-json.ts";
 import { seccionDeData } from "./generadores/data.ts";
 import { recolectarEstilos } from "./inventario/recolectar.ts";
 import { agruparInventario } from "./inventario/agrupar.ts";
+import { inventarioDocumento } from "./inventario/documento.ts";
 import { seccionDeStyling } from "./generadores/styling.ts";
 import { recolectarModes } from "./variables/recolectar-modes.ts";
 import { agruparModes } from "./variables/modes.ts";
@@ -29,7 +30,7 @@ import { header, hero, feature, footer, envolverItem, ANCHO_PAGINA } from "./gen
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
-figma.showUI(__html__, { width: 280, height: 460 });
+figma.showUI(__html__, { width: 640, height: 500 });
 
 function responder(msg: MensajePlugin): void {
   figma.ui.postMessage(msg);
@@ -83,15 +84,18 @@ function instanciasAnidadas(nodo: SceneNode): InstanceNode[] {
 
 // Component sets de las instancias anidadas (en la variante default), sin
 // repetidos, sin el set principal y sin componentes que no tengan variantes.
+// Recorre TODAS las variantes (no solo la default), para no perder subcomponentes
+// que aparecen únicamente en algunas versiones (ej. Badge).
 function setsAnidados(componentSet: ComponentSetNode): ComponentSetNode[] {
-  const raiz = componentSet.defaultVariant ?? componentSet;
   const res: ComponentSetNode[] = [];
   const vistos = new Set<string>([componentSet.id]);
-  for (const inst of instanciasAnidadas(raiz)) {
-    const set = resolverComponentSet(inst);
-    if (!set || vistos.has(set.id)) continue;
-    vistos.add(set.id);
-    res.push(set);
+  for (const variante of componentSet.children) {
+    for (const inst of instanciasAnidadas(variante)) {
+      const set = resolverComponentSet(inst);
+      if (!set || vistos.has(set.id)) continue;
+      vistos.add(set.id);
+      res.push(set);
+    }
   }
   return res;
 }
@@ -105,6 +109,7 @@ interface OpcionesGen {
   medirHijos: boolean;
   columnas: number;
   anatomyDepth: "self" | "children" | "all";
+  stylingTotal: boolean;
 }
 
 // Frame de aviso para una sección que no aplica al nodo (no aborta las demás).
@@ -149,8 +154,9 @@ async function seccionPara(nodo: SceneNode, seccion: Seccion, opts: OpcionesGen)
     return [await seccionDeData(nodo.name, serializarAnatomy(extraerAnatomy(aNodoLike(nodo))))];
   }
   if (seccion === "styling") {
+    if (opts.stylingTotal) return [await seccionDeStyling(nodo.name, await inventarioDocumento(), true)];
     if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Styling Inventory needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
-    return [await seccionDeStyling(nodo.name, agruparInventario(recolectarEstilos(aNodoLike(nodo))))];
+    return [await seccionDeStyling(nodo.name, agruparInventario(recolectarEstilos(aNodoLike(nodo))), false)];
   }
   if (seccion === "modes") {
     if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Modes needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
@@ -217,6 +223,8 @@ const DESCRIPCION_SECCION: Record<Seccion, string> = {
 };
 
 figma.ui.onmessage = async (msg: MensajeUI) => {
+  if (msg.tipo === "cancelar") { figma.closePlugin(); return; }
+  if (msg.tipo === "abrir") { figma.openExternal(msg.url); return; }
   if (msg.tipo !== "generar") return;
 
   const seleccion = figma.currentPage.selection;
@@ -246,6 +254,7 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
     medirHijos: msg.medirHijos ?? false,
     columnas: clampColumnas(msg.columnas),
     anatomyDepth: msg.anatomyDepth ?? "children",
+    stylingTotal: msg.stylingTotal ?? false,
   };
   try {
     const specs = frameVertical("Specs", 80, 0);

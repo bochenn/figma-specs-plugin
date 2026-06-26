@@ -33,7 +33,7 @@ function resaltarBoolean(node: SceneNode, offX: number, offY: number, propKey: s
 // Subsección de una propiedad booleana: heading + artwork (clon con highlights) + capas afectadas.
 async function subseccionBoolean(componentSet: ComponentSetNode, nombre: string, propKey: string): Promise<FrameNode> {
   const sub = frameVertical(nombre, 40);
-  sub.appendChild(await texto(nombre, 36));
+  sub.appendChild(await tituloPropiedad(nombre));
 
   const nombres: string[] = [];
   const defaultVariant = componentSet.defaultVariant;
@@ -78,6 +78,21 @@ function buscarComponenteConValor(componentSet: ComponentSetNode, prop: string, 
   return undefined;
 }
 
+// Título del componente (Blog post card, Badge…): Inter Medium 40 / line-height 48 / letter-spacing -2%.
+async function tituloComponente(s: string): Promise<TextNode> {
+  const t = await texto(s, 40, FONT_MEDIUM);
+  t.lineHeight = { value: 48, unit: "PIXELS" };
+  t.letterSpacing = { value: -2, unit: "PERCENT" };
+  return t;
+}
+
+// Título de una propiedad (Type, Orientation…): Inter Medium 24 / line-height 32.
+async function tituloPropiedad(s: string): Promise<TextNode> {
+  const t = await texto(s, 24, FONT_MEDIUM);
+  t.lineHeight = { value: 32, unit: "PIXELS" };
+  return t;
+}
+
 // Marcador ◆ que precede a cada valor en la tabla de propiedades.
 function diamante(): PolygonNode {
   const p = figma.createPolygon();
@@ -111,9 +126,12 @@ async function cardVariante(header: string, comp: ComponentNode, nombresProps: s
   artwork.fills = fillTematizado(varsTema().fondoArtwork);
   const inst = comp.createInstance();
   artwork.appendChild(inst);
-  inst.x = 0;
-  inst.y = 0;
-  artwork.resize(inst.width, inst.height);
+  // Padding mínimo de 64px en los 4 lados (instancia + 128), con piso 400×156.
+  const w = Math.max(400, inst.width + 128);
+  const h = Math.max(156, inst.height + 128);
+  artwork.resize(w, h);
+  inst.x = (w - inst.width) / 2;
+  inst.y = (h - inst.height) / 2;
   display.appendChild(artwork);
 
   const props = comp.variantProperties ?? {};
@@ -285,6 +303,9 @@ export async function seccionDeProperties(
   columnas: number,
 ): Promise<FrameNode> {
   const seccion = frameVertical("Properties", 64);
+  // Título con el nombre del componente al que pertenece esta sección (clave para
+  // distinguir la del componente principal de las de los subcomponentes anidados).
+  seccion.appendChild(await tituloComponente(componentSet.name));
   const grupos = componentSet.variantGroupProperties;
   const nombresProps = Object.keys(grupos);
 
@@ -293,14 +314,14 @@ export async function seccionDeProperties(
     return seccion;
   }
 
-  // Card del variante default arriba.
+  // Card del variante default arriba (el nombre del componente ya va en el título).
   const defComp = buscarComponente(componentSet, defaultProps);
-  if (defComp) seccion.appendChild(await cardVariante(componentSet.name, defComp, nombresProps));
+  if (defComp) seccion.appendChild(await cardVariante("Default", defComp, nombresProps));
 
   // Una subsección por propiedad: una card por cada valor (preview + tabla).
   for (const prop of nombresProps) {
     const subseccion = frameVertical(prop, 40);
-    subseccion.appendChild(await texto(prop, 36));
+    subseccion.appendChild(await tituloPropiedad(prop));
     const bloques: FrameNode[] = [];
     for (const valor of grupos[prop].values) {
       const comp = buscarComponente(componentSet, { ...defaultProps, [prop]: valor })

@@ -1,6 +1,23 @@
-import type { NodoLike } from "../modelo/tipos.ts";
+import type { NodoLike, PaintLike } from "../modelo/tipos.ts";
 import { gridSpecDe } from "../utils/grilla.ts";
 import { limpiarPrefijoColeccion } from "../utils/nombre-variable.ts";
+
+// Convierte un Paint de Figma a PaintLike: color sólido o stops del gradiente.
+function paintLike(f: Paint): PaintLike {
+  if (f.type === "SOLID") return { type: f.type, color: f.color };
+  if (f.type.startsWith("GRADIENT_")) {
+    const g = f as GradientPaint;
+    return {
+      type: f.type,
+      gradiente: {
+        type: f.type,
+        gradientStops: g.gradientStops.map((s) => ({ position: s.position, color: { r: s.color.r, g: s.color.g, b: s.color.b, a: s.color.a } })),
+        gradientTransform: g.gradientTransform.map((row) => [...row]),
+      },
+    };
+  }
+  return { type: f.type };
+}
 
 // Resuelve una variable a "Colección/Variable" (o solo su nombre si no hay collection).
 function nombreVariable(id: string): string | undefined {
@@ -18,16 +35,10 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
   if ("height" in nodo) base.height = nodo.height;
   if ("opacity" in nodo) base.opacity = nodo.opacity;
   if ("fills" in nodo && Array.isArray(nodo.fills)) {
-    base.fills = nodo.fills.map((f) => ({
-      type: f.type,
-      color: f.type === "SOLID" ? f.color : undefined,
-    }));
+    base.fills = nodo.fills.map(paintLike);
   }
   if ("strokes" in nodo && Array.isArray(nodo.strokes)) {
-    base.strokes = nodo.strokes.map((f) => ({
-      type: f.type,
-      color: f.type === "SOLID" ? f.color : undefined,
-    }));
+    base.strokes = nodo.strokes.map(paintLike);
   }
   if (nodo.type === "INSTANCE") {
     const main = (nodo as InstanceNode).mainComponent;
