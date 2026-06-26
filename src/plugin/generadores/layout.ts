@@ -182,7 +182,7 @@ async function chipSpacing(val: number, par: ParCota, artwork: FrameNode, varNam
   return varName ? await cotaConNombre(nombreCorto(varName), t, par, artwork) : await cota(t, par, artwork);
 }
 
-// Ubica padding (por lado) + gaps como callouts afuera, exactamente como DesignDoc:
+// Ubica padding (por lado) + gaps como callouts afuera del elemento:
 // cada banda se mide con un BRACKET corto (la cota con topes, del color de la banda)
 // pegado al borde — vertical a la derecha para top/bottom/gaps verticales, horizontal
 // abajo para left/right/gaps horizontales — con el chip al lado.

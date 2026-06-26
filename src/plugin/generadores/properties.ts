@@ -115,7 +115,7 @@ async function filaPropTabla(label: string, valor: string): Promise<FrameNode> {
   return fila;
 }
 
-// Card de un variante (estilo Spectral): header + [artwork (instancia) | tabla de propiedades].
+// Card de un variante: header + [artwork (instancia) | tabla de propiedades].
 async function cardVariante(header: string, comp: ComponentNode, nombresProps: string[]): Promise<FrameNode> {
   const display = frameHorizontal("Display", 64);
   display.counterAxisAlignItems = "MIN";
@@ -293,7 +293,7 @@ async function specDeProperties(
 }
 
 // Construye solo la sección Properties (sin Specifications ni título de nodo).
-// Estilo Spectral: por cada valor de cada propiedad, una card con el preview del
+// Por cada valor de cada propiedad, una card con el preview del
 // variante + su tabla de propiedades completa. `_propiedades` ya no se usa (la
 // info se toma directo del component set).
 export async function seccionDeProperties(
