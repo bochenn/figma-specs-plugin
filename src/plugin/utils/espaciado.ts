@@ -1,49 +1,49 @@
-import type { Unidad } from "../modelo/tipos.ts";
+import type { Unit } from "../modelo/tipos.ts";
 
-// Redondea a máximo 2 decimales (sin ceros sobrantes).
+// Rounds to at most 2 decimals (no trailing zeros).
 function redondear2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-// Formatea un valor en px al formato elegido. `mostrarUnidad` agrega "px" (rem siempre
-// lleva su unidad). px sin unidad = número pelado (para las cotas del artwork).
-export function formatearEspaciado(n: number, unidad: Unidad, mostrarUnidad = false): string {
-  if (unidad === "rem") return `${redondear2(n / 16)}rem`;
+// Formats a value in px to the chosen format. `showUnit` adds "px" (rem always
+// carries its unit). px without unit = bare number (for the artwork callouts).
+export function formatSpacing(n: number, unit: Unit, showUnit = false): string {
+  if (unit === "rem") return `${redondear2(n / 16)}rem`;
   const v = redondear2(n);
-  return mostrarUnidad ? `${v}px` : `${v}`;
+  return showUnit ? `${v}px` : `${v}`;
 }
 
-// "16" / "1rem" sin variable; "DS Space/padding/1x (16)" con variable.
-export function etiquetaSpacing(px: number, unidad: Unidad, nombreVar?: string): string {
-  const v = formatearEspaciado(px, unidad);
-  return nombreVar ? `${nombreVar} (${v})` : v;
+// "16" / "1rem" without variable; "DS Space/padding/1x (16)" with variable.
+export function spacingLabel(px: number, unit: Unit, varName?: string): string {
+  const v = formatSpacing(px, unit);
+  return varName ? `${varName} (${v})` : v;
 }
 
-// Padding legible al estilo CSS: colapsa lados iguales. 4 iguales → un valor;
-// pares vertical/horizontal → "V H"; todos distintos → "T R B L". Cada lado se
-// formatea con etiquetaSpacing (respeta unidad y nombre de variable).
-export function textoPadding(
+// Readable padding in CSS style: collapses equal sides. 4 equal → one value;
+// vertical/horizontal pairs → "V H"; all different → "T R B L". Each side is
+// formats with spacingLabel (respects unit and variable name).
+export function paddingText(
   p: { left: number; top: number; right: number; bottom: number },
-  unidad: Unidad,
+  unit: Unit,
   sv: { paddingLeft?: string; paddingTop?: string; paddingRight?: string; paddingBottom?: string } = {},
 ): string {
-  const T = etiquetaSpacing(p.top, unidad, sv.paddingTop);
-  const R = etiquetaSpacing(p.right, unidad, sv.paddingRight);
-  const B = etiquetaSpacing(p.bottom, unidad, sv.paddingBottom);
-  const L = etiquetaSpacing(p.left, unidad, sv.paddingLeft);
+  const T = spacingLabel(p.top, unit, sv.paddingTop);
+  const R = spacingLabel(p.right, unit, sv.paddingRight);
+  const B = spacingLabel(p.bottom, unit, sv.paddingBottom);
+  const L = spacingLabel(p.left, unit, sv.paddingLeft);
   if (T === R && R === B && B === L) return T;
   if (T === B && L === R) return `${T} ${R}`;
   return `${T} ${R} ${B} ${L}`;
 }
 
-let unidad: Unidad = "px";
+let unit: Unit = "px";
 
-// Setea la unidad actual (default px).
-export function aplicarUnidad(u: Unidad): void {
-  unidad = u;
+// Sets the current unit (default px).
+export function applyUnit(u: Unit): void {
+  unit = u;
 }
 
-// Devuelve la unidad actual.
-export function unidadActual(): Unidad {
-  return unidad;
+// Returns the current unit.
+export function currentUnit(): Unit {
+  return unit;
 }

@@ -1,25 +1,25 @@
 # Properties
 
-## Qué hace
-Documenta las propiedades de variante de un component set: por cada valor de cada propiedad muestra el preview del variante + su tabla de propiedades completa (estilo panel de instancia de Figma).
+## What it does
+Documents the variant properties of a component set: for each value of each property it shows the variant's preview + its full property table (Figma's instance-panel style).
 
-## Qué muestra
-- **Título** = nombre del componente (clave para distinguir el principal de los subcomponentes anidados).
-- **Card del default** arriba: artwork (instancia del variante default) + tabla de props.
-- **Una subsección por cada propiedad de variante** (Type, Orientation, Breakpoint, Size…):
-  - Una **card por cada valor** de la propiedad, con: header = el valor, **artwork** (instancia del variante con ese valor, con artwork mínimo 400×156 y padding ≥64) y la **tabla de propiedades completa** del variante: fila `Label  ◆ Valor` (label gris, marcador ◆ rombo, valor).
-  - Si no existe el variante "default con solo esa prop cambiada" (matriz dispersa), se usa **cualquier** variante con ese valor.
-- **Propiedades booleanas**: subsección con el artwork (instancia del default) y los layers afectados resaltados en azul.
+## What it shows
+- **Title** = the component's name (key for telling the main one apart from nested subcomponents).
+- **Default card** at the top: artwork (instance of the default variant) + property table.
+- **One subsection per variant property** (Type, Orientation, Breakpoint, Size…):
+  - A **card per value** of the property, with: header = the value, **artwork** (instance of the variant with that value, with a minimum 400×156 artwork and ≥64 padding) and the variant's **full property table**: row `Label  ◆ Value` (gray label, ◆ diamond marker, value).
+  - If the "default with only that prop changed" variant doesn't exist (sparse matrix), **any** variant with that value is used.
+- **Boolean properties**: a subsection with the artwork (default instance) and the affected layers highlighted in blue.
 
-## Notas
-- El artwork usa **`createInstance()`** del variante (instancia), no `clone()` (que duplicaría el componente master).
-- No muestra el diff de cambios; eso es solo de **Two-Way**, que comparte el código de comparación.
+## Notes
+- The artwork uses **`createInstance()`** of the variant (an instance), not `clone()` (which would duplicate the master component).
+- It does not show the diff of changes; that's only in **Two-Way**, which shares the comparison code.
 
-## Opciones que la afectan
-- **Spec nested subcomponents** — agrega una sección Properties por cada component set anidado (detectado en **todas** las variantes, no solo la default).
-- **Columns** — cards por fila.
+## Options that affect it
+- **Spec nested subcomponents** — adds a Properties section per nested component set (detected across **all** variants, not just the default).
+- **Columns** — cards per row.
 
-## Archivos clave
+## Key files
 - `generadores/properties.ts` (`seccionDeProperties`, `cardVariante`, boolean)
-- `extraccion/properties.ts` (extracción, fallback de valor)
-- `main.ts` (`setsAnidados` recorre todas las variantes)
+- `extraccion/properties.ts` (extraction, value fallback)
+- `main.ts` (`setsAnidados` walks every variant)

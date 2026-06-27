@@ -1,30 +1,30 @@
-import type { NodoLike, ElementoAnatomy } from "../modelo/tipos.ts";
-import { recorrer } from "../traversal/recorrer.ts";
-import { leerAtributos } from "../utils/atributos.ts";
+import type { NodeLike, AnatomyElement } from "../modelo/tipos.ts";
+import { traverse } from "../traversal/recorrer.ts";
+import { readAttributes } from "../utils/atributos.ts";
 
-function elementoDe(nodo: NodoLike, profundidad: number): ElementoAnatomy {
-  const esInstancia = nodo.type === "INSTANCE";
-  const elemento: ElementoAnatomy = {
-    id: nodo.id,
-    nombre: nodo.name,
-    tipo: nodo.type,
-    esInstancia,
-    atributos: leerAtributos(nodo),
+function elementOf(node: NodeLike, depth: number): AnatomyElement {
+  const isInstance = node.type === "INSTANCE";
+  const element: AnatomyElement = {
+    id: node.id,
+    name: node.name,
+    type: node.type,
+    isInstance,
+    attributes: readAttributes(node),
   };
-  if (esInstancia && nodo.mainComponentName) elemento.dependeDe = nodo.mainComponentName;
-  if (profundidad > 0) elemento.profundidad = profundidad;
-  return elemento;
+  if (isInstance && node.mainComponentName) element.dependsOn = node.mainComponentName;
+  if (depth > 0) element.depth = depth;
+  return element;
 }
 
-// Recorre el nodo raíz y produce la lista de elementos de Anatomy.
-// opts.nivelMax: límite de profundidad de árbol (default Infinity).
-// opts.incluirRaiz: incluye el nodo raíz como primer elemento (default false).
-export function extraerAnatomy(
-  nodoRaiz: NodoLike,
-  itemizar = false,
-  opts: { nivelMax?: number; incluirRaiz?: boolean; textosProfundos?: boolean } = {},
-): ElementoAnatomy[] {
-  const nivelMax = opts.nivelMax ?? Infinity;
-  const descendientes = recorrer(nodoRaiz, itemizar, 0, 0, nivelMax, opts.textosProfundos ?? false).map(({ nodo, profundidad }) => elementoDe(nodo, profundidad));
-  return opts.incluirRaiz ? [elementoDe(nodoRaiz, 0), ...descendientes] : descendientes;
+// Traverses the root node and produces the Anatomy element list.
+// opts.maxLevel: tree depth limit (default Infinity).
+// opts.includeRoot: includes the root node as the first element (default false).
+export function extractAnatomy(
+  rootNode: NodeLike,
+  itemize = false,
+  opts: { maxLevel?: number; includeRoot?: boolean; deepTexts?: boolean } = {},
+): AnatomyElement[] {
+  const maxLevel = opts.maxLevel ?? Infinity;
+  const descendientes = traverse(rootNode, itemize, 0, 0, maxLevel, opts.deepTexts ?? false).map(({ node, depth }) => elementOf(node, depth));
+  return opts.includeRoot ? [elementOf(rootNode, 0), ...descendientes] : descendientes;
 }

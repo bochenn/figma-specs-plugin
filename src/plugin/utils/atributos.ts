@@ -1,41 +1,41 @@
-import type { NodoLike, Atributo, AlturaLinea, EspaciadoLetra } from "../modelo/tipos.ts";
-import { formatearColor, formatoColorActual } from "./color.ts";
-import { formatoRawActual, mostrarRawActual, preferenciaActual } from "./valores.ts";
-import { formatearEspaciado, unidadActual } from "./espaciado.ts";
+import type { NodeLike, Attribute, LineHeightVal, LetterSpacingVal } from "../modelo/tipos.ts";
+import { formatColor, currentColorFormat } from "./color.ts";
+import { currentRawFormat, currentShowRaw, currentPreference } from "./valores.ts";
+import { formatSpacing, currentUnit } from "./espaciado.ts";
 
-// Altura de línea para una fila propia: "Auto", "150%" o "20px".
-function alturaLineaTexto(lh?: AlturaLinea): string | undefined {
+// Line height for its own row: "Auto", "150%" or "20px".
+function textLineHeight(lh?: LineHeightVal): string | undefined {
   if (!lh) return undefined;
-  if (lh.unidad === "auto") return "Auto";
-  if (lh.unidad === "percent") return `${lh.valor}%`;
-  return formatearEspaciado(lh.valor, unidadActual(), true);
+  if (lh.unit === "auto") return "Auto";
+  if (lh.unit === "percent") return `${lh.value}%`;
+  return formatSpacing(lh.value, currentUnit(), true);
 }
 
-// Tracking (letter-spacing) para una fila propia: "0%" o "0.5px".
-function espaciadoLetraTexto(ls?: EspaciadoLetra): string | undefined {
+// Tracking (letter-spacing) for its own row: "0%" or "0.5px".
+function textLetterSpacing(ls?: LetterSpacingVal): string | undefined {
   if (!ls) return undefined;
-  if (ls.unidad === "percent") return `${ls.valor}%`;
-  return formatearEspaciado(ls.valor, unidadActual(), true);
+  if (ls.unit === "percent") return `${ls.value}%`;
+  return formatSpacing(ls.value, currentUnit(), true);
 }
 
-// Alineación horizontal del texto en texto legible.
-function alineacionTexto(valor: string): string {
-  if (valor === "CENTER") return "Center";
-  if (valor === "RIGHT") return "Right";
-  if (valor === "JUSTIFIED") return "Justified";
+// Horizontal text alignment as readable text.
+function textAlignVal(value: string): string {
+  if (value === "CENTER") return "Center";
+  if (value === "RIGHT") return "Right";
+  if (value === "JUSTIFIED") return "Justified";
   return "Left"; // "LEFT"
 }
 
-// Transformación de caja (text case) en texto legible.
-function casoTexto(valor: string): string {
-  if (valor === "UPPER") return "Uppercase";
-  if (valor === "LOWER") return "Lowercase";
-  if (valor === "TITLE") return "Title case";
-  if (valor === "SMALL_CAPS" || valor === "SMALL_CAPS_FORCED") return "Small caps";
+// Case transformation (text case) as readable text.
+function textCaseVal(value: string): string {
+  if (value === "UPPER") return "Uppercase";
+  if (value === "LOWER") return "Lowercase";
+  if (value === "TITLE") return "Title case";
+  if (value === "SMALL_CAPS" || value === "SMALL_CAPS_FORCED") return "Small caps";
   return "Original"; // "ORIGINAL"
 }
 
-// Convierte un canal de color (0..1) a dos dígitos hex.
+// Converts a color channel (0..1) to two hex digits.
 function canalHex(canal: number): string {
   return Math.round(canal * 255).toString(16).padStart(2, "0").toUpperCase();
 }
@@ -44,35 +44,35 @@ function aHex(color: { r: number; g: number; b: number }): string {
   return "#" + canalHex(color.r) + canalHex(color.g) + canalHex(color.b);
 }
 
-// Atributo de color: variable o style (según la preferencia cuando hay ambos),
-// con el valor resuelto formateado según las opciones de Custom Value Formats;
-// hardcoded si no hay ninguno. Devuelve undefined si no hay un color resuelto.
-export function colorAtributo(
-  clave: string,
+// Color attribute: variable or style (per the preference when both exist),
+// with the resolved value formatted per the Custom Value Formats options;
+// hardcoded if there's none. Returns undefined if there's no resolved color.
+export function attributeColor(
+  key: string,
   opts: { hex?: string; variableName?: string; styleName?: string },
-): Atributo | undefined {
+): Attribute | undefined {
   const hex = opts.hex;
   if (!hex) return undefined;
-  const nombrado = (valor: string, formato: "VARIABLE" | "STYLE"): Atributo => {
-    const a: Atributo = { clave, valor, formato, swatchHex: hex };
-    if (mostrarRawActual()) a.rawValue = formatearColor(hex, formatoRawActual());
+  const named = (value: string, format: "VARIABLE" | "STYLE"): Attribute => {
+    const a: Attribute = { key, value, format, swatchHex: hex };
+    if (currentShowRaw()) a.rawValue = formatColor(hex, currentRawFormat());
     return a;
   };
-  if (preferenciaActual() === "STYLE" && opts.styleName) return nombrado(opts.styleName, "STYLE");
-  if (opts.variableName) return nombrado(opts.variableName, "VARIABLE");
-  if (opts.styleName) return nombrado(opts.styleName, "STYLE");
-  return { clave, valor: formatearColor(hex, formatoColorActual()), formato: "HARDCODED", swatchHex: hex };
+  if (currentPreference() === "STYLE" && opts.styleName) return named(opts.styleName, "STYLE");
+  if (opts.variableName) return named(opts.variableName, "VARIABLE");
+  if (opts.styleName) return named(opts.styleName, "STYLE");
+  return { key, value: formatColor(hex, currentColorFormat()), format: "HARDCODED", swatchHex: hex };
 }
 
-// Devuelve el hex del primer paint SOLID de una lista, o undefined.
-export function hexSolido(
+// Returns the hex of the first SOLID paint in a list, or undefined.
+export function solidHex(
   paints: ReadonlyArray<{ type: string; color?: { r: number; g: number; b: number } }> | undefined,
 ): string | undefined {
   const p = paints?.find((f) => f.type === "SOLID" && f.color);
   return p && p.color ? aHex(p.color) : undefined;
 }
 
-// Mapea el modo de resizing de Figma a su etiqueta ("FIXED" → "Fixed", etc.).
+// Maps Figma's resizing mode to its label ("FIXED" → "Fixed", etc.).
 function modoDeSizing(s?: string): string | undefined {
   if (s === "HUG") return "Hug";
   if (s === "FILL") return "Fill";
@@ -80,64 +80,64 @@ function modoDeSizing(s?: string): string | undefined {
   return undefined;
 }
 
-// Atributo de dimensión: VARIABLE (nombre + rawValue) si hay variable atada;
-// HARDCODED (valor pelado) si no. `modo` agrega el prefijo de resizing si está.
-function dimensionAtributo(clave: string, px: number, nombreVar?: string, modo?: string): Atributo {
-  const valorFmt = formatearEspaciado(px, unidadActual(), true);
-  const a: Atributo = nombreVar
-    ? { clave, valor: nombreVar, formato: "VARIABLE", rawValue: valorFmt }
-    : { clave, valor: valorFmt, formato: "HARDCODED" };
-  const prefijo = modoDeSizing(modo);
-  if (prefijo) a.prefijo = prefijo;
+// Dimension attribute: VARIABLE (name + rawValue) if there's a bound variable;
+// HARDCODED (bare value) otherwise. `mode` adds the resizing prefix if present.
+function dimensionAtributo(key: string, px: number, varName?: string, mode?: string): Attribute {
+  const fmtValue = formatSpacing(px, currentUnit(), true);
+  const a: Attribute = varName
+    ? { key, value: varName, format: "VARIABLE", rawValue: fmtValue }
+    : { key, value: fmtValue, format: "HARDCODED" };
+  const prefix = modoDeSizing(mode);
+  if (prefix) a.prefix = prefix;
   return a;
 }
 
-// Lee los atributos visuales presentes en un nodo.
-export function leerAtributos(nodo: NodoLike): Atributo[] {
-  const atributos: Atributo[] = [];
+// Reads the visual attributes present on a node.
+export function readAttributes(node: NodeLike): Attribute[] {
+  const attributes: Attribute[] = [];
 
-  const bg = colorAtributo("background-color", {
-    hex: hexSolido(nodo.fills),
-    variableName: nodo.fillVariableName,
-    styleName: nodo.fillStyleName,
+  const bg = attributeColor("background-color", {
+    hex: solidHex(node.fills),
+    variableName: node.fillVariableName,
+    styleName: node.fillStyleName,
   });
-  if (bg) atributos.push(bg);
+  if (bg) attributes.push(bg);
 
-  const bd = colorAtributo("border-color", {
-    hex: hexSolido(nodo.strokes),
-    variableName: nodo.strokeVariableName,
-    styleName: nodo.strokeStyleName,
+  const bd = attributeColor("border-color", {
+    hex: solidHex(node.strokes),
+    variableName: node.strokeVariableName,
+    styleName: node.strokeStyleName,
   });
-  if (bd) atributos.push(bd);
+  if (bd) attributes.push(bd);
 
-  if (typeof nodo.width === "number") {
-    atributos.push(dimensionAtributo("width", nodo.width, nodo.widthVariableName, nodo.layoutSizingHorizontal));
+  if (typeof node.width === "number") {
+    attributes.push(dimensionAtributo("width", node.width, node.widthVariableName, node.layoutSizingHorizontal));
   }
 
-  if (typeof nodo.height === "number" && nodo.heightVariableName) {
-    atributos.push(dimensionAtributo("height", nodo.height, nodo.heightVariableName, nodo.layoutSizingVertical));
+  if (typeof node.height === "number" && node.heightVariableName) {
+    attributes.push(dimensionAtributo("height", node.height, node.heightVariableName, node.layoutSizingVertical));
   }
 
-  if (typeof nodo.opacity === "number" && nodo.opacity < 1) {
-    atributos.push({ clave: "opacity", valor: Math.round(nodo.opacity * 100) + "%", formato: "HARDCODED" });
+  if (typeof node.opacity === "number" && node.opacity < 1) {
+    attributes.push({ key: "opacity", value: Math.round(node.opacity * 100) + "%", format: "HARDCODED" });
   }
 
-  if (nodo.fontFamily && typeof nodo.fontSize === "number") {
-    // Text Style: el token aplicado, o "N/A" si el texto no tiene estilo asignado.
-    atributos.push(nodo.textStyleName
-      ? { clave: "Text Style", valor: nodo.textStyleName, formato: "STYLE" }
-      : { clave: "Text Style", valor: "N/A", formato: "HARDCODED" });
-    // Detalle de la tipografía: una propiedad por fila.
-    atributos.push({ clave: "Font Family", valor: nodo.fontFamily, formato: "HARDCODED" });
-    if (nodo.fontStyle) atributos.push({ clave: "Font Weight", valor: nodo.fontStyle, formato: "HARDCODED" });
-    atributos.push({ clave: "Font Size", valor: formatearEspaciado(nodo.fontSize, unidadActual(), true), formato: "HARDCODED" });
-    const lh = alturaLineaTexto(nodo.lineHeight);
-    if (lh) atributos.push({ clave: "Line Height", valor: lh, formato: "HARDCODED" });
-    const ls = espaciadoLetraTexto(nodo.letterSpacing);
-    if (ls) atributos.push({ clave: "Letter Spacing", valor: ls, formato: "HARDCODED" });
-    if (nodo.textAlign) atributos.push({ clave: "Alignment", valor: alineacionTexto(nodo.textAlign), formato: "HARDCODED" });
-    if (nodo.textCase) atributos.push({ clave: "Case", valor: casoTexto(nodo.textCase), formato: "HARDCODED" });
+  if (node.fontFamily && typeof node.fontSize === "number") {
+    // Text Style: the applied token, or "N/A" if the text has no assigned style.
+    attributes.push(node.textStyleName
+      ? { key: "Text Style", value: node.textStyleName, format: "STYLE" }
+      : { key: "Text Style", value: "N/A", format: "HARDCODED" });
+    // Typography detail: one property per row.
+    attributes.push({ key: "Font Family", value: node.fontFamily, format: "HARDCODED" });
+    if (node.fontStyle) attributes.push({ key: "Font Weight", value: node.fontStyle, format: "HARDCODED" });
+    attributes.push({ key: "Font Size", value: formatSpacing(node.fontSize, currentUnit(), true), format: "HARDCODED" });
+    const lh = textLineHeight(node.lineHeight);
+    if (lh) attributes.push({ key: "Line Height", value: lh, format: "HARDCODED" });
+    const ls = textLetterSpacing(node.letterSpacing);
+    if (ls) attributes.push({ key: "Letter Spacing", value: ls, format: "HARDCODED" });
+    if (node.textAlign) attributes.push({ key: "Alignment", value: textAlignVal(node.textAlign), format: "HARDCODED" });
+    if (node.textCase) attributes.push({ key: "Case", value: textCaseVal(node.textCase), format: "HARDCODED" });
   }
 
-  return atributos;
+  return attributes;
 }

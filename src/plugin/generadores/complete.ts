@@ -1,82 +1,82 @@
-import type { ElementoAdicional, VarianteLayout } from "../modelo/tipos.ts";
-import { frameVertical, texto, enColumnas, tarjeta, filaPill, FONT_BOLD, textoClave, textoValor, textoHeaderCard } from "./frames.ts";
-import { agruparPorVariante } from "../utils/agrupar-variante.ts";
-import { etiquetaSpacing, unidadActual, textoPadding } from "../utils/espaciado.ts";
+import type { ExtraElement, LayoutVariant } from "../modelo/tipos.ts";
+import { verticalFrame, text, inColumns, card, pillRow, FONT_BOLD, keyText, valueText, cardHeaderText } from "./frames.ts";
+import { groupByVariant } from "../utils/agrupar-variante.ts";
+import { spacingLabel, currentUnit, paddingText } from "../utils/espaciado.ts";
 
-// Apila los bloques o los reparte en columnas según el selector.
-function agregarBloques(seccion: FrameNode, bloques: FrameNode[], columnas: number): void {
-  if (bloques.length === 0) return;
-  if (columnas > 1) {
-    seccion.appendChild(enColumnas(bloques, columnas));
+// Stacks the blocks or distributes them in columns per the selector.
+function addBlocks(section: FrameNode, blocks: FrameNode[], columns: number): void {
+  if (blocks.length === 0) return;
+  if (columns > 1) {
+    section.appendChild(inColumns(blocks, columns));
   } else {
-    for (const b of bloques) seccion.appendChild(b);
+    for (const b of blocks) section.appendChild(b);
   }
 }
 
-// Genera el output de Complete (Anatomy + Layout): elementos adicionales por
-// variante y variantes con Auto Layout de la raíz distinto al default.
-export async function generarComplete(
-  nombre: string,
-  anatomy: ElementoAdicional[],
-  layout: VarianteLayout[],
-  columnas: number,
+// Generates the Complete output (Anatomy + Layout): extra elements per
+// variant, and variants with a root Auto Layout different from the default.
+export async function generateComplete(
+  name: string,
+  anatomy: ExtraElement[],
+  layout: LayoutVariant[],
+  columns: number,
 ): Promise<FrameNode> {
-  const specifications = frameVertical("Specifications", 128, 64);
-  const spec = frameVertical(`${nombre} Spec`, 48);
+  const specifications = verticalFrame("Specifications", 128, 64);
+  const spec = verticalFrame(`${name} Spec`, 48);
   specifications.appendChild(spec);
-  spec.appendChild(await texto(nombre, 64));
-  for (const sec of await seccionDeComplete(nombre, anatomy, layout, columnas)) spec.appendChild(sec);
+  spec.appendChild(await text(name, 64));
+  for (const sec of await completeSection(name, anatomy, layout, columns)) spec.appendChild(sec);
   figma.currentPage.appendChild(specifications);
   return specifications;
 }
 
-// Construye las dos secciones de Complete (Anatomy + Layout) y las devuelve como
-// array, sin Specifications ni título de nodo.
-export async function seccionDeComplete(
-  nombre: string,
-  anatomy: ElementoAdicional[],
-  layout: VarianteLayout[],
-  columnas: number,
+// Builds the two Complete sections (Anatomy + Layout) and returns them as an
+// array, without Specifications or node title.
+export async function completeSection(
+  name: string,
+  anatomy: ExtraElement[],
+  layout: LayoutVariant[],
+  columns: number,
 ): Promise<FrameNode[]> {
-  // Complete Anatomy: un bloque por variante con sus elementos adicionales.
-  const secA = frameVertical("Complete Anatomy", 64);
-  secA.appendChild(await texto("Complete Anatomy", 48));
+  // Complete Anatomy: one block per variant with its extra elements.
+  const secA = verticalFrame("Complete Anatomy", 64);
+  secA.appendChild(await text("Complete Anatomy", 48));
   if (anatomy.length === 0) {
-    secA.appendChild(await texto("No additional elements found in other variants.", 16));
+    secA.appendChild(await text("No additional elements found in other variants.", 16));
   }
-  const bloquesA: FrameNode[] = [];
-  for (const grupo of agruparPorVariante(anatomy)) {
-    const headerNodos: SceneNode[] = [await textoHeaderCard(grupo.variante)];
-    const filas: FrameNode[] = [];
-    for (const el of grupo.elementos) {
-      filas.push(filaPill([await textoValor(`${el.nombre} · ${el.tipo}`)]));
+  const blocksA: FrameNode[] = [];
+  for (const group of groupByVariant(anatomy)) {
+    const headerNodes: SceneNode[] = [await cardHeaderText(group.variant)];
+    const rows: FrameNode[] = [];
+    for (const el of group.elements) {
+      rows.push(pillRow([await valueText(`${el.name} · ${el.type}`)]));
     }
-    bloquesA.push(tarjeta(headerNodos, filas));
+    blocksA.push(card(headerNodes, rows));
   }
-  agregarBloques(secA, bloquesA, columnas);
+  addBlocks(secA, blocksA, columns);
 
-  // Complete Layout: un bloque por variante.
-  const secL = frameVertical("Complete Layout", 64);
-  secL.appendChild(await texto("Complete Layout", 48));
+  // Complete Layout: one block per variant.
+  const secL = verticalFrame("Complete Layout", 64);
+  secL.appendChild(await text("Complete Layout", 48));
   if (layout.length === 0) {
-    secL.appendChild(await texto("No additional layouts found in other variants.", 16));
+    secL.appendChild(await text("No additional layouts found in other variants.", 16));
   }
-  const bloquesL: FrameNode[] = [];
+  const blocksL: FrameNode[] = [];
   for (const v of layout) {
     const s = v.spec;
-    const dir = s.direccion === "HORIZONTAL" ? "Horizontal" : s.direccion === "GRID" ? "Grid" : "Vertical";
+    const dir = s.direction === "HORIZONTAL" ? "Horizontal" : s.direction === "GRID" ? "Grid" : "Vertical";
     const sv = s.spacingVars;
-    const headerNodos: SceneNode[] = [await textoHeaderCard(v.variante)];
-    const filas: FrameNode[] = [
-      filaPill([await textoClave(`Direction:`), await textoValor(dir)]),
-      filaPill([await textoClave(`Align:`), await textoValor(`${s.alineacionPrimaria}/${s.alineacionContraria}`)]),
-      filaPill([await textoClave(`Resize:`), await textoValor(`${s.resizingHorizontal}×${s.resizingVertical}`)]),
-      filaPill([await textoClave(`Padding:`), await textoValor(textoPadding(s.padding, unidadActual(), sv))]),
-      filaPill([await textoClave(`Item spacing:`), await textoValor(etiquetaSpacing(s.itemSpacing, unidadActual(), sv.itemSpacing))]),
+    const headerNodes: SceneNode[] = [await cardHeaderText(v.variant)];
+    const rows: FrameNode[] = [
+      pillRow([await keyText(`Direction:`), await valueText(dir)]),
+      pillRow([await keyText(`Align:`), await valueText(`${s.primaryAlignment}/${s.counterAlignment}`)]),
+      pillRow([await keyText(`Resize:`), await valueText(`${s.resizingHorizontal}×${s.resizingVertical}`)]),
+      pillRow([await keyText(`Padding:`), await valueText(paddingText(s.padding, currentUnit(), sv))]),
+      pillRow([await keyText(`Item spacing:`), await valueText(spacingLabel(s.itemSpacing, currentUnit(), sv.itemSpacing))]),
     ];
-    bloquesL.push(tarjeta(headerNodos, filas));
+    blocksL.push(card(headerNodes, rows));
   }
-  agregarBloques(secL, bloquesL, columnas);
+  addBlocks(secL, blocksL, columns);
 
   return [secA, secL];
 }

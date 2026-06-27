@@ -1,27 +1,27 @@
 # Layout & Spacing
 
-## Qué hace
-Muestra cómo está organizado el contenido: dirección, alineación, padding, item spacing (gap), grids y dimensiones de cada frame con Auto Layout, con cotas sobre el diseño.
+## What it does
+Shows how the content is organized: direction, alignment, padding, item spacing (gap), grids and dimensions of each Auto Layout frame, with dimension lines over the design.
 
-## Qué muestra
-Por cada capa con Auto Layout, una fila (`layoutItem01`, `layoutItem02`…) con:
-- **Breadcrumb** de la jerarquía (a la izquierda).
-- **Artwork** con cotas/overlays: líneas de medida (rojo), padding, item spacing; chips con la variable + valor cuando el spacing/dimensión está atado a una variable; íconos de dirección, alineación y resizing.
-- **Exhibit** (card a la derecha): Width/Height (con ícono Hug/Fixed/Fill), Direction, Alignment, Padding, Item spacing, Corner radius, Grid.
+## What it shows
+Per Auto Layout layer, a row (`layoutItem01`, `layoutItem02`…) with:
+- **Breadcrumb** of the hierarchy (on the left).
+- **Artwork** with dimension lines/overlays: measure lines (red), padding, item spacing; chips with the variable + value when the spacing/dimension is bound to a variable; direction, alignment and resizing icons.
+- **Exhibit** (card on the right): Width/Height (with Hug/Fixed/Fill icon), Direction, Alignment, Padding, Item spacing, Corner radius, Grid.
 
-La sección **es** el frame-item (`Layout&Spacing`), con su padding y fondo; las filas van directo adentro (sin doble envoltura).
+The section **is** the frame-item (`Layout&Spacing`), with its padding and background; the rows go straight inside (no double wrapping).
 
-## Legend (opcional, "Include legend")
-Tabla **Element | Detail** (ancho fijo 656px) que explica las convenciones del artwork: cotas, padding, gap, líneas de medida, chips de variable, jerarquía. Textos en Inter Medium 12 / lh 150% / text-secondary.
+## Legend (optional, "Include legend")
+An **Element | Detail** table (fixed 656px width) explaining the artwork conventions: dimension lines, padding, gap, measure lines, variable chips, hierarchy. Text in Inter Medium 12 / lh 150% / text-secondary.
 
-## Opciones que la afectan
-- **Hide outer layout** — omite la fila del frame más externo.
-- **Element measures** — agrega cotas también a los elementos hijos.
-- **Itemize instances** — entra a las instancias para medir sus capas.
-- **Include legend** — agrega la tabla de leyenda (una vez, arriba).
+## Options that affect it
+- **Hide outer layout** — skips the outermost frame's row.
+- **Element measures** — adds dimension lines to the child elements too.
+- **Itemize instances** — descends into instances to measure their layers.
+- **Include legend** — adds the legend table (once, at the top).
 - **Columns**, Units.
 
-## Archivos clave
+## Key files
 - `extraccion/layout.ts`, `traversal/recorrer-autolayout.ts`
-- `generadores/layout.ts` (`seccionDeLayout`, artwork/cotas, `seccionLeyenda`)
+- `generadores/layout.ts` (`seccionDeLayout`, artwork/dimension lines, `seccionLeyenda`)
 - `utils/marcadores-layout.ts`, `utils/overlays.ts`, `utils/grilla.ts`

@@ -1,43 +1,43 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { filaAnatomy, HEADERS_ANATOMY } from "../src/plugin/utils/tabla-anatomy.ts";
-import type { ElementoAnatomy } from "../src/plugin/modelo/tipos.ts";
+import { anatomyRow, HEADERS_ANATOMY } from "../src/plugin/utils/tabla-anatomy.ts";
+import type { AnatomyElement } from "../src/plugin/modelo/tipos.ts";
 
 test("HEADERS_ANATOMY incluye la columna Attributes", () => {
   assert.deepEqual(HEADERS_ANATOMY, ["#", "Name", "Type", "Attributes"]);
 });
 
-test("filaAnatomy sin atributos → celda de atributos vacía", () => {
-  const el: ElementoAnatomy = { id: "1", nombre: "Label", tipo: "TEXT", esInstancia: false, atributos: [] };
-  assert.deepEqual(filaAnatomy(1, el), ["1", "Label", "TEXT", ""]);
+test("anatomyRow sin attributes → celda de attributes vacía", () => {
+  const el: AnatomyElement = { id: "1", name: "Label", type: "TEXT", isInstance: false, attributes: [] };
+  assert.deepEqual(anatomyRow(1, el), ["1", "Label", "TEXT", ""]);
 });
 
-test("filaAnatomy aplana los atributos como clave: valor", () => {
-  const el: ElementoAnatomy = {
+test("anatomyRow aplana los attributes como key: value", () => {
+  const el: AnatomyElement = {
     id: "2",
-    nombre: "Box",
-    tipo: "FRAME",
-    esInstancia: false,
-    atributos: [
-      { clave: "width", valor: "120", formato: "HARDCODED" },
-      { clave: "opacity", valor: "50%", formato: "HARDCODED" },
+    name: "Box",
+    type: "FRAME",
+    isInstance: false,
+    attributes: [
+      { key: "width", value: "120", format: "HARDCODED" },
+      { key: "opacity", value: "50%", format: "HARDCODED" },
     ],
   };
-  assert.deepEqual(filaAnatomy(1, el), ["1", "Box", "FRAME", "width: 120, opacity: 50%"]);
+  assert.deepEqual(anatomyRow(1, el), ["1", "Box", "FRAME", "width: 120, opacity: 50%"]);
 });
 
-test("filaAnatomy incluye el valor resuelto (rawValue) de variables/styles", () => {
-  const el: ElementoAnatomy = {
+test("anatomyRow incluye el value resuelto (rawValue) de variables/styles", () => {
+  const el: AnatomyElement = {
     id: "3",
-    nombre: "Card",
-    tipo: "INSTANCE",
-    esInstancia: true,
-    atributos: [
-      { clave: "background-color", valor: "color/surface", formato: "VARIABLE", rawValue: "#FFFFFF" },
-      { clave: "width", valor: "sizing/card-width", formato: "VARIABLE", rawValue: "240" },
+    name: "Card",
+    type: "INSTANCE",
+    isInstance: true,
+    attributes: [
+      { key: "background-color", value: "color/surface", format: "VARIABLE", rawValue: "#FFFFFF" },
+      { key: "width", value: "sizing/card-width", format: "VARIABLE", rawValue: "240" },
     ],
   };
-  assert.deepEqual(filaAnatomy(1, el), [
+  assert.deepEqual(anatomyRow(1, el), [
     "1", "Card", "INSTANCE",
     "background-color: color/surface (#FFFFFF), width: sizing/card-width (240)",
   ]);

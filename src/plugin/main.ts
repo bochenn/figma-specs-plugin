@@ -1,75 +1,75 @@
-import type { MensajeUI, MensajePlugin, SetNorm, Seccion } from "./modelo/tipos.ts";
-import { aNodoLike } from "./extraccion/adaptador.ts";
-import { asegurarVariablesTema, varsTema } from "./utils/variables-tema.ts";
-import { frameVertical, texto } from "./generadores/frames.ts";
-import { clampColumnas } from "./utils/columnas.ts";
-import { aplicarFormatoColor } from "./utils/color.ts";
-import { aplicarFormatoRaw, aplicarMostrarRaw, aplicarPreferencia } from "./utils/valores.ts";
-import { aplicarUnidad } from "./utils/espaciado.ts";
-import { aplicarFormatoTipo } from "./utils/tipografia.ts";
-import { extraerAnatomy } from "./extraccion/anatomy.ts";
-import { seccionDeAnatomy } from "./generadores/anatomy.ts";
-import { resolverComponentSet } from "./extraccion/resolver.ts";
-import { seccionDeProperties } from "./generadores/properties.ts";
-import { extraerLayout } from "./extraccion/layout.ts";
-import { seccionDeLayout, seccionLeyenda } from "./generadores/layout.ts";
-import { serializarAnatomy } from "./serializacion/anatomy-json.ts";
-import { seccionDeData } from "./generadores/data.ts";
-import { recolectarEstilos } from "./inventario/recolectar.ts";
-import { agruparInventario } from "./inventario/agrupar.ts";
-import { inventarioDocumento } from "./inventario/documento.ts";
-import { seccionDeStyling } from "./generadores/styling.ts";
-import { recolectarModes } from "./variables/recolectar-modes.ts";
-import { agruparModes } from "./variables/modes.ts";
-import { seccionDeModes } from "./generadores/modes.ts";
-import { extraerDosWay } from "./extraccion/properties.ts";
-import { seccionDeDosWay } from "./generadores/properties.ts";
-import { extraerCompleteAnatomy, extraerCompleteLayout } from "./extraccion/properties.ts";
-import { seccionDeComplete } from "./generadores/complete.ts";
-import { header, hero, feature, footer, envolverItem, ANCHO_PAGINA } from "./generadores/pagina.ts";
+import type { UIMessage, PluginMessage, NormSet, Section } from "./modelo/tipos.ts";
+import { toNodeLike } from "./extraccion/adaptador.ts";
+import { ensureThemeVariables, themeVars } from "./utils/variables-tema.ts";
+import { verticalFrame, text } from "./generadores/frames.ts";
+import { clampColumns } from "./utils/columnas.ts";
+import { applyColorFormat } from "./utils/color.ts";
+import { applyRawFormat, applyShowRaw, applyPreference } from "./utils/valores.ts";
+import { applyUnit } from "./utils/espaciado.ts";
+import { applyTypeFormat } from "./utils/tipografia.ts";
+import { extractAnatomy } from "./extraccion/anatomy.ts";
+import { anatomySection } from "./generadores/anatomy.ts";
+import { resolveComponentSet } from "./extraccion/resolver.ts";
+import { propertiesSection } from "./generadores/properties.ts";
+import { extractLayout } from "./extraccion/layout.ts";
+import { layoutSection, legendSection } from "./generadores/layout.ts";
+import { serializeAnatomy } from "./serializacion/anatomy-json.ts";
+import { dataSection } from "./generadores/data.ts";
+import { collectStyles } from "./inventario/recolectar.ts";
+import { groupInventory } from "./inventario/agrupar.ts";
+import { documentInventory } from "./inventario/documento.ts";
+import { stylingSection } from "./generadores/styling.ts";
+import { collectModes } from "./variables/recolectar-modes.ts";
+import { groupModes } from "./variables/modes.ts";
+import { modesSection } from "./generadores/modes.ts";
+import { extractTwoWay } from "./extraccion/properties.ts";
+import { twoWaySection } from "./generadores/properties.ts";
+import { extractCompleteAnatomy, extractCompleteLayout } from "./extraccion/properties.ts";
+import { completeSection } from "./generadores/complete.ts";
+import { header, hero, feature, footer, wrapItem, PAGE_WIDTH } from "./generadores/pagina.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
 figma.showUI(__html__, { width: 640, height: 500 });
 
-function responder(msg: MensajePlugin): void {
+function respond(msg: PluginMessage): void {
   figma.ui.postMessage(msg);
 }
 
-// Ubica el output a la derecha del nodo seleccionado, aplica el fondo del tema,
-// Toggle Dark de la última generación (setea el modo explícito del frame).
-let modoOscuro = false;
+// Places the output to the right of the selected node, applies the theme bg,
+// Dark toggle of the last generation (sets the frame's explicit mode).
+let darkModeOn = false;
 
-// hace foco y avisa éxito a la UI.
-function finalizar(frame: FrameNode, nodo: SceneNode): void {
-  const caja = nodo.absoluteBoundingBox;
-  if (caja) {
-    frame.x = caja.x + caja.width + 100;
-    frame.y = caja.y;
+// focuses it and reports success to the UI.
+function finalizar(frame: FrameNode, node: SceneNode): void {
+  const box = node.absoluteBoundingBox;
+  if (box) {
+    frame.x = box.x + box.width + 100;
+    frame.y = box.y;
   }
-  if (modoOscuro) {
-    frame.setExplicitVariableModeForCollection(varsTema().coleccion, varsTema().modoDark);
+  if (darkModeOn) {
+    frame.setExplicitVariableModeForCollection(themeVars().collection, themeVars().darkMode);
   }
   figma.viewport.scrollAndZoomIntoView([frame]);
-  responder({ tipo: "resultado", ok: true });
+  respond({ type: "result", ok: true });
 }
 
-// Construye el SetNorm para la extracción pura a partir del Component Set real.
-function normalizarSet(componentSet: ComponentSetNode): SetNorm {
-  const propiedades: Record<string, string[]> = {};
-  const grupos = componentSet.variantGroupProperties;
-  for (const nombre of Object.keys(grupos)) {
-    propiedades[nombre] = grupos[nombre].values;
+// Builds the NormSet for pure extraction from the real Component Set.
+function normalizarSet(componentSet: ComponentSetNode): NormSet {
+  const properties: Record<string, string[]> = {};
+  const groups = componentSet.variantGroupProperties;
+  for (const name of Object.keys(groups)) {
+    properties[name] = groups[name].values;
   }
-  const variantes = componentSet.children
+  const variants = componentSet.children
     .filter((c): c is ComponentNode => c.type === "COMPONENT")
-    .map((c) => ({ variantProperties: c.variantProperties ?? {}, raiz: aNodoLike(c) }));
+    .map((c) => ({ variantProperties: c.variantProperties ?? {}, root: toNodeLike(c) }));
   const defaultProps = componentSet.defaultVariant?.variantProperties ?? {};
-  return { propiedades, variantes, defaultProps };
+  return { properties, variants, defaultProps };
 }
 
-// Instancias anidadas de primer nivel (no entra dentro de las instancias).
-function instanciasAnidadas(nodo: SceneNode): InstanceNode[] {
+// First-level nested instances (doesn't descend into the instances).
+function instanciasAnidadas(node: SceneNode): InstanceNode[] {
   const res: InstanceNode[] = [];
   function walk(n: SceneNode): void {
     if (!("children" in n)) return;
@@ -78,20 +78,20 @@ function instanciasAnidadas(nodo: SceneNode): InstanceNode[] {
       else walk(c);
     }
   }
-  walk(nodo);
+  walk(node);
   return res;
 }
 
-// Component sets de las instancias anidadas (en la variante default), sin
-// repetidos, sin el set principal y sin componentes que no tengan variantes.
-// Recorre TODAS las variantes (no solo la default), para no perder subcomponentes
-// que aparecen únicamente en algunas versiones (ej. Badge).
+// Component sets of the nested instances (in the default variant), without
+// duplicates, without the main set, and without components that have no variants.
+// Traverses ALL variants (not just the default), so as not to miss subcomponents
+// that appear only in some versions (e.g. Badge).
 function setsAnidados(componentSet: ComponentSetNode): ComponentSetNode[] {
   const res: ComponentSetNode[] = [];
   const vistos = new Set<string>([componentSet.id]);
-  for (const variante of componentSet.children) {
-    for (const inst of instanciasAnidadas(variante)) {
-      const set = resolverComponentSet(inst);
+  for (const variant of componentSet.children) {
+    for (const inst of instanciasAnidadas(variant)) {
+      const set = resolveComponentSet(inst);
       if (!set || vistos.has(set.id)) continue;
       vistos.add(set.id);
       res.push(set);
@@ -100,94 +100,94 @@ function setsAnidados(componentSet: ComponentSetNode): ComponentSetNode[] {
   return res;
 }
 
-// Opciones de generación tomadas del mensaje de la UI.
+// Generation options taken from the UI message.
 interface OpcionesGen {
   nested: boolean;
-  tabla: boolean;
-  itemizar: boolean;
+  table: boolean;
+  itemize: boolean;
   hideOuter: boolean;
-  medirHijos: boolean;
-  columnas: number;
+  measureChildren: boolean;
+  columns: number;
   anatomyDepth: "self" | "children" | "all";
   stylingTotal: boolean;
 }
 
-// Frame de aviso para una sección que no aplica al nodo (no aborta las demás).
+// Notice frame for a section that doesn't apply to the node (doesn't abort the others).
 async function aviso(mensaje: string): Promise<FrameNode> {
-  const f = frameVertical("Aviso", 8);
-  f.appendChild(await texto(mensaje, 16));
+  const f = verticalFrame("Aviso", 8);
+  f.appendChild(await text(mensaje, 16));
   return f;
 }
 
-// Devuelve la(s) sección(es) de un tipo para el nodo, o un aviso si no aplica.
-async function seccionPara(nodo: SceneNode, seccion: Seccion, opts: OpcionesGen): Promise<FrameNode[]> {
-  if (seccion === "anatomy") {
-    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Anatomy needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
-    const nivelMax = opts.anatomyDepth === "self" ? 0 : opts.anatomyDepth === "all" ? Infinity : 1;
-    const secciones = [await seccionDeAnatomy(nodo, extraerAnatomy(aNodoLike(nodo), opts.itemizar, { nivelMax, incluirRaiz: true, textosProfundos: true }), opts.tabla)];
+// Returns the section(s) of a type for the node, or a notice if it doesn't apply.
+async function sectionFor(node: SceneNode, section: Section, opts: OpcionesGen): Promise<FrameNode[]> {
+  if (section === "anatomy") {
+    if (!TIPOS_VALIDOS.includes(node.type)) return [await aviso("Anatomy needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
+    const maxLevel = opts.anatomyDepth === "self" ? 0 : opts.anatomyDepth === "all" ? Infinity : 1;
+    const sections = [await anatomySection(node, extractAnatomy(toNodeLike(node), opts.itemize, { maxLevel, includeRoot: true, deepTexts: true }), opts.table)];
     if (opts.nested) {
-      for (const inst of instanciasAnidadas(nodo)) {
-        secciones.push(await seccionDeAnatomy(inst, extraerAnatomy(aNodoLike(inst), opts.itemizar, { nivelMax, incluirRaiz: true, textosProfundos: true }), opts.tabla));
+      for (const inst of instanciasAnidadas(node)) {
+        sections.push(await anatomySection(inst, extractAnatomy(toNodeLike(inst), opts.itemize, { maxLevel, includeRoot: true, deepTexts: true }), opts.table));
       }
     }
-    return secciones;
+    return sections;
   }
-  if (seccion === "properties") {
-    const componentSet = resolverComponentSet(nodo);
+  if (section === "properties") {
+    const componentSet = resolveComponentSet(node);
     if (!componentSet) return [await aviso("Properties needs a component with variants.")];
     const setNorm = normalizarSet(componentSet);
-    // Properties ya no usa el diff (toma la info del component set); se pasa [].
-    const secciones = [await seccionDeProperties(componentSet, [], setNorm.defaultProps, opts.columnas)];
+    // Properties no longer uses the diff (takes info from the component set); [] is passed.
+    const sections = [await propertiesSection(componentSet, [], setNorm.defaultProps, opts.columns)];
     if (opts.nested) {
       for (const set of setsAnidados(componentSet)) {
-        secciones.push(await seccionDeProperties(set, [], normalizarSet(set).defaultProps, opts.columnas));
+        sections.push(await propertiesSection(set, [], normalizarSet(set).defaultProps, opts.columns));
       }
     }
-    return secciones;
+    return sections;
   }
-  if (seccion === "layout") {
-    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Layout and Spacing needs a FRAME, COMPONENT or INSTANCE.")];
-    return [await seccionDeLayout(nodo, extraerLayout(aNodoLike(nodo), opts.itemizar), opts.columnas, opts.hideOuter, opts.itemizar, opts.medirHijos)];
+  if (section === "layout") {
+    if (!TIPOS_VALIDOS.includes(node.type)) return [await aviso("Layout and Spacing needs a FRAME, COMPONENT or INSTANCE.")];
+    return [await layoutSection(node, extractLayout(toNodeLike(node), opts.itemize), opts.columns, opts.hideOuter, opts.itemize, opts.measureChildren)];
   }
-  if (seccion === "data") {
-    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Data needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
-    return [await seccionDeData(nodo.name, serializarAnatomy(extraerAnatomy(aNodoLike(nodo))))];
+  if (section === "data") {
+    if (!TIPOS_VALIDOS.includes(node.type)) return [await aviso("Data needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
+    return [await dataSection(node.name, serializeAnatomy(extractAnatomy(toNodeLike(node))))];
   }
-  if (seccion === "styling") {
-    if (opts.stylingTotal) return [await seccionDeStyling(nodo.name, await inventarioDocumento(), true)];
-    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Styling Inventory needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
-    return [await seccionDeStyling(nodo.name, agruparInventario(recolectarEstilos(aNodoLike(nodo))), false)];
+  if (section === "styling") {
+    if (opts.stylingTotal) return [await stylingSection(node.name, await documentInventory(), true)];
+    if (!TIPOS_VALIDOS.includes(node.type)) return [await aviso("Styling Inventory needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
+    return [await stylingSection(node.name, groupInventory(collectStyles(toNodeLike(node))), false)];
   }
-  if (seccion === "modes") {
-    if (!TIPOS_VALIDOS.includes(nodo.type)) return [await aviso("Modes needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
-    return [await seccionDeModes(nodo, agruparModes(recolectarModes(nodo)), opts.columnas)];
+  if (section === "modes") {
+    if (!TIPOS_VALIDOS.includes(node.type)) return [await aviso("Modes needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
+    return [await modesSection(node, groupModes(collectModes(node)), opts.columns)];
   }
-  if (seccion === "twoway") {
-    const componentSet = resolverComponentSet(nodo);
+  if (section === "twoway") {
+    const componentSet = resolveComponentSet(node);
     if (!componentSet) return [await aviso("Two-Way needs a component with variants.")];
     const setNorm = normalizarSet(componentSet);
-    const dosway = extraerDosWay(setNorm);
+    const dosway = extractTwoWay(setNorm);
     if (!dosway) return [await aviso("Two-Way needs at least two variant properties.")];
-    return [await seccionDeDosWay(componentSet, dosway, setNorm.defaultProps, opts.columnas)];
+    return [await twoWaySection(componentSet, dosway, setNorm.defaultProps, opts.columns)];
   }
   // complete
-  const componentSet = resolverComponentSet(nodo);
+  const componentSet = resolveComponentSet(node);
   if (!componentSet) return [await aviso("Complete needs a component with variants.")];
   const setNorm = normalizarSet(componentSet);
-  return await seccionDeComplete(componentSet.name, extraerCompleteAnatomy(setNorm), extraerCompleteLayout(setNorm), opts.columnas);
+  return await completeSection(componentSet.name, extractCompleteAnatomy(setNorm), extractCompleteLayout(setNorm), opts.columns);
 }
 
-// Orden fijo en el que se apilan las secciones elegidas.
-const ORDEN: Seccion[] = ["anatomy", "properties", "layout", "data", "styling", "modes", "twoway", "complete"];
+// Fixed order in which the chosen sections are stacked.
+const ORDEN: Section[] = ["anatomy", "properties", "layout", "data", "styling", "modes", "twoway", "complete"];
 
-// Nombre base del item-envoltorio por sección (se numera: anatomyItem01, …).
-// Las secciones sin entrada conservan el nombre por defecto de envolverItem.
-const NOMBRE_ITEM: Partial<Record<Seccion, string>> = {
+// Base name of the wrapper item per section (numbered: anatomyItem01, …).
+// Sections without an entry keep wrapItem's default name.
+const ITEM_NAME: Partial<Record<Section, string>> = {
   anatomy: "anatomyItem",
 };
 
-// Etiqueta (mayúsculas) que muestra la barra del encabezado por cada sección.
-const ETIQUETA_SECCION: Record<Seccion, string> = {
+// Label (uppercase) shown by the headerBox bar for each section.
+const SECTION_LABEL: Record<Section, string> = {
   anatomy: "ANATOMY",
   properties: "PROPERTIES",
   layout: "LAYOUT AND SPACING",
@@ -198,8 +198,8 @@ const ETIQUETA_SECCION: Record<Seccion, string> = {
   complete: "COMPLETE",
 };
 
-// Título grande del Hero por sección.
-const TITULO_SECCION: Record<Seccion, string> = {
+// Large Hero title per section.
+const SECTION_TITLE: Record<Section, string> = {
   anatomy: "Anatomy",
   properties: "Properties",
   layout: "Layout & Spacing",
@@ -210,8 +210,8 @@ const TITULO_SECCION: Record<Seccion, string> = {
   complete: "Complete",
 };
 
-// Párrafo descriptivo del Hero por sección.
-const DESCRIPCION_SECCION: Record<Seccion, string> = {
+// Descriptive Hero paragraph per section.
+const SECTION_DESC: Record<Section, string> = {
   anatomy: "Breaks the element down into its layers. Each layer is numbered over the design (on the left) and detailed on the right with its type and attributes —color, dimensions, typography and the variables applied. Use it to understand what the element is made of and which design-system tokens each part uses.",
   properties: "Lists the component's variant properties and their possible values. Use it to know what can be configured and how the variants combine.",
   layout: "Shows how the content is organized: direction, alignment, padding, item spacing (gap) and the dimensions of each Auto Layout frame. The dimension lines over the design mark the measurements in place; the panel on the right details them with their variables. Use it to reproduce the spacing and the resizing behavior.",
@@ -222,77 +222,77 @@ const DESCRIPCION_SECCION: Record<Seccion, string> = {
   complete: "A complete view combining the anatomy and layout of every variant. Use it as an all-in-one reference for the component.",
 };
 
-figma.ui.onmessage = async (msg: MensajeUI) => {
-  if (msg.tipo === "cancelar") { figma.closePlugin(); return; }
-  if (msg.tipo === "abrir") { figma.openExternal(msg.url); return; }
-  if (msg.tipo !== "generar") return;
+figma.ui.onmessage = async (msg: UIMessage) => {
+  if (msg.type === "cancel") { figma.closePlugin(); return; }
+  if (msg.type === "open") { figma.openExternal(msg.url); return; }
+  if (msg.type !== "generate") return;
 
-  const seleccion = figma.currentPage.selection;
-  if (seleccion.length === 0) {
-    responder({ tipo: "resultado", ok: false, error: "Select something to generate specs." });
+  const selection = figma.currentPage.selection;
+  if (selection.length === 0) {
+    respond({ type: "result", ok: false, error: "Select something to generate specs." });
     return;
   }
-  if (!msg.secciones || msg.secciones.length === 0) {
-    responder({ tipo: "resultado", ok: false, error: "Choose at least one section." });
+  if (!msg.sections || msg.sections.length === 0) {
+    respond({ type: "result", ok: false, error: "Choose at least one section." });
     return;
   }
 
-  const nodo = seleccion[0];
-  modoOscuro = msg.dark ?? false;
-  await asegurarVariablesTema();
-  aplicarFormatoColor(msg.formatoColor ?? "HEX");
-  aplicarUnidad(msg.unidad ?? "px");
-  aplicarFormatoTipo(msg.formatoTipo ?? "Plain");
-  aplicarFormatoRaw(msg.formatoRaw ?? "HEX");
-  aplicarMostrarRaw(msg.mostrarRaw ?? true);
-  aplicarPreferencia(msg.preferencia ?? "VARIABLE");
+  const node = selection[0];
+  darkModeOn = msg.dark ?? false;
+  await ensureThemeVariables();
+  applyColorFormat(msg.colorFormat ?? "HEX");
+  applyUnit(msg.unit ?? "px");
+  applyTypeFormat(msg.typeFormat ?? "Plain");
+  applyRawFormat(msg.rawFormat ?? "HEX");
+  applyShowRaw(msg.showRaw ?? true);
+  applyPreference(msg.preference ?? "VARIABLE");
   const opts: OpcionesGen = {
     nested: msg.nested ?? false,
-    tabla: msg.tabla ?? false,
-    itemizar: msg.itemizar ?? false,
+    table: msg.table ?? false,
+    itemize: msg.itemize ?? false,
     hideOuter: msg.hideOuter ?? false,
-    medirHijos: msg.medirHijos ?? false,
-    columnas: clampColumnas(msg.columnas),
+    measureChildren: msg.measureChildren ?? false,
+    columns: clampColumns(msg.columns),
     anatomyDepth: msg.anatomyDepth ?? "children",
     stylingTotal: msg.stylingTotal ?? false,
   };
   try {
-    const specs = frameVertical("Specs", 80, 0);
-    specs.minWidth = ANCHO_PAGINA; // piso de ancho; crece si alguna sección es más ancha
-    let primeraSeccion = true;
-    for (const seccion of ORDEN) {
-      if (!msg.secciones.includes(seccion)) continue;
+    const specs = verticalFrame("Specs", 80, 0);
+    specs.minWidth = PAGE_WIDTH; // width floor; grows if any section is wider
+    let firstSection = true;
+    for (const section of ORDEN) {
+      if (!msg.sections.includes(section)) continue;
 
-      const pagina = frameVertical("Specifications", 0, 0);
+      const pagina = verticalFrame("Specifications", 0, 0);
       pagina.cornerRadius = 40;
 
-      const barraHeader = await header(ETIQUETA_SECCION[seccion]);
-      pagina.appendChild(barraHeader);
-      barraHeader.layoutSizingHorizontal = "FILL";
-      const barraHero = await hero(TITULO_SECCION[seccion], DESCRIPCION_SECCION[seccion]);
+      const headerBar = await header(SECTION_LABEL[section]);
+      pagina.appendChild(headerBar);
+      headerBar.layoutSizingHorizontal = "FILL";
+      const barraHero = await hero(SECTION_TITLE[section], SECTION_DESC[section]);
       pagina.appendChild(barraHero);
       barraHero.layoutSizingHorizontal = "FILL";
-      const barraFeature = await feature(nodo.name);
+      const barraFeature = await feature(node.name);
       pagina.appendChild(barraFeature);
       barraFeature.layoutSizingHorizontal = "FILL";
 
-      if (primeraSeccion && msg.leyenda) {
-        const it = envolverItem(await seccionLeyenda(), "leyendaItem");
+      if (firstSection && msg.legend) {
+        const it = wrapItem(await legendSection(), "leyendaItem");
         pagina.appendChild(it);
         it.layoutSizingHorizontal = "FILL";
       }
-      const baseItem = NOMBRE_ITEM[seccion];
+      const baseItem = ITEM_NAME[section];
       let itemN = 0;
-      for (const contenido of await seccionPara(nodo, seccion, opts)) {
+      for (const content of await sectionFor(node, section, opts)) {
         itemN++;
-        const nombreItem = baseItem ? `${baseItem}${String(itemN).padStart(2, "0")}` : undefined;
-        // Layout ya devuelve su propio frame-item con padding/fondo: no se re-envuelve.
+        const itemName = baseItem ? `${baseItem}${String(itemN).padStart(2, "0")}` : undefined;
+        // Layout already returns its own frame-item with padding/bg: it isn't re-wrapped.
         let it: FrameNode;
-        if (seccion === "layout") {
-          it = contenido;
+        if (section === "layout") {
+          it = content;
           it.name = "Layout&Spacing";
         } else {
-          it = envolverItem(contenido, nombreItem);
+          it = wrapItem(content, itemName);
         }
         pagina.appendChild(it);
         it.layoutSizingHorizontal = "FILL";
@@ -303,12 +303,12 @@ figma.ui.onmessage = async (msg: MensajeUI) => {
       barraFooter.layoutSizingHorizontal = "FILL";
 
       specs.appendChild(pagina);
-      pagina.layoutSizingHorizontal = "FILL"; // la página llena el ancho de specs (chrome alineado)
-      primeraSeccion = false;
+      pagina.layoutSizingHorizontal = "FILL"; // the page fills the specs width (aligned chrome)
+      firstSection = false;
     }
     figma.currentPage.appendChild(specs);
-    finalizar(specs, nodo);
+    finalizar(specs, node);
   } catch (e) {
-    responder({ tipo: "resultado", ok: false, error: String(e) });
+    respond({ type: "result", ok: false, error: String(e) });
   }
 };

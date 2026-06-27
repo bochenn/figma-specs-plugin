@@ -5,8 +5,8 @@ export interface Rect {
   height: number;
 }
 
-// Bandas de padding (top, bottom, left, right), omitiendo las de padding 0.
-export function rectsPadding(
+// Padding bands (top, bottom, left, right), omitting the ones with padding 0.
+export function paddingRects(
   frame: Rect,
   padding: { left: number; top: number; right: number; bottom: number },
 ): Rect[] {
@@ -19,13 +19,13 @@ export function rectsPadding(
   return rects;
 }
 
-// Gaps entre hijos consecutivos (hueco medido), omitiendo gaps ≤ 0.
-export function rectsSpacing(children: Rect[], direccion: "HORIZONTAL" | "VERTICAL"): Rect[] {
+// Gaps entre children consecutivos (hueco medido), omitiendo gaps ≤ 0.
+export function spacingRects(children: Rect[], direction: "HORIZONTAL" | "VERTICAL"): Rect[] {
   const rects: Rect[] = [];
   for (let i = 0; i < children.length - 1; i++) {
     const a = children[i];
     const b = children[i + 1];
-    if (direccion === "HORIZONTAL") {
+    if (direction === "HORIZONTAL") {
       const x = a.x + a.width;
       const w = b.x - x;
       if (w > 0) rects.push({ x, y: a.y, width: w, height: a.height });

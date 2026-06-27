@@ -1,113 +1,113 @@
-import type { SetNorm, PropiedadSpec, OpcionSpec, VarianteNorm, DosWaySpec, CombinacionSpec, ElementoAdicional, VarianteLayout, NodoLike } from "../modelo/tipos.ts";
-import { mismasProps, compararVariante } from "../comparacion/variantes.ts";
-import { extraerAnatomy } from "./anatomy.ts";
-import { layoutSpecDe, claveLayout } from "./layout.ts";
+import type { NormSet, PropertySpec, OptionSpec, NormVariant, TwoWaySpec, CombinationSpec, ExtraElement, LayoutVariant, NodeLike } from "../modelo/tipos.ts";
+import { sameProps, compareVariant } from "../comparacion/variantes.ts";
+import { extractAnatomy } from "./anatomy.ts";
+import { layoutSpecOf, layoutKey } from "./layout.ts";
 
-// Busca en el set la variante cuyo mapa de props coincide exactamente con el target.
-function buscarVariante(set: SetNorm, target: Record<string, string>): VarianteNorm | undefined {
-  return set.variantes.find((v) => mismasProps(v.variantProperties, target));
+// Finds in the set the variant whose props map matches the target exactly.
+function findVariant(set: NormSet, target: Record<string, string>): NormVariant | undefined {
+  return set.variants.find((v) => sameProps(v.variantProperties, target));
 }
 
-// Produce las PropiedadSpec[]: por cada propiedad, compara el default contra
-// cada opción alternativa (salteando el valor default).
-export function extraerProperties(set: SetNorm): PropiedadSpec[] {
-  const varianteDefault = buscarVariante(set, set.defaultProps);
+// Produces the PropertySpec[]: for each property, compares the default against
+// each alternative option (skipping the default value).
+export function extractProperties(set: NormSet): PropertySpec[] {
+  const varianteDefault = findVariant(set, set.defaultProps);
   if (!varianteDefault) return [];
 
-  const specs: PropiedadSpec[] = [];
+  const specs: PropertySpec[] = [];
 
-  for (const nombreProp of Object.keys(set.propiedades)) {
-    const valorDefault = set.defaultProps[nombreProp];
-    const opciones: OpcionSpec[] = [];
+  for (const propName of Object.keys(set.properties)) {
+    const defaultValue = set.defaultProps[propName];
+    const options: OptionSpec[] = [];
 
-    for (const opcion of set.propiedades[nombreProp]) {
-      if (opcion === valorDefault) continue;
-      const target = { ...set.defaultProps, [nombreProp]: opcion };
-      // Primero el variante "default con solo esta prop cambiada"; si no existe
-      // (matriz dispersa), cualquiera con ese valor, para mostrar cada versión.
-      const varianteOpcion = buscarVariante(set, target)
-        ?? set.variantes.find((v) => v.variantProperties[nombreProp] === opcion);
+    for (const option of set.properties[propName]) {
+      if (option === defaultValue) continue;
+      const target = { ...set.defaultProps, [propName]: option };
+      // First the "default with only this prop changed" variant; if it doesn't exist
+      // (sparse matrix), any with that value, to show each version.
+      const varianteOpcion = findVariant(set, target)
+        ?? set.variants.find((v) => v.variantProperties[propName] === option);
       if (!varianteOpcion) continue;
-      const cambios = compararVariante(varianteDefault.raiz, varianteOpcion.raiz);
-      opciones.push({ nombre: opcion, cambios });
+      const changes = compareVariant(varianteDefault.root, varianteOpcion.root);
+      options.push({ name: option, changes });
     }
 
-    specs.push({ nombre: nombreProp, tipo: "VARIANT", default: valorDefault, opciones });
+    specs.push({ name: propName, type: "VARIANT", default: defaultValue, options });
   }
 
   return specs;
 }
 
-// Compara todas las combinaciones de las dos primeras propiedades de variante
-// contra el default. Devuelve null si hay menos de dos propiedades.
-export function extraerDosWay(set: SetNorm): DosWaySpec | null {
-  const props = Object.keys(set.propiedades);
+// Compares all combinations of the first two variant properties
+// against the default. Returns null if there are fewer than two properties.
+export function extractTwoWay(set: NormSet): TwoWaySpec | null {
+  const props = Object.keys(set.properties);
   if (props.length < 2) return null;
 
   const p1 = props[0];
   const p2 = props[1];
-  const varianteDefault = buscarVariante(set, set.defaultProps);
+  const varianteDefault = findVariant(set, set.defaultProps);
   if (!varianteDefault) return null;
 
-  const combinaciones: CombinacionSpec[] = [];
-  for (const v1 of set.propiedades[p1]) {
-    for (const v2 of set.propiedades[p2]) {
+  const combinations: CombinationSpec[] = [];
+  for (const v1 of set.properties[p1]) {
+    for (const v2 of set.properties[p2]) {
       const target = { ...set.defaultProps, [p1]: v1, [p2]: v2 };
-      const variante = buscarVariante(set, target);
-      if (!variante) continue;
-      const cambios = compararVariante(varianteDefault.raiz, variante.raiz);
-      combinaciones.push({ valor1: v1, valor2: v2, cambios });
+      const variant = findVariant(set, target);
+      if (!variant) continue;
+      const changes = compareVariant(varianteDefault.root, variant.root);
+      combinations.push({ value1: v1, value2: v2, changes });
     }
   }
-  return { prop1: p1, prop2: p2, combinaciones };
+  return { prop1: p1, prop2: p2, combinations };
 }
 
-// Etiqueta legible de una variante a partir de sus props ("k=v, k2=v2").
-function etiquetaVariante(props: Record<string, string>): string {
+// Readable label of a variant from its props ("k=v, k2=v2").
+function variantLabel(props: Record<string, string>): string {
   return Object.entries(props).map(([k, v]) => `${k}=${v}`).join(", ");
 }
 
-// Lista los elementos que cada variante tiene y el default no (clave tipo|nombre).
-export function extraerCompleteAnatomy(set: SetNorm): ElementoAdicional[] {
-  const varianteDefault = buscarVariante(set, set.defaultProps);
+// Lists the elements each variant has and the default doesn't (key type|name).
+export function extractCompleteAnatomy(set: NormSet): ExtraElement[] {
+  const varianteDefault = findVariant(set, set.defaultProps);
   if (!varianteDefault) return [];
 
-  const defaultKeys = new Set(extraerAnatomy(varianteDefault.raiz).map((e) => `${e.tipo}|${e.nombre}`));
-  const adicionales: ElementoAdicional[] = [];
+  const defaultKeys = new Set(extractAnatomy(varianteDefault.root).map((e) => `${e.type}|${e.name}`));
+  const adicionales: ExtraElement[] = [];
 
-  for (const variante of set.variantes) {
-    if (mismasProps(variante.variantProperties, set.defaultProps)) continue;
-    const etiqueta = etiquetaVariante(variante.variantProperties);
-    for (const el of extraerAnatomy(variante.raiz)) {
-      if (!defaultKeys.has(`${el.tipo}|${el.nombre}`)) {
-        adicionales.push({ variante: etiqueta, nombre: el.nombre, tipo: el.tipo });
+  for (const variant of set.variants) {
+    if (sameProps(variant.variantProperties, set.defaultProps)) continue;
+    const label = variantLabel(variant.variantProperties);
+    for (const el of extractAnatomy(variant.root)) {
+      if (!defaultKeys.has(`${el.type}|${el.name}`)) {
+        adicionales.push({ variant: label, name: el.name, type: el.type });
       }
     }
   }
   return adicionales;
 }
 
-// True si el nodo tiene Auto Layout (horizontal o vertical).
-function tieneAutoLayout(n: NodoLike): boolean {
+// True if the node has Auto Layout (horizontal or vertical).
+function tieneAutoLayout(n: NodeLike): boolean {
   return n.layoutMode === "HORIZONTAL" || n.layoutMode === "VERTICAL";
 }
 
-// Variantes cuyo Auto Layout de la raíz difiere del default.
-export function extraerCompleteLayout(set: SetNorm): VarianteLayout[] {
-  const varianteDefault = buscarVariante(set, set.defaultProps);
+// Variants whose root Auto Layout differs from the default.
+export function extractCompleteLayout(set: NormSet): LayoutVariant[] {
+  const varianteDefault = findVariant(set, set.defaultProps);
   if (!varianteDefault) return [];
 
-  const claveDefault = tieneAutoLayout(varianteDefault.raiz)
-    ? claveLayout(layoutSpecDe(varianteDefault.raiz))
+  const claveDefault = tieneAutoLayout(varianteDefault.root)
+    ? layoutKey(layoutSpecOf(varianteDefault.root))
     : null;
 
-  const adicionales: VarianteLayout[] = [];
-  for (const variante of set.variantes) {
-    if (mismasProps(variante.variantProperties, set.defaultProps)) continue;
-    if (!tieneAutoLayout(variante.raiz)) continue;
-    const spec = layoutSpecDe(variante.raiz);
-    if (claveDefault === null || claveLayout(spec) !== claveDefault) {
-      adicionales.push({ variante: etiquetaVariante(variante.variantProperties), spec });
+  const adicionales: LayoutVariant[] = [];
+  for (const variant of set.variants) {
+    if (sameProps(variant.variantProperties, set.defaultProps)) continue;
+    if (!tieneAutoLayout(variant.root)) continue;
+    const spec = layoutSpecOf(variant.root);
+    if (claveDefault === null || layoutKey(spec) !== claveDefault) {
+      adicionales.push({ variant: variantLabel(variant.variantProperties), spec });
     }
   }
   return adicionales;

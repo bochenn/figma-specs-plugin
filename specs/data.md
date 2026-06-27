@@ -1,16 +1,16 @@
 # Data (JSON)
 
-## Qué hace
-Representa el elemento como datos estructurados (JSON) para entender su jerarquía y conectarlo con código.
+## What it does
+Represents the element as structured data (JSON) to understand its hierarchy and connect it to code.
 
-## Qué muestra
-Un bloque de código con el JSON de la anatomía del elemento (cada elemento con `name`, `type`, `attributes` [`key`, `value`, `format`] y `instanceOf` si es instancia), serializado con `JSON.stringify(..., 2)`.
+## What it shows
+A code block with the JSON of the element's anatomy (each element with `name`, `type`, `attributes` [`key`, `value`, `format`] and `instanceOf` if it's an instance), serialized with `JSON.stringify(..., 2)`.
 
-El código va:
-- En **font mono**.
-- Con **sintaxis coloreada** (vía `setRangeFills`): keys en rosa `#EA10AC`, strings en verde `#1FA855`, números/`true`/`false`/`null` en azul `#0D80FF`, puntuación en gris `#6B7280`.
-- Dentro de un **bloque con fondo** gris claro `#F3F4F6`, redondeado, con padding (legible con los colores).
+The code is:
+- In a **mono font**.
+- With **syntax highlighting** (via `setRangeFills`): keys in pink `#EA10AC`, strings in green `#1FA855`, numbers/`true`/`false`/`null` in blue `#0D80FF`, punctuation in gray `#6B7280`.
+- Inside a **block with a background** (light gray `#F3F4F6`), rounded, with padding (readable with the colors).
 
-## Archivos clave
-- `serializacion/anatomy-json.ts` (modelo → JSON)
-- `generadores/data.ts` (tokenizador + render coloreado)
+## Key files
+- `serializacion/anatomy-json.ts` (model → JSON)
+- `generadores/data.ts` (tokenizer + colored render)

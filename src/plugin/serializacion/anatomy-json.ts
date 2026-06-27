@@ -1,21 +1,21 @@
-import type { ElementoAnatomy, AnatomyJson, ElementoJson } from "../modelo/tipos.ts";
+import type { AnatomyElement, AnatomyJson, JsonElement } from "../modelo/tipos.ts";
 
-// Mapea el modelo interno de Anatomy a la forma JSON del PRD (objeto JS).
-// Omite los campos que aún no extraemos (systemId, rawValue, propertyName).
-export function serializarAnatomy(elementos: ElementoAnatomy[]): AnatomyJson {
+// Maps the internal Anatomy model to the JSON shape (JS object).
+// Omits the fields we don't extract yet (systemId, rawValue, propertyName).
+export function serializeAnatomy(elements: AnatomyElement[]): AnatomyJson {
   return {
-    anatomy: elementos.map((el) => {
-      const salida: ElementoJson = {
-        name: el.nombre,
-        type: el.tipo,
-        attributes: el.atributos.map((a) => ({
-          value: a.valor,
-          format: a.formato,
-          key: a.clave,
+    anatomy: elements.map((el) => {
+      const salida: JsonElement = {
+        name: el.name,
+        type: el.type,
+        attributes: el.attributes.map((a) => ({
+          value: a.value,
+          format: a.format,
+          key: a.key,
         })),
       };
-      if (el.esInstancia && el.dependeDe) {
-        salida.instanceOf = el.dependeDe;
+      if (el.isInstance && el.dependsOn) {
+        salida.instanceOf = el.dependsOn;
       }
       return salida;
     }),

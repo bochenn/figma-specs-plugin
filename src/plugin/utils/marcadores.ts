@@ -1,19 +1,19 @@
-export const TAM_MARCADOR = 24; // diámetro del círculo del marcador, en px
-export const OFFSET_MARCADOR = 16; // separación entre el marcador y el borde del artwork
+export const BADGE_SIZE = 24; // marker circle diameter, in px
+export const BADGE_OFFSET = 16; // separation between the marker and the artwork border
 
-export interface Caja {
+export interface Box {
   x: number;
   y: number;
   width: number;
   height: number;
 }
 
-// Calcula dónde colocar el marcador de un elemento: proyectado al borde
-// izquierdo del artwork, centrado verticalmente con el elemento.
-export function posicionMarcador(caja: Caja): { x: number; y: number } {
-  const centroY = caja.y + caja.height / 2;
+// Computes where to place an element's marker: projected to the border
+// left side of the artwork, vertically centered with the element.
+export function badgePosition(box: Box): { x: number; y: number } {
+  const centroY = box.y + box.height / 2;
   return {
-    x: -(OFFSET_MARCADOR + TAM_MARCADOR),
-    y: centroY - TAM_MARCADOR / 2,
+    x: -(BADGE_OFFSET + BADGE_SIZE),
+    y: centroY - BADGE_SIZE / 2,
   };
 }

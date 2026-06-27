@@ -1,7 +1,7 @@
-import type { FormatoColor } from "../modelo/tipos.ts";
+import type { ColorFormat } from "../modelo/tipos.ts";
 
 // Convierte "#RRGGBB" a RGB (canales 0..1).
-export function hexARgb(hex: string): RGB {
+export function hexToRgb(hex: string): RGB {
   const n = parseInt(hex.slice(1), 16);
   return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255 };
 }
@@ -24,26 +24,26 @@ function rgbAHsl(r: number, g: number, b: number): { h: number; s: number; l: nu
   return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
 }
 
-// Formatea un hex "#RRGGBB" al formato elegido (HEX / RGB / HSL).
-export function formatearColor(hex: string, formato: FormatoColor): string {
-  if (formato === "HEX") return hex.toUpperCase();
-  const { r, g, b } = hexARgb(hex);
+// Formats a hex "#RRGGBB" to the chosen format (HEX / RGB / HSL).
+export function formatColor(hex: string, format: ColorFormat): string {
+  if (format === "HEX") return hex.toUpperCase();
+  const { r, g, b } = hexToRgb(hex);
   const R = Math.round(r * 255);
   const G = Math.round(g * 255);
   const B = Math.round(b * 255);
-  if (formato === "RGB") return `rgb(${R}, ${G}, ${B})`;
+  if (format === "RGB") return `rgb(${R}, ${G}, ${B})`;
   const { h, s, l } = rgbAHsl(r, g, b);
   return `hsl(${h}, ${s}%, ${l}%)`;
 }
 
-let formato: FormatoColor = "HEX";
+let format: ColorFormat = "HEX";
 
-// Setea el formato de color actual (default HEX).
-export function aplicarFormatoColor(f: FormatoColor): void {
-  formato = f;
+// Sets the current color format (default HEX).
+export function applyColorFormat(f: ColorFormat): void {
+  format = f;
 }
 
-// Devuelve el formato de color actual.
-export function formatoColorActual(): FormatoColor {
-  return formato;
+// Returns the current color format.
+export function currentColorFormat(): ColorFormat {
+  return format;
 }

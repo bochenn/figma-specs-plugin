@@ -1,132 +1,132 @@
-import type { PropiedadSpec, ElementoCambiado, AtributoCambiado, DosWaySpec } from "../modelo/tipos.ts";
-import { mismasProps } from "../comparacion/variantes.ts";
-import { frameVertical, frameHorizontal, texto, enColumnas, fillTematizado, tarjeta, filaPill, chipVariable, FONT_MEDIUM, textoClave, textoValor } from "./frames.ts";
-import { indicadorDimension, iconoResizingKey } from "./iconos.ts";
-import { varsTema } from "../utils/variables-tema.ts";
-import { hexARgb } from "../utils/color.ts";
-import { nombrePropiedad } from "../utils/propiedades.ts";
-import { parseVariantes } from "../utils/anatomy-variantes.ts";
+import type { PropertySpec, ChangedElement, ChangedAttribute, TwoWaySpec } from "../modelo/tipos.ts";
+import { sameProps } from "../comparacion/variantes.ts";
+import { verticalFrame, horizontalFrame, text, inColumns, themedFill, card, pillRow, variableChip, FONT_MEDIUM, keyText, valueText } from "./frames.ts";
+import { dimensionIndicator, resizingIconKey } from "./iconos.ts";
+import { themeVars } from "../utils/variables-tema.ts";
+import { hexToRgb } from "../utils/color.ts";
+import { propertyName } from "../utils/propiedades.ts";
+import { parseVariants } from "../utils/anatomy-variantes.ts";
 
-const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
-const AZUL_HL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
+const GRAY = (n: number): RGB => ({ r: n, g: n, b: n });
+const BLUE_HL: RGB = { r: 0.05, g: 0.4, b: 0.85 };
 
-// Recorre el variante default (offset acumulado) y, por cada nodo cuya
-// visibilidad referencia la booleana, dibuja un rect azul en el artwork y junta
-// su nombre. Frena en instancias.
-function resaltarBoolean(node: SceneNode, offX: number, offY: number, propKey: string, artwork: FrameNode, nombres: string[]): void {
+// Traverses the default variant (accumulated offset) and, for each node whose
+// visibility references the boolean, draws a blue rect on the artwork and collects
+// its name. Stops at instances.
+function resaltarBoolean(node: SceneNode, offX: number, offY: number, propKey: string, artwork: FrameNode, names: string[]): void {
   const refs = (node as { componentPropertyReferences?: { visible?: string } | null }).componentPropertyReferences;
   if (refs && refs.visible === propKey) {
     const rect = figma.createRectangle();
     rect.x = offX;
     rect.y = offY;
     rect.resize(Math.max(node.width, 0.01), Math.max(node.height, 0.01));
-    rect.fills = [{ type: "SOLID", color: AZUL_HL, opacity: 0.3 }];
+    rect.fills = [{ type: "SOLID", color: BLUE_HL, opacity: 0.3 }];
     artwork.appendChild(rect);
-    nombres.push(node.name);
+    names.push(node.name);
   }
   if (node.type === "INSTANCE") return;
   if ("children" in node) {
-    for (const c of node.children) resaltarBoolean(c, offX + c.x, offY + c.y, propKey, artwork, nombres);
+    for (const c of node.children) resaltarBoolean(c, offX + c.x, offY + c.y, propKey, artwork, names);
   }
 }
 
-// Subsección de una propiedad booleana: heading + artwork (clon con highlights) + capas afectadas.
-async function subseccionBoolean(componentSet: ComponentSetNode, nombre: string, propKey: string): Promise<FrameNode> {
-  const sub = frameVertical(nombre, 40);
-  sub.appendChild(await tituloPropiedad(nombre));
+// Subsection of a boolean property: heading + artwork (clone with highlights) + affected layers.
+async function booleanSubsection(componentSet: ComponentSetNode, name: string, propKey: string): Promise<FrameNode> {
+  const sub = verticalFrame(name, 40);
+  sub.appendChild(await propertyTitle(name));
 
-  const nombres: string[] = [];
+  const names: string[] = [];
   const defaultVariant = componentSet.defaultVariant;
   if (defaultVariant) {
     const artwork = figma.createFrame();
     artwork.name = "Artwork";
     artwork.layoutMode = "NONE";
     artwork.clipsContent = false;
-    artwork.fills = fillTematizado(varsTema().fondoArtwork);
-    const clon = defaultVariant.createInstance(); // instancia del variante, no un clon-componente
-    artwork.appendChild(clon);
-    clon.x = 0;
-    clon.y = 0;
-    artwork.resize(clon.width, clon.height);
-    // Detecta sobre el variante original (geometría idéntica al clon) y dibuja en el artwork.
-    resaltarBoolean(defaultVariant, 0, 0, propKey, artwork, nombres);
+    artwork.fills = themedFill(themeVars().bgArtwork);
+    const clone = defaultVariant.createInstance(); // instance of the variant, not a component clone
+    artwork.appendChild(clone);
+    clone.x = 0;
+    clone.y = 0;
+    artwork.resize(clone.width, clone.height);
+    // Detects on the original variant (geometry identical to the clone) and draws on the artwork.
+    resaltarBoolean(defaultVariant, 0, 0, propKey, artwork, names);
     sub.appendChild(artwork);
   }
 
-  sub.appendChild(await texto(`Affected layers: ${nombres.length ? nombres.join(", ") : "—"}`, 12));
+  sub.appendChild(await text(`Affected layers: ${names.length ? names.join(", ") : "—"}`, 12));
   return sub;
 }
 
-// Busca el componente-variante real del set que coincide con el target de props.
-function buscarComponente(
+// Finds the real variant component in the set matching the target props.
+function findComponent(
   componentSet: ComponentSetNode,
   target: Record<string, string>,
 ): ComponentNode | undefined {
-  for (const hijo of componentSet.children) {
-    if (hijo.type === "COMPONENT" && mismasProps(hijo.variantProperties ?? {}, target)) {
-      return hijo;
+  for (const child of componentSet.children) {
+    if (child.type === "COMPONENT" && sameProps(child.variantProperties ?? {}, target)) {
+      return child;
     }
   }
   return undefined;
 }
 
-// Cualquier variante que tenga `valor` en la propiedad `prop` (matriz dispersa).
-function buscarComponenteConValor(componentSet: ComponentSetNode, prop: string, valor: string): ComponentNode | undefined {
-  for (const hijo of componentSet.children) {
-    if (hijo.type === "COMPONENT" && (hijo.variantProperties ?? {})[prop] === valor) return hijo;
+// Any variant that has `value` in property `prop` (sparse matrix).
+function findComponentWithValue(componentSet: ComponentSetNode, prop: string, value: string): ComponentNode | undefined {
+  for (const child of componentSet.children) {
+    if (child.type === "COMPONENT" && (child.variantProperties ?? {})[prop] === value) return child;
   }
   return undefined;
 }
 
-// Título del componente (Blog post card, Badge…): Inter Medium 40 / line-height 48 / letter-spacing -2%.
-async function tituloComponente(s: string): Promise<TextNode> {
-  const t = await texto(s, 40, FONT_MEDIUM);
+// Component title (Blog post card, Badge…): Inter Medium 40 / line-height 48 / letter-spacing -2%.
+async function componentTitle(s: string): Promise<TextNode> {
+  const t = await text(s, 40, FONT_MEDIUM);
   t.lineHeight = { value: 48, unit: "PIXELS" };
   t.letterSpacing = { value: -2, unit: "PERCENT" };
   return t;
 }
 
-// Título de una propiedad (Type, Orientation…): Inter Medium 24 / line-height 32.
-async function tituloPropiedad(s: string): Promise<TextNode> {
-  const t = await texto(s, 24, FONT_MEDIUM);
+// Property title (Type, Orientation…): Inter Medium 24 / line-height 32.
+async function propertyTitle(s: string): Promise<TextNode> {
+  const t = await text(s, 24, FONT_MEDIUM);
   t.lineHeight = { value: 32, unit: "PIXELS" };
   return t;
 }
 
-// Marcador ◆ que precede a cada valor en la tabla de propiedades.
+// ◆ marker preceding each value in the properties table.
 function diamante(): PolygonNode {
   const p = figma.createPolygon();
   p.pointCount = 4;
   p.resize(8, 8);
-  p.fills = [{ type: "SOLID", color: GRIS(0.1) }];
+  p.fills = [{ type: "SOLID", color: GRAY(0.1) }];
   return p;
 }
 
-// Fila de la tabla de propiedades: label (gris, ancho fijo) + ◆ + valor.
-async function filaPropTabla(label: string, valor: string): Promise<FrameNode> {
-  const fila = frameHorizontal("prop", 12);
-  fila.counterAxisAlignItems = "CENTER";
-  const lbl = await textoClave(label);
+// Properties-table row: label (gray, fixed width) + ◆ + value.
+async function propTableRow(label: string, value: string): Promise<FrameNode> {
+  const row = horizontalFrame("prop", 12);
+  row.counterAxisAlignItems = "CENTER";
+  const lbl = await keyText(label);
   lbl.textAutoResize = "HEIGHT";
   lbl.resize(160, lbl.height);
-  fila.appendChild(lbl);
-  fila.appendChild(diamante());
-  fila.appendChild(await textoValor(valor));
-  return fila;
+  row.appendChild(lbl);
+  row.appendChild(diamante());
+  row.appendChild(await valueText(value));
+  return row;
 }
 
-// Card de un variante: header + [artwork (instancia) | tabla de propiedades].
-async function cardVariante(header: string, comp: ComponentNode, nombresProps: string[]): Promise<FrameNode> {
-  const display = frameHorizontal("Display", 64);
+// Variant card: header + [artwork (instance) | properties table].
+async function cardVariante(header: string, comp: ComponentNode, propNames: string[]): Promise<FrameNode> {
+  const display = horizontalFrame("Display", 64);
   display.counterAxisAlignItems = "MIN";
 
   const artwork = figma.createFrame();
   artwork.name = "Artwork";
   artwork.layoutMode = "NONE";
-  artwork.fills = fillTematizado(varsTema().fondoArtwork);
+  artwork.fills = themedFill(themeVars().bgArtwork);
   const inst = comp.createInstance();
   artwork.appendChild(inst);
-  // Padding mínimo de 64px en los 4 lados (instancia + 128), con piso 400×156.
+  // Minimum 64px padding on all 4 sides (instance + 128), with a 400×156 floor.
   const w = Math.max(400, inst.width + 128);
   const h = Math.max(156, inst.height + 128);
   artwork.resize(w, h);
@@ -135,293 +135,293 @@ async function cardVariante(header: string, comp: ComponentNode, nombresProps: s
   display.appendChild(artwork);
 
   const props = comp.variantProperties ?? {};
-  const tabla = frameVertical("PropsTable", 8);
-  for (const name of nombresProps) {
+  const table = verticalFrame("PropsTable", 8);
+  for (const name of propNames) {
     if (props[name] === undefined) continue;
-    tabla.appendChild(await filaPropTabla(name, props[name]));
+    table.appendChild(await propTableRow(name, props[name]));
   }
-  display.appendChild(tabla);
+  display.appendChild(table);
 
-  return tarjeta([await texto(header, 16, FONT_MEDIUM)], [display]);
+  return card([await text(header, 16, FONT_MEDIUM)], [display]);
 }
 
-// Texto legible de un atributo cambiado: "valorOpcion (raw) (default: valorDefault (raw))".
-// El (raw) aparece solo cuando el valor es una variable/style con valor resuelto.
-function lineaAtributo(c: AtributoCambiado): string {
-  const op = `${c.valorOpcion ?? "—"}${c.rawValueOpcion ? ` (${c.rawValueOpcion})` : ""}`;
-  const def = `${c.valorDefault ?? "—"}${c.rawValueDefault ? ` (${c.rawValueDefault})` : ""}`;
-  return `${c.clave}: ${op} (default: ${def})`;
+// Readable text of a changed attribute: "optionValue (raw) (default: defaultValue (raw))".
+// The (raw) appears only when the value is a variable/style with a resolved value.
+function attributeLine(c: ChangedAttribute): string {
+  const op = `${c.optionValue ?? "—"}${c.rawValueOption ? ` (${c.rawValueOption})` : ""}`;
+  const def = `${c.defaultValue ?? "—"}${c.rawValueDefault ? ` (${c.rawValueDefault})` : ""}`;
+  return `${c.key}: ${op} (default: ${def})`;
 }
 
-// Dibuja un cambio de atributo como DOS pills horizontales: itemValue-current
-// (clave + valor de la opción, a la izquierda) e itemValue-default (default +
-// su valor, a la derecha). Separa visualmente el valor actual del default.
-async function filaAtributoCambiado(c: AtributoCambiado): Promise<FrameNode> {
-  // itemValue-current: swatch + clave + valor de la opción
+// Draws an attribute change as TWO horizontal pills: itemValue-current
+// (key + option value, on the left) and itemValue-default (default +
+// its value, on the right). Visually separates the current value from the default.
+async function changedAttributeRow(c: ChangedAttribute): Promise<FrameNode> {
+  // itemValue-current: swatch + key + option value
   const current: SceneNode[] = [];
   if (c.swatchHex) {
     const swatch = figma.createRectangle();
     swatch.resize(12, 12);
-    swatch.fills = [{ type: "SOLID", color: hexARgb(c.swatchHex) }];
+    swatch.fills = [{ type: "SOLID", color: hexToRgb(c.swatchHex) }];
     swatch.strokes = [{ type: "SOLID", color: { r: 0.8, g: 0.8, b: 0.8 } }];
     swatch.strokeWeight = 1;
     current.push(swatch);
   }
-  current.push(await textoClave(`${c.clave}:`));
-  // ChipVar solo si es token; si no, texto plano
-  if (c.valorOpcion && c.valorOpcion !== "—") {
-    current.push(c.formatoOpcion ? await chipVariable(c.valorOpcion) : await textoValor(c.valorOpcion));
+  current.push(await keyText(`${c.key}:`));
+  // ChipVar only if it's a token; otherwise plain text
+  if (c.optionValue && c.optionValue !== "—") {
+    current.push(c.formatOption ? await variableChip(c.optionValue) : await valueText(c.optionValue));
   } else {
-    current.push(await textoValor("—"));
+    current.push(await valueText("—"));
   }
-  if (c.rawValueOpcion) current.push(await textoValor(`(${c.rawValueOpcion})`));
-  if (iconoResizingKey(c.clave, c.prefijoOpcion)) current.push(await indicadorDimension(c.clave, c.prefijoOpcion!));
-  const pillCurrent = filaPill(current);
+  if (c.rawValueOption) current.push(await valueText(`(${c.rawValueOption})`));
+  if (resizingIconKey(c.key, c.prefixOption)) current.push(await dimensionIndicator(c.key, c.prefixOption!));
+  const pillCurrent = pillRow(current);
   pillCurrent.name = "itemValue-current";
 
-  // itemValue-default: default: + valor del default
-  const def: SceneNode[] = [await textoClave("default:")];
-  if (c.valorDefault && c.valorDefault !== "—") {
-    def.push(c.formatoDefault ? await chipVariable(c.valorDefault) : await textoValor(c.valorDefault));
+  // itemValue-default: default: + default value
+  const def: SceneNode[] = [await keyText("default:")];
+  if (c.defaultValue && c.defaultValue !== "—") {
+    def.push(c.formatDefault ? await variableChip(c.defaultValue) : await valueText(c.defaultValue));
   } else {
-    def.push(await textoValor("—"));
+    def.push(await valueText("—"));
   }
-  if (c.rawValueDefault) def.push(await textoValor(`(${c.rawValueDefault})`));
-  if (iconoResizingKey(c.clave, c.prefijoDefault)) def.push(await indicadorDimension(c.clave, c.prefijoDefault!));
-  const pillDefault = filaPill(def);
+  if (c.rawValueDefault) def.push(await valueText(`(${c.rawValueDefault})`));
+  if (resizingIconKey(c.key, c.prefixDefault)) def.push(await dimensionIndicator(c.key, c.prefixDefault!));
+  const pillDefault = pillRow(def);
   pillDefault.name = "itemValue-default";
 
-  const fila = frameHorizontal("cambio", 8);
-  fila.counterAxisAlignItems = "CENTER";
-  fila.appendChild(pillCurrent);
-  fila.appendChild(pillDefault);
-  return fila;
+  const row = horizontalFrame("change", 8);
+  row.counterAxisAlignItems = "CENTER";
+  row.appendChild(pillCurrent);
+  row.appendChild(pillDefault);
+  return row;
 }
 
-// Etiqueta en inglés del estado de un elemento cambiado (el valor interno queda en español).
-const ETIQUETA_ESTADO: Record<ElementoCambiado["estado"], string> = {
-  modificado: "Modified",
-  agregado: "Added",
-  removido: "Removed",
+// English label for a changed element's state.
+const STATE_LABEL: Record<ChangedElement["state"], string> = {
+  modified: "Modified",
+  added: "Added",
+  removed: "Removed",
 };
 
-// Construye la lista de cambios de una opción. Cada elemento cambiado es una tarjeta.
-// `nombreBase` es el nombre del componente (para la card raíz del variante).
-async function listaCambios(cambios: ElementoCambiado[], nombreBase: string): Promise<FrameNode> {
-  const lista = frameVertical("Cambios", 8);
-  if (cambios.length === 0) {
-    lista.appendChild(await texto("No changes from the default", 16));
+// Builds an option's change list. Each changed element is a card.
+// `baseName` is the component name (for the variant's root card).
+async function listaCambios(changes: ChangedElement[], baseName: string): Promise<FrameNode> {
+  const lista = verticalFrame("Cambios", 8);
+  if (changes.length === 0) {
+    lista.appendChild(await text("No changes from the default", 16));
     return lista;
   }
-  // Consolida added/removed repetidos (misma capa nombre+estado, ej. varios "Vector")
-  // en una sola card con cantidad.
+  // Consolidates repeated added/removed (same layer name+state, e.g. several "Vector")
+  // into a single card with a count.
   const cuenta = new Map<string, number>();
-  const orden: ElementoCambiado[] = [];
-  for (const c of cambios) {
-    if (c.atributos.length === 0) {
-      const k = `${c.elementoNombre}|${c.estado}`;
+  const orden: ChangedElement[] = [];
+  for (const c of changes) {
+    if (c.attributes.length === 0) {
+      const k = `${c.elementName}|${c.state}`;
       cuenta.set(k, (cuenta.get(k) ?? 0) + 1);
       if (cuenta.get(k) === 1) orden.push(c);
     } else {
       orden.push(c);
     }
   }
-  for (const cambio of orden) {
-    const props = parseVariantes(cambio.elementoNombre); // no vacío solo en la raíz (variante)
-    const headerNodos: SceneNode[] = [];
-    const filas: FrameNode[] = [];
+  for (const change of orden) {
+    const props = parseVariants(change.elementName); // non-empty only at the root (variant)
+    const headerNodes: SceneNode[] = [];
+    const rows: FrameNode[] = [];
     if (props.length > 0) {
-      // Raíz del variante: nombre del componente + sus props en vertical (estilo panel de Figma).
-      headerNodos.push(await texto(nombreBase, 16, FONT_MEDIUM));
-      for (const p of props) filas.push(filaPill([await textoClave(`${p.clave}:`), await textoValor(p.valor)]));
+      // Variant root: component name + its props stacked vertically (Figma style panel).
+      headerNodes.push(await text(baseName, 16, FONT_MEDIUM));
+      for (const p of props) rows.push(pillRow([await keyText(`${p.key}:`), await valueText(p.value)]));
     } else {
-      const n = cuenta.get(`${cambio.elementoNombre}|${cambio.estado}`) ?? 1;
-      const sufijo = cambio.estado === "modificado" ? "" : ` · ${ETIQUETA_ESTADO[cambio.estado]}${n > 1 ? ` ×${n}` : ""}`;
-      headerNodos.push(await texto(`${cambio.elementoNombre}${sufijo}`, 16, FONT_MEDIUM));
+      const n = cuenta.get(`${change.elementName}|${change.state}`) ?? 1;
+      const suffix = change.state === "modified" ? "" : ` · ${STATE_LABEL[change.state]}${n > 1 ? ` ×${n}` : ""}`;
+      headerNodes.push(await text(`${change.elementName}${suffix}`, 16, FONT_MEDIUM));
     }
-    for (const attr of cambio.atributos) {
-      filas.push(await filaAtributoCambiado(attr));
+    for (const attr of change.attributes) {
+      rows.push(await changedAttributeRow(attr));
     }
-    // Added/removed sin atributos: una nota, en vez de una caja vacía.
-    if (cambio.atributos.length === 0 && props.length === 0) {
-      const nota = cambio.estado === "agregado" ? "Added in this variant" : "Removed from this variant";
-      filas.push(filaPill([await textoValor(nota)]));
+    // Added/removed without attributes: a note instead of an empty box.
+    if (change.attributes.length === 0 && props.length === 0) {
+      const nota = change.state === "added" ? "Added in this variant" : "Removed from this variant";
+      rows.push(pillRow([await valueText(nota)]));
     }
-    lista.appendChild(tarjeta(headerNodos, filas));
+    lista.appendChild(card(headerNodes, rows));
   }
   return lista;
 }
 
-// Construye el display de una opción: artwork (clon del variante) + lista de cambios.
+// Builds an option's display: artwork (variant clone) + change list.
 async function displayOpcion(
   componentSet: ComponentSetNode,
   target: Record<string, string>,
-  cambios: ElementoCambiado[],
+  changes: ChangedElement[],
 ): Promise<FrameNode> {
-  const display = frameHorizontal("Display", 64);
+  const display = horizontalFrame("Display", 64);
 
-  const componente = buscarComponente(componentSet, target);
+  const componente = findComponent(componentSet, target);
   if (componente) {
     const artwork = figma.createFrame();
     artwork.name = "Artwork";
     artwork.layoutMode = "NONE";
-    artwork.fills = fillTematizado(varsTema().fondoArtwork);
-    const clon = componente.createInstance(); // instancia del variante, no un clon-componente
-    artwork.appendChild(clon);
-    clon.x = 0;
-    clon.y = 0;
-    artwork.resize(clon.width, clon.height);
+    artwork.fills = themedFill(themeVars().bgArtwork);
+    const clone = componente.createInstance(); // instance of the variant, not a component clone
+    artwork.appendChild(clone);
+    clone.x = 0;
+    clone.y = 0;
+    artwork.resize(clone.width, clone.height);
     display.appendChild(artwork);
   }
 
-  display.appendChild(await listaCambios(cambios, componentSet.name));
+  display.appendChild(await listaCambios(changes, componentSet.name));
   return display;
 }
 
-// Construye el frame "{nombre} Spec" completo de un component set: título +
-// sección Properties (subsección por propiedad de variante + booleans).
+// Builds the full "{name} Spec" frame of a component set: title +
+// Properties section (subsection per variant property + booleans).
 async function specDeProperties(
   componentSet: ComponentSetNode,
-  propiedades: PropiedadSpec[],
+  properties: PropertySpec[],
   defaultProps: Record<string, string>,
-  columnas: number,
+  columns: number,
 ): Promise<FrameNode> {
-  const spec = frameVertical(`${componentSet.name} Spec`, 48);
-  spec.appendChild(await texto(componentSet.name, 64));
-  spec.appendChild(await seccionDeProperties(componentSet, propiedades, defaultProps, columnas));
+  const spec = verticalFrame(`${componentSet.name} Spec`, 48);
+  spec.appendChild(await text(componentSet.name, 64));
+  spec.appendChild(await propertiesSection(componentSet, properties, defaultProps, columns));
   return spec;
 }
 
-// Construye solo la sección Properties (sin Specifications ni título de nodo).
-// Por cada valor de cada propiedad, una card con el preview del
-// variante + su tabla de propiedades completa. `_propiedades` ya no se usa (la
-// info se toma directo del component set).
-export async function seccionDeProperties(
+// Builds only the Properties section (without Specifications or node title).
+// For each value of each property, a card with the variant
+// preview + its full properties table. `_properties` is no longer used (the
+// info is taken directly from the component set).
+export async function propertiesSection(
   componentSet: ComponentSetNode,
-  _propiedades: PropiedadSpec[],
+  _properties: PropertySpec[],
   defaultProps: Record<string, string>,
-  columnas: number,
+  columns: number,
 ): Promise<FrameNode> {
-  const seccion = frameVertical("Properties", 64);
-  // Título con el nombre del componente al que pertenece esta sección (clave para
-  // distinguir la del componente principal de las de los subcomponentes anidados).
-  seccion.appendChild(await tituloComponente(componentSet.name));
-  const grupos = componentSet.variantGroupProperties;
-  const nombresProps = Object.keys(grupos);
+  const section = verticalFrame("Properties", 64);
+  // Title with the name of the component this section belongs to (key to
+  // tell the main component's section apart from the nested subcomponents').
+  section.appendChild(await componentTitle(componentSet.name));
+  const groups = componentSet.variantGroupProperties;
+  const propNames = Object.keys(groups);
 
-  if (nombresProps.length === 0) {
-    seccion.appendChild(await texto("No variant properties to compare", 16));
-    return seccion;
+  if (propNames.length === 0) {
+    section.appendChild(await text("No variant properties to compare", 16));
+    return section;
   }
 
-  // Card del variante default arriba (el nombre del componente ya va en el título).
-  const defComp = buscarComponente(componentSet, defaultProps);
-  if (defComp) seccion.appendChild(await cardVariante("Default", defComp, nombresProps));
+  // Default-variant card on top (the component name already goes in the title).
+  const defComp = findComponent(componentSet, defaultProps);
+  if (defComp) section.appendChild(await cardVariante("Default", defComp, propNames));
 
-  // Una subsección por propiedad: una card por cada valor (preview + tabla).
-  for (const prop of nombresProps) {
-    const subseccion = frameVertical(prop, 40);
-    subseccion.appendChild(await tituloPropiedad(prop));
-    const bloques: FrameNode[] = [];
-    for (const valor of grupos[prop].values) {
-      const comp = buscarComponente(componentSet, { ...defaultProps, [prop]: valor })
-        ?? buscarComponenteConValor(componentSet, prop, valor);
+  // One subsection per property: a card per value (preview + table).
+  for (const prop of propNames) {
+    const subsection = verticalFrame(prop, 40);
+    subsection.appendChild(await propertyTitle(prop));
+    const blocks: FrameNode[] = [];
+    for (const value of groups[prop].values) {
+      const comp = findComponent(componentSet, { ...defaultProps, [prop]: value })
+        ?? findComponentWithValue(componentSet, prop, value);
       if (!comp) continue;
-      bloques.push(await cardVariante(valor, comp, nombresProps));
+      blocks.push(await cardVariante(value, comp, propNames));
     }
-    if (columnas > 1) {
-      subseccion.appendChild(enColumnas(bloques, columnas));
+    if (columns > 1) {
+      subsection.appendChild(inColumns(blocks, columns));
     } else {
-      for (const b of bloques) subseccion.appendChild(b);
+      for (const b of blocks) subsection.appendChild(b);
     }
-    seccion.appendChild(subseccion);
+    section.appendChild(subsection);
   }
 
-  // Propiedades booleanas (se mantienen).
+  // Boolean properties (kept).
   const defs = componentSet.componentPropertyDefinitions;
-  for (const clave of Object.keys(defs)) {
-    if (defs[clave].type === "BOOLEAN") {
-      seccion.appendChild(await subseccionBoolean(componentSet, nombrePropiedad(clave), clave));
+  for (const key of Object.keys(defs)) {
+    if (defs[key].type === "BOOLEAN") {
+      section.appendChild(await booleanSubsection(componentSet, propertyName(key), key));
     }
   }
 
-  return seccion;
+  return section;
 }
 
-// Genera el output de Properties. Devuelve el frame Specifications creado.
-export async function generarProperties(
+// Generates the Properties output. Returns the created Specifications frame.
+export async function generateProperties(
   componentSet: ComponentSetNode,
-  propiedades: PropiedadSpec[],
+  properties: PropertySpec[],
   defaultProps: Record<string, string>,
-  columnas: number,
+  columns: number,
 ): Promise<FrameNode> {
-  const specifications = frameVertical("Specifications", 128, 64);
-  specifications.appendChild(await specDeProperties(componentSet, propiedades, defaultProps, columnas));
+  const specifications = verticalFrame("Specifications", 128, 64);
+  specifications.appendChild(await specDeProperties(componentSet, properties, defaultProps, columns));
   figma.currentPage.appendChild(specifications);
   return specifications;
 }
 
-// Properties de un set anidado, ya extraídas.
-export interface PropertiesDeSet {
+// Already-extracted properties of a nested set.
+export interface SetProperties {
   set: ComponentSetNode;
-  propiedades: PropiedadSpec[];
+  properties: PropertySpec[];
   defaultProps: Record<string, string>;
 }
 
-// Genera Properties del set principal + una sección por cada set anidado.
-export async function generarPropertiesConNested(
+// Generates Properties for the main set + one section per nested set.
+export async function generatePropertiesWithNested(
   componentSet: ComponentSetNode,
-  propiedades: PropiedadSpec[],
+  properties: PropertySpec[],
   defaultProps: Record<string, string>,
-  columnas: number,
-  nested: PropertiesDeSet[],
+  columns: number,
+  nested: SetProperties[],
 ): Promise<FrameNode> {
-  const specifications = frameVertical("Specifications", 128, 64);
-  specifications.appendChild(await specDeProperties(componentSet, propiedades, defaultProps, columnas));
+  const specifications = verticalFrame("Specifications", 128, 64);
+  specifications.appendChild(await specDeProperties(componentSet, properties, defaultProps, columns));
   for (const n of nested) {
-    specifications.appendChild(await specDeProperties(n.set, n.propiedades, n.defaultProps, columnas));
+    specifications.appendChild(await specDeProperties(n.set, n.properties, n.defaultProps, columns));
   }
   figma.currentPage.appendChild(specifications);
   return specifications;
 }
 
-// Genera el output de Two-Way: una combinación por bloque (artwork + cambios).
-export async function generarDosWay(
+// Generates the Two-Way output: one combination per block (artwork + changes).
+export async function generateTwoWay(
   componentSet: ComponentSetNode,
-  dosway: DosWaySpec,
+  dosway: TwoWaySpec,
   defaultProps: Record<string, string>,
-  columnas: number,
+  columns: number,
 ): Promise<FrameNode> {
-  const specifications = frameVertical("Specifications", 128, 64);
-  const spec = frameVertical(`${componentSet.name} Spec`, 48);
+  const specifications = verticalFrame("Specifications", 128, 64);
+  const spec = verticalFrame(`${componentSet.name} Spec`, 48);
   specifications.appendChild(spec);
-  spec.appendChild(await texto(componentSet.name, 64));
-  spec.appendChild(await seccionDeDosWay(componentSet, dosway, defaultProps, columnas));
+  spec.appendChild(await text(componentSet.name, 64));
+  spec.appendChild(await twoWaySection(componentSet, dosway, defaultProps, columns));
   figma.currentPage.appendChild(specifications);
   return specifications;
 }
 
-// Construye solo la sección Two-Way (sin Specifications ni título de nodo).
-export async function seccionDeDosWay(
+// Builds only the Two-Way section (without Specifications or node title).
+export async function twoWaySection(
   componentSet: ComponentSetNode,
-  dosway: DosWaySpec,
+  dosway: TwoWaySpec,
   defaultProps: Record<string, string>,
-  columnas: number,
+  columns: number,
 ): Promise<FrameNode> {
-  const seccion = frameVertical("Two-Way", 64);
-  seccion.appendChild(await texto(`${dosway.prop1} × ${dosway.prop2}`, 24));
+  const section = verticalFrame("Two-Way", 64);
+  section.appendChild(await text(`${dosway.prop1} × ${dosway.prop2}`, 24));
 
-  const bloques: FrameNode[] = [];
-  for (const comb of dosway.combinaciones) {
-    const target = { ...defaultProps, [dosway.prop1]: comb.valor1, [dosway.prop2]: comb.valor2 };
-    const headerNodos: SceneNode[] = [await texto(`${comb.valor1} + ${comb.valor2}`, 16, FONT_MEDIUM)];
-    const display = await displayOpcion(componentSet, target, comb.cambios);
-    bloques.push(tarjeta(headerNodos, [display]));
+  const blocks: FrameNode[] = [];
+  for (const comb of dosway.combinations) {
+    const target = { ...defaultProps, [dosway.prop1]: comb.value1, [dosway.prop2]: comb.value2 };
+    const headerNodes: SceneNode[] = [await text(`${comb.value1} + ${comb.value2}`, 16, FONT_MEDIUM)];
+    const display = await displayOpcion(componentSet, target, comb.changes);
+    blocks.push(card(headerNodes, [display]));
   }
-  if (columnas > 1) {
-    seccion.appendChild(enColumnas(bloques, columnas));
+  if (columns > 1) {
+    section.appendChild(inColumns(blocks, columns));
   } else {
-    for (const b of bloques) seccion.appendChild(b);
+    for (const b of blocks) section.appendChild(b);
   }
-  return seccion;
+  return section;
 }

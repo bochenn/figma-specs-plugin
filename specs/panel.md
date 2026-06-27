@@ -1,28 +1,28 @@
-# Panel del plugin
+# Plugin panel
 
-## Qué es
-La UI del plugin: un iframe (`src/ui/`) que se comunica con el código del plugin por `postMessage`. **Alto fijo con scroll** en el área de contenido; tabs y footer fijos.
+## What it is
+The plugin's UI: an iframe (`src/ui/`) that talks to the plugin code over `postMessage`. **Fixed height with scroll** in the content area; tabs and footer are pinned.
 
-## Estructura
-- **Tabs**: Specs / Options / Format / About (la activa con pill gris).
-- **Specs**: grid de **cards seleccionables**. Al tildar, la card se pone azul (borde + fondo + texto + check ✓); las no seleccionadas, grises. Son las 8 secciones (Anatomy, Properties, Layout & Spacing, Styling Inventory, Two Way, Data, Modes, Complete).
-- **Options**: agrupado por sección (General, Anatomy, Layout & Spacing, Properties, Styling Inventory). Cada fila: label + control (checkbox/dropdown) + descripción. Ver [opciones y formatos](options-and-formats.md).
-- **Format**: filas con dropdowns (Columns, Color, Units, Type, Raw values + Show raw value, Preferred).
-- **About**: descripción, cómo usarlo, open source, feedback, y link de donación (`buymeacoffee.com/bochenn`) que abre el navegador vía `figma.openExternal`.
-- **Footer**: Cancel (cierra el plugin) + Create Spec (deshabilitado si no hay ninguna spec seleccionada).
+## Structure
+- **Tabs**: Specs / Options / Format / About (the active one has a gray pill).
+- **Specs**: a grid of **selectable cards**. When ticked, the card turns blue (border + background + text + check ✓); the unselected ones stay gray. These are the 8 sections (Anatomy, Properties, Layout & Spacing, Styling Inventory, Two Way, Data, Modes, Complete).
+- **Options**: grouped per section (General, Anatomy, Layout & Spacing, Properties, Styling Inventory). Each row: label + control (checkbox/dropdown) + description. See [options and formats](options-and-formats.md).
+- **Format**: rows with dropdowns (Columns, Color, Units, Type, Raw values + Show raw value, Preferred).
+- **About**: description, how to use it, open source, feedback, and a donation link (`buymeacoffee.com/bochenn`) that opens the browser via `figma.openExternal`.
+- **Footer**: Cancel (closes the plugin) + Create Spec (disabled when no spec is selected).
 
-## Mensajes (UI → plugin)
-- `generar` — con las secciones elegidas + todas las opciones/formatos.
+## Messages (UI → plugin)
+- `generar` — with the chosen sections + all the options/formats.
 - `cancelar` — `figma.closePlugin()`.
 - `abrir` `{ url }` — `figma.openExternal(url)`.
 
-## Detalles
-- **Mode** (Light/Dark) es un dropdown que mapea al booleano `dark`.
-- Las opciones que aparecen en dos secciones (**Itemize instances** en Anatomy/Layout, **Spec nested subcomponents** en Anatomy/Properties) son el mismo valor, **sincronizadas** entre sus dos checkboxes.
-- El header con el nombre y la X es la **ventana propia de Figma** (toma el nombre del manifest), no está en el HTML.
-- Tamaño actual: 640×500.
+## Details
+- **Mode** (Light/Dark) is a dropdown that maps to the `dark` boolean.
+- Options that appear in two sections (**Itemize instances** in Anatomy/Layout, **Spec nested subcomponents** in Anatomy/Properties) are the same value, **synced** between their two checkboxes.
+- The header with the name and the X is **Figma's own window** (it takes the name from the manifest), it's not in the HTML.
+- Current size: 640×500.
 
-## Archivos clave
-- `src/ui/index.html` (estructura + estilos), `src/ui/ui.ts` (tabs, selección, sync, mensajes)
-- `src/plugin/main.ts` (`figma.showUI`, handler de mensajes)
+## Key files
+- `src/ui/index.html` (structure + styles), `src/ui/ui.ts` (tabs, selection, sync, messages)
+- `src/plugin/main.ts` (`figma.showUI`, message handler)
 - `modelo/tipos.ts` (`MensajeUI`)

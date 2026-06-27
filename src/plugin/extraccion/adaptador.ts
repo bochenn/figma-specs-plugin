@@ -1,15 +1,15 @@
-import type { NodoLike, PaintLike } from "../modelo/tipos.ts";
-import { gridSpecDe } from "../utils/grilla.ts";
-import { limpiarPrefijoColeccion } from "../utils/nombre-variable.ts";
+import type { NodeLike, PaintLike } from "../modelo/tipos.ts";
+import { gridSpecOf } from "../utils/grilla.ts";
+import { stripCollectionPrefix } from "../utils/nombre-variable.ts";
 
-// Convierte un Paint de Figma a PaintLike: color sólido o stops del gradiente.
+// Converts a Figma Paint to PaintLike: solid color or gradient stops.
 function paintLike(f: Paint): PaintLike {
   if (f.type === "SOLID") return { type: f.type, color: f.color };
   if (f.type.startsWith("GRADIENT_")) {
     const g = f as GradientPaint;
     return {
       type: f.type,
-      gradiente: {
+      gradient: {
         type: f.type,
         gradientStops: g.gradientStops.map((s) => ({ position: s.position, color: { r: s.color.r, g: s.color.g, b: s.color.b, a: s.color.a } })),
         gradientTransform: g.gradientTransform.map((row) => [...row]),
@@ -19,108 +19,108 @@ function paintLike(f: Paint): PaintLike {
   return { type: f.type };
 }
 
-// Resuelve una variable a "Colección/Variable" (o solo su nombre si no hay collection).
-function nombreVariable(id: string): string | undefined {
+// Resolves a variable to "Collection/Variable" (or just its name if there's no collection).
+function variableNameVal(id: string): string | undefined {
   const variable = figma.variables.getVariableById(id);
   if (!variable) return undefined;
   const col = figma.variables.getVariableCollectionById(variable.variableCollectionId);
-  return col ? `${limpiarPrefijoColeccion(col.name)}/${variable.name}` : variable.name;
+  return col ? `${stripCollectionPrefix(col.name)}/${variable.name}` : variable.name;
 }
 
-// Convierte un nodo real de Figma en NodoLike (solo lo que leen los módulos puros).
-export function aNodoLike(nodo: SceneNode): NodoLike {
-  const base: NodoLike = { id: nodo.id, name: nodo.name, type: nodo.type };
+// Converts a real Figma node into NodeLike (only what the pure modules read).
+export function toNodeLike(node: SceneNode): NodeLike {
+  const base: NodeLike = { id: node.id, name: node.name, type: node.type };
 
-  if ("width" in nodo) base.width = nodo.width;
-  if ("height" in nodo) base.height = nodo.height;
-  if ("opacity" in nodo) base.opacity = nodo.opacity;
-  if ("fills" in nodo && Array.isArray(nodo.fills)) {
-    base.fills = nodo.fills.map(paintLike);
+  if ("width" in node) base.width = node.width;
+  if ("height" in node) base.height = node.height;
+  if ("opacity" in node) base.opacity = node.opacity;
+  if ("fills" in node && Array.isArray(node.fills)) {
+    base.fills = node.fills.map(paintLike);
   }
-  if ("strokes" in nodo && Array.isArray(nodo.strokes)) {
-    base.strokes = nodo.strokes.map(paintLike);
+  if ("strokes" in node && Array.isArray(node.strokes)) {
+    base.strokes = node.strokes.map(paintLike);
   }
-  if (nodo.type === "INSTANCE") {
-    const main = (nodo as InstanceNode).mainComponent;
+  if (node.type === "INSTANCE") {
+    const main = (node as InstanceNode).mainComponent;
     if (main) base.mainComponentName = main.name;
   }
-  if ("layoutMode" in nodo && (nodo.layoutMode === "HORIZONTAL" || nodo.layoutMode === "VERTICAL" || nodo.layoutMode === "GRID")) {
-    base.layoutMode = nodo.layoutMode;
-    base.primaryAxisAlignItems = nodo.primaryAxisAlignItems;
-    base.counterAxisAlignItems = nodo.counterAxisAlignItems;
-    base.paddingLeft = nodo.paddingLeft;
-    base.paddingTop = nodo.paddingTop;
-    base.paddingRight = nodo.paddingRight;
-    base.paddingBottom = nodo.paddingBottom;
-    base.itemSpacing = nodo.itemSpacing;
-    if ("layoutWrap" in nodo) base.layoutWrap = nodo.layoutWrap;
-    if ("layoutSizingHorizontal" in nodo) base.layoutSizingHorizontal = nodo.layoutSizingHorizontal;
-    if ("layoutSizingVertical" in nodo) base.layoutSizingVertical = nodo.layoutSizingVertical;
-    const bvLayout = (nodo.boundVariables ?? {}) as Record<string, VariableAlias | undefined>;
-    const sv: NonNullable<NodoLike["spacingVars"]> = {};
+  if ("layoutMode" in node && (node.layoutMode === "HORIZONTAL" || node.layoutMode === "VERTICAL" || node.layoutMode === "GRID")) {
+    base.layoutMode = node.layoutMode;
+    base.primaryAxisAlignItems = node.primaryAxisAlignItems;
+    base.counterAxisAlignItems = node.counterAxisAlignItems;
+    base.paddingLeft = node.paddingLeft;
+    base.paddingTop = node.paddingTop;
+    base.paddingRight = node.paddingRight;
+    base.paddingBottom = node.paddingBottom;
+    base.itemSpacing = node.itemSpacing;
+    if ("layoutWrap" in node) base.layoutWrap = node.layoutWrap;
+    if ("layoutSizingHorizontal" in node) base.layoutSizingHorizontal = node.layoutSizingHorizontal;
+    if ("layoutSizingVertical" in node) base.layoutSizingVertical = node.layoutSizingVertical;
+    const bvLayout = (node.boundVariables ?? {}) as Record<string, VariableAlias | undefined>;
+    const sv: NonNullable<NodeLike["spacingVars"]> = {};
     for (const campo of ["paddingLeft", "paddingTop", "paddingRight", "paddingBottom", "itemSpacing"] as const) {
       const alias = bvLayout[campo];
       if (alias) {
-        const nombre = nombreVariable(alias.id);
-        if (nombre) sv[campo] = nombre;
+        const name = variableNameVal(alias.id);
+        if (name) sv[campo] = name;
       }
     }
     if (Object.keys(sv).length > 0) base.spacingVars = sv;
-    if (nodo.layoutMode === "GRID") {
-      const g = nodo as unknown as { gridColumnCount?: number; gridRowCount?: number; gridColumnGap?: number; gridRowGap?: number };
+    if (node.layoutMode === "GRID") {
+      const g = node as unknown as { gridColumnCount?: number; gridRowCount?: number; gridColumnGap?: number; gridRowGap?: number };
       base.gridColumnCount = g.gridColumnCount;
       base.gridRowCount = g.gridRowCount;
       base.gridColumnGap = g.gridColumnGap;
       base.gridRowGap = g.gridRowGap;
       const colVar = bvLayout["gridColumnGap"];
-      if (colVar) { const n = nombreVariable(colVar.id); if (n) base.gridColumnGapVar = n; }
+      if (colVar) { const n = variableNameVal(colVar.id); if (n) base.gridColumnGapVar = n; }
       const rowVar = bvLayout["gridRowGap"];
-      if (rowVar) { const n = nombreVariable(rowVar.id); if (n) base.gridRowGapVar = n; }
+      if (rowVar) { const n = variableNameVal(rowVar.id); if (n) base.gridRowGapVar = n; }
     }
   }
-  if ("layoutGrids" in nodo && Array.isArray(nodo.layoutGrids)) {
-    base.layoutGrids = nodo.layoutGrids.map((g) => gridSpecDe(g));
+  if ("layoutGrids" in node && Array.isArray(node.layoutGrids)) {
+    base.layoutGrids = node.layoutGrids.map((g) => gridSpecOf(g));
   }
-  if ("cornerRadius" in nodo && typeof nodo.cornerRadius === "number") base.cornerRadius = nodo.cornerRadius;
-  if ("fillStyleId" in nodo && typeof nodo.fillStyleId === "string" && nodo.fillStyleId !== "") {
-    const estilo = figma.getStyleById(nodo.fillStyleId);
-    if (estilo) base.fillStyleName = estilo.name;
+  if ("cornerRadius" in node && typeof node.cornerRadius === "number") base.cornerRadius = node.cornerRadius;
+  if ("fillStyleId" in node && typeof node.fillStyleId === "string" && node.fillStyleId !== "") {
+    const style = figma.getStyleById(node.fillStyleId);
+    if (style) base.fillStyleName = style.name;
   }
-  if ("strokeStyleId" in nodo && typeof nodo.strokeStyleId === "string" && nodo.strokeStyleId !== "") {
-    const estilo = figma.getStyleById(nodo.strokeStyleId);
-    if (estilo) base.strokeStyleName = estilo.name;
+  if ("strokeStyleId" in node && typeof node.strokeStyleId === "string" && node.strokeStyleId !== "") {
+    const style = figma.getStyleById(node.strokeStyleId);
+    if (style) base.strokeStyleName = style.name;
   }
-  if ("textStyleId" in nodo && typeof nodo.textStyleId === "string" && nodo.textStyleId !== "") {
-    const estilo = figma.getStyleById(nodo.textStyleId);
-    if (estilo) base.textStyleName = estilo.name;
+  if ("textStyleId" in node && typeof node.textStyleId === "string" && node.textStyleId !== "") {
+    const style = figma.getStyleById(node.textStyleId);
+    if (style) base.textStyleName = style.name;
   }
-  if (nodo.type === "TEXT") {
-    const fn = nodo.fontName;
+  if (node.type === "TEXT") {
+    const fn = node.fontName;
     if (fn !== figma.mixed) {
       base.fontFamily = fn.family;
       base.fontStyle = fn.style;
     }
-    if (nodo.fontSize !== figma.mixed) base.fontSize = nodo.fontSize;
-    const lh = nodo.lineHeight;
+    if (node.fontSize !== figma.mixed) base.fontSize = node.fontSize;
+    const lh = node.lineHeight;
     if (lh !== figma.mixed) {
-      if (lh.unit === "AUTO") base.lineHeight = { unidad: "auto" };
-      else if (lh.unit === "PERCENT") base.lineHeight = { unidad: "percent", valor: lh.value };
-      else base.lineHeight = { unidad: "px", valor: lh.value };
+      if (lh.unit === "AUTO") base.lineHeight = { unit: "auto" };
+      else if (lh.unit === "PERCENT") base.lineHeight = { unit: "percent", value: lh.value };
+      else base.lineHeight = { unit: "px", value: lh.value };
     }
-    const ls = nodo.letterSpacing;
+    const ls = node.letterSpacing;
     if (ls !== figma.mixed) {
-      base.letterSpacing = { unidad: ls.unit === "PERCENT" ? "percent" : "px", valor: ls.value };
+      base.letterSpacing = { unit: ls.unit === "PERCENT" ? "percent" : "px", value: ls.value };
     }
-    base.textAlign = nodo.textAlignHorizontal;
-    if (nodo.textCase !== figma.mixed) base.textCase = nodo.textCase;
-    // layoutSizing del texto (Hug/Fixed/Fill) cuando vive dentro de un Auto Layout.
+    base.textAlign = node.textAlignHorizontal;
+    if (node.textCase !== figma.mixed) base.textCase = node.textCase;
+    // the text's layoutSizing (Hug/Fixed/Fill) when it lives inside an Auto Layout.
     try {
-      base.layoutSizingHorizontal = nodo.layoutSizingHorizontal;
-      base.layoutSizingVertical = nodo.layoutSizingVertical;
-    } catch { /* texto suelto, sin padre Auto Layout: sin modo de resizing */ }
+      base.layoutSizingHorizontal = node.layoutSizingHorizontal;
+      base.layoutSizingVertical = node.layoutSizingVertical;
+    } catch { /* loose text, no Auto Layout parent: no resizing mode */ }
   }
-  if ("boundVariables" in nodo && nodo.boundVariables) {
-    const bv = nodo.boundVariables as {
+  if ("boundVariables" in node && node.boundVariables) {
+    const bv = node.boundVariables as {
       fills?: readonly VariableAlias[];
       strokes?: readonly VariableAlias[];
       width?: VariableAlias;
@@ -128,29 +128,29 @@ export function aNodoLike(nodo: SceneNode): NodoLike {
       topLeftRadius?: VariableAlias;
     };
     if (bv.fills && bv.fills.length > 0) {
-      const nombre = nombreVariable(bv.fills[0].id);
-      if (nombre) base.fillVariableName = nombre;
+      const name = variableNameVal(bv.fills[0].id);
+      if (name) base.fillVariableName = name;
     }
     if (bv.strokes && bv.strokes.length > 0) {
-      const nombre = nombreVariable(bv.strokes[0].id);
-      if (nombre) base.strokeVariableName = nombre;
+      const name = variableNameVal(bv.strokes[0].id);
+      if (name) base.strokeVariableName = name;
     }
     if (bv.width) {
-      const nombre = nombreVariable(bv.width.id);
-      if (nombre) base.widthVariableName = nombre;
+      const name = variableNameVal(bv.width.id);
+      if (name) base.widthVariableName = name;
     }
     if (bv.height) {
-      const nombre = nombreVariable(bv.height.id);
-      if (nombre) base.heightVariableName = nombre;
+      const name = variableNameVal(bv.height.id);
+      if (name) base.heightVariableName = name;
     }
-    // El radio uniforme se ata por esquina; topLeftRadius representa al conjunto.
+    // The uniform radius is bound per corner; topLeftRadius represents the whole.
     if (bv.topLeftRadius) {
-      const nombre = nombreVariable(bv.topLeftRadius.id);
-      if (nombre) base.cornerRadiusVar = nombre;
+      const name = variableNameVal(bv.topLeftRadius.id);
+      if (name) base.cornerRadiusVar = name;
     }
   }
-  if ("children" in nodo) {
-    base.children = nodo.children.map((c) => aNodoLike(c));
+  if ("children" in node) {
+    base.children = node.children.map((c) => toNodeLike(c));
   }
   return base;
 }

@@ -1,18 +1,18 @@
-// Helpers compartidos para construir frames con Auto Layout. Tocan figma.*.
+// Shared helpers to build Auto Layout frames. They touch figma.*.
 
-import { varsTema } from "../utils/variables-tema.ts";
-import { anchoContenedor } from "../utils/columnas.ts";
+import { themeVars } from "../utils/variables-tema.ts";
+import { containerWidth } from "../utils/columnas.ts";
 
-// Fill SOLID atado a una variable de tema (se re-tematiza al cambiar el modo en Figma).
-export function fillTematizado(variable: Variable): Paint[] {
+// SOLID fill bound to a theme variable (re-themes when the mode changes in Figma).
+export function themedFill(variable: Variable): Paint[] {
   const base: SolidPaint = { type: "SOLID", color: { r: 0, g: 0, b: 0 } };
   return [figma.variables.setBoundVariableForPaint(base, "color", variable)];
 }
 
-// Crea un frame con Auto Layout vertical configurado.
-export function frameVertical(nombre: string, gap: number, padding = 0): FrameNode {
+// Creates a frame with a configured vertical Auto Layout.
+export function verticalFrame(name: string, gap: number, padding = 0): FrameNode {
   const f = figma.createFrame();
-  f.name = nombre;
+  f.name = name;
   f.layoutMode = "VERTICAL";
   f.itemSpacing = gap;
   f.paddingTop = f.paddingBottom = f.paddingLeft = f.paddingRight = padding;
@@ -22,10 +22,10 @@ export function frameVertical(nombre: string, gap: number, padding = 0): FrameNo
   return f;
 }
 
-// Crea un frame con Auto Layout horizontal configurado.
-export function frameHorizontal(nombre: string, gap: number): FrameNode {
+// Creates a frame with a configured horizontal Auto Layout.
+export function horizontalFrame(name: string, gap: number): FrameNode {
   const f = figma.createFrame();
-  f.name = nombre;
+  f.name = name;
   f.layoutMode = "HORIZONTAL";
   f.itemSpacing = gap;
   f.primaryAxisSizingMode = "AUTO";
@@ -37,9 +37,9 @@ export function frameHorizontal(nombre: string, gap: number): FrameNode {
 export const FONT_REG: FontName = { family: "Inter", style: "Regular" };
 export const FONT_BOLD: FontName = { family: "Inter", style: "Bold" };
 export const FONT_SEMI: FontName = { family: "Inter", style: "Semi Bold" };
-// Inter Medium (con fallback a Regular vía cargarFont).
+// Inter Medium (with fallback to Regular via loadFont).
 export const FONT_MEDIUM: FontName[] = [{ family: "Inter", style: "Medium" }, { family: "Inter", style: "Regular" }];
-// Monospace: SF Mono primero, JetBrains Mono como fallback (y al final Inter, vía cargarFont).
+// Monospace: SF Mono first, JetBrains Mono as fallback (and finally Inter, via loadFont).
 export const FONT_MONO: FontName[] = [
   { family: "SF Mono", style: "Regular" },
   { family: "JetBrains Mono", style: "Regular" },
@@ -47,9 +47,9 @@ export const FONT_MONO: FontName[] = [
 
 const fontsCache = new Map<string, FontName>();
 
-// Carga la primera fuente disponible de la lista (o una sola); si ninguna está
-// instalada en el archivo, cae a Inter Regular. Cachea por la cadena pedida.
-export async function cargarFont(font: FontName | FontName[]): Promise<FontName> {
+// Loads the first available font from the list (or a single one); if none is
+// installed in the file, falls back to Inter Regular. Caches by the requested chain.
+export async function loadFont(font: FontName | FontName[]): Promise<FontName> {
   const lista = Array.isArray(font) ? font : [font];
   const key = lista.map((f) => `${f.family}|${f.style}`).join(">");
   const cached = fontsCache.get(key);
@@ -60,7 +60,7 @@ export async function cargarFont(font: FontName | FontName[]): Promise<FontName>
       fontsCache.set(key, f);
       return f;
     } catch {
-      // probar la siguiente de la cadena
+      // try the next one in the chain
     }
   }
   await figma.loadFontAsync(FONT_REG);
@@ -68,16 +68,16 @@ export async function cargarFont(font: FontName | FontName[]): Promise<FontName>
   return FONT_REG;
 }
 
-// Crea un texto. fontSize en px; `font` opcional (default Inter Regular); acepta una
-// cadena de fallback (FontName[]) y cae a Inter si ninguna está disponible.
-export async function texto(contenido: string, fontSize: number, font: FontName | FontName[] = FONT_REG): Promise<TextNode> {
+// Creates a text. fontSize in px; `font` optional (default Inter Regular); accepts a
+// fallback chain (FontName[]) and falls back to Inter if none is available.
+export async function text(content: string, fontSize: number, font: FontName | FontName[] = FONT_REG): Promise<TextNode> {
   const t = figma.createText();
-  t.fontName = await cargarFont(font);
-  t.characters = contenido;
+  t.fontName = await loadFont(font);
+  t.characters = content;
   t.fontSize = fontSize;
-  t.fills = fillTematizado(varsTema().texto);
-  // Definición completa de estilo de texto (no dejar nada en "auto"): line-height
-  // 1.5×, sin tracking, alineado arriba-izquierda, sin decoración ni transformación.
+  t.fills = themedFill(themeVars().text);
+  // Full text style definition (leave nothing on "auto"): line-height
+  // 1.5×, no tracking, aligned top-left, no decoration or transformation.
   t.lineHeight = { value: 150, unit: "PERCENT" };
   t.letterSpacing = { value: 0, unit: "PERCENT" };
   t.textAlignHorizontal = "LEFT";
@@ -87,112 +87,112 @@ export async function texto(contenido: string, fontSize: number, font: FontName 
   return t;
 }
 
-// Texto del header de una Card: Inter Medium 16, line-height 32px, sin tracking.
-export async function textoHeaderCard(contenido: string): Promise<TextNode> {
-  const t = await texto(contenido, 16, FONT_MEDIUM);
+// Card header text: Inter Medium 16, line-height 32px, no tracking.
+export async function cardHeaderText(content: string): Promise<TextNode> {
+  const t = await text(content, 16, FONT_MEDIUM);
   t.lineHeight = { value: 32, unit: "PIXELS" };
   t.letterSpacing = { value: 0, unit: "PERCENT" };
   return t;
 }
 
-export const BORDE_PILL: RGB = { r: 0.819, g: 0.835, b: 0.859 }; // #D1D5DB
-const FONDO_CHIP: RGB = { r: 1, g: 0.878, b: 0.988 };       // #FFE0FC
-const TEXTO_CHIP: RGB = { r: 0.918, g: 0.063, b: 0.675 };   // #EA10AC
+export const BORDER_PILL: RGB = { r: 0.819, g: 0.835, b: 0.859 }; // #D1D5DB
+const CHIP_BG: RGB = { r: 1, g: 0.878, b: 0.988 };       // #FFE0FC
+const CHIP_TEXT: RGB = { r: 0.918, g: 0.063, b: 0.675 };   // #EA10AC
 const COLOR_CLAVE: RGB = { r: 0.420, g: 0.447, b: 0.502 }; // #6B7280
-const COLOR_VALOR: RGB = { r: 0.216, g: 0.255, b: 0.318 }; // #374151
+const VALUE_COLOR: RGB = { r: 0.216, g: 0.255, b: 0.318 }; // #374151
 
-// Texto de la CLAVE de un spec (ej. "Breakpoint:"): monospace, gris #6B7280.
-export async function textoClave(s: string): Promise<TextNode> {
-  const t = await texto(s, 12, FONT_MONO);
+// Spec KEY text (e.g. "Breakpoint:"): monospace, gray #6B7280.
+export async function keyText(s: string): Promise<TextNode> {
+  const t = await text(s, 12, FONT_MONO);
   t.fills = [{ type: "SOLID", color: COLOR_CLAVE }];
   return t;
 }
 
-// Texto del VALOR de un spec (ej. "Mobile"): monospace, gris oscuro #374151.
-export async function textoValor(s: string): Promise<TextNode> {
-  const t = await texto(s, 12, FONT_MONO);
-  t.fills = [{ type: "SOLID", color: COLOR_VALOR }];
+// Spec VALUE text (e.g. "Mobile"): monospace, dark gray #374151.
+export async function valueText(s: string): Promise<TextNode> {
+  const t = await text(s, 12, FONT_MONO);
+  t.fills = [{ type: "SOLID", color: VALUE_COLOR }];
   return t;
 }
 
-// Chip gris para una variable/style (monospace). Compartido entre secciones.
-export async function chipVariable(nombre: string): Promise<FrameNode> {
-  const c = frameHorizontal("ChipVar", 0);
+// Gray chip for a variable/style (monospace). Shared across sections.
+export async function variableChip(name: string): Promise<FrameNode> {
+  const c = horizontalFrame("ChipVar", 0);
   c.counterAxisAlignItems = "CENTER";
   c.paddingTop = c.paddingBottom = 2;
   c.paddingLeft = c.paddingRight = 5;
   c.cornerRadius = 4;
-  c.fills = [{ type: "SOLID", color: FONDO_CHIP }];
-  const t = await texto(nombre, 11, FONT_MONO);
-  t.fills = [{ type: "SOLID", color: TEXTO_CHIP }];
+  c.fills = [{ type: "SOLID", color: CHIP_BG }];
+  const t = await text(name, 11, FONT_MONO);
+  t.fills = [{ type: "SOLID", color: CHIP_TEXT }];
   c.appendChild(t);
   return c;
 }
 
-// Chip con borde para el nombre de una sección (ej. "ANATOMY"): sin fill, stroke #374151.
-export async function tagSeccion(etiqueta: string): Promise<FrameNode> {
-  const chip = frameHorizontal("Tag", 0);
+// Bordered chip for a section name (e.g. "ANATOMY"): no fill, stroke #374151.
+export async function sectionTag(label: string): Promise<FrameNode> {
+  const chip = horizontalFrame("Tag", 0);
   chip.counterAxisAlignItems = "CENTER";
   chip.paddingTop = chip.paddingBottom = 6;
   chip.paddingLeft = chip.paddingRight = 16;
   chip.cornerRadius = 6;
   chip.fills = [];
-  chip.strokes = [{ type: "SOLID", color: COLOR_VALOR }];
+  chip.strokes = [{ type: "SOLID", color: VALUE_COLOR }];
   chip.strokeWeight = 1;
-  const t = await texto(etiqueta.toUpperCase(), 12, FONT_SEMI);
-  t.fills = [{ type: "SOLID", color: COLOR_VALOR }];
+  const t = await text(label.toUpperCase(), 12, FONT_SEMI);
+  t.fills = [{ type: "SOLID", color: VALUE_COLOR }];
   t.letterSpacing = { value: 8, unit: "PERCENT" };
   chip.appendChild(t);
   return chip;
 }
 
-// Párrafo descriptivo de una sección (gris, ancho fijo con wrap). Va debajo del tag.
-export async function parrafoSeccion(descripcion: string, ancho = 720): Promise<TextNode> {
-  const t = await texto(descripcion, 14);
+// Section descriptive paragraph (gray, fixed width with wrap). Goes below the tag.
+export async function sectionParagraph(description: string, width = 720): Promise<TextNode> {
+  const t = await text(description, 14);
   t.fills = [{ type: "SOLID", color: COLOR_CLAVE }];
   t.textAutoResize = "HEIGHT";
-  t.resize(ancho, t.height);
+  t.resize(width, t.height);
   return t;
 }
 
-// Fila en pill con borde (cada atributo/propiedad). Appendea los nodos provistos.
-export function filaPill(nodos: SceneNode[]): FrameNode {
-  const fila = frameHorizontal("itemValue", 6);
-  fila.counterAxisAlignItems = "CENTER";
-  fila.paddingTop = fila.paddingBottom = 6;
-  fila.paddingLeft = fila.paddingRight = 8;
-  fila.cornerRadius = 4;
-  fila.strokes = [{ type: "SOLID", color: BORDE_PILL }];
-  fila.strokeWeight = 1;
-  for (const n of nodos) fila.appendChild(n);
-  return fila;
+// Bordered pill row (each attribute/property). Appends the provided nodes.
+export function pillRow(nodes: SceneNode[]): FrameNode {
+  const row = horizontalFrame("itemValue", 6);
+  row.counterAxisAlignItems = "CENTER";
+  row.paddingTop = row.paddingBottom = 6;
+  row.paddingLeft = row.paddingRight = 8;
+  row.cornerRadius = 4;
+  row.strokes = [{ type: "SOLID", color: BORDER_PILL }];
+  row.strokeWeight = 1;
+  for (const n of nodes) row.appendChild(n);
+  return row;
 }
 
-// Card de entrada: header (con divisor inferior) + body (padding 16, gap 8).
-export function tarjeta(headerNodos: SceneNode[], filas: FrameNode[]): FrameNode {
-  const card = frameVertical("Card", 0);
-  card.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+// Entry card: header (with bottom divider) + body (padding 16, gap 8).
+export function card(headerNodes: SceneNode[], rows: FrameNode[]): FrameNode {
+  const card = verticalFrame("Card", 0);
+  card.strokes = [{ type: "SOLID", color: BORDER_PILL }];
   card.strokeWeight = 1;
   card.cornerRadius = 8;
-  card.fills = fillTematizado(varsTema().fondoSpec);
+  card.fills = themedFill(themeVars().bgSpec);
   card.clipsContent = true;
 
-  const header = frameHorizontal("Header", 8);
+  const header = horizontalFrame("Header", 8);
   header.counterAxisAlignItems = "CENTER";
   header.paddingTop = header.paddingBottom = 8;
   header.paddingLeft = header.paddingRight = 16;
-  header.strokes = [{ type: "SOLID", color: BORDE_PILL }];
+  header.strokes = [{ type: "SOLID", color: BORDER_PILL }];
   header.strokeTopWeight = 0;
   header.strokeLeftWeight = 0;
   header.strokeRightWeight = 0;
   header.strokeBottomWeight = 1;
-  for (const n of headerNodos) header.appendChild(n);
+  for (const n of headerNodes) header.appendChild(n);
   card.appendChild(header);
   header.layoutSizingHorizontal = "FILL";
 
-  const body = frameVertical("Body", 8);
+  const body = verticalFrame("Body", 8);
   body.paddingTop = body.paddingBottom = body.paddingLeft = body.paddingRight = 16;
-  for (const f of filas) body.appendChild(f);
+  for (const f of rows) body.appendChild(f);
   card.appendChild(body);
   body.layoutSizingHorizontal = "FILL";
   return card;
@@ -200,41 +200,41 @@ export function tarjeta(headerNodos: SceneNode[], filas: FrameNode[]): FrameNode
 
 const GAP_COL = 64;
 
-// Acomoda los ítems en `columnas` columnas: un contenedor wrap de ancho fijo,
-// con cada ítem fijado al ancho máximo del grupo (≥ su ancho natural → sin overflow).
-export function enColumnas(items: FrameNode[], columnas: number): FrameNode {
+// Arranges the items in `columns` columns: a fixed-width wrap container,
+// with each item set to the group's max width (≥ its natural width → no overflow).
+export function inColumns(items: FrameNode[], columns: number): FrameNode {
   let maxW = 0;
   for (const it of items) maxW = Math.max(maxW, it.width);
 
-  const cont = figma.createFrame();
-  cont.name = "Columns";
-  cont.layoutMode = "HORIZONTAL";
-  cont.layoutWrap = "WRAP";
-  cont.itemSpacing = GAP_COL;
-  cont.counterAxisSpacing = GAP_COL;
-  cont.counterAxisSizingMode = "AUTO";
-  cont.fills = [];
-  cont.primaryAxisSizingMode = "FIXED";
-  cont.resize(anchoContenedor(columnas, maxW, GAP_COL), 1);
+  const container = figma.createFrame();
+  container.name = "Columns";
+  container.layoutMode = "HORIZONTAL";
+  container.layoutWrap = "WRAP";
+  container.itemSpacing = GAP_COL;
+  container.counterAxisSpacing = GAP_COL;
+  container.counterAxisSizingMode = "AUTO";
+  container.fills = [];
+  container.primaryAxisSizingMode = "FIXED";
+  container.resize(containerWidth(columns, maxW, GAP_COL), 1);
 
   for (const it of items) {
-    cont.appendChild(it);
+    container.appendChild(it);
     it.layoutSizingHorizontal = "FIXED";
     it.resize(maxW, it.height);
   }
-  return cont;
+  return container;
 }
 
-// Arma una tabla: text nodes de todas las celdas, alineadas fijando cada celda
-// al ancho máximo de su columna (≥ su ancho natural → sin overflow). Header arriba.
-export async function tablaDe(headers: string[], filas: string[][]): Promise<FrameNode> {
-  const registros = [headers, ...filas];
+// Builds a table: text nodes for all cells, aligned by setting each cell
+// to its column's max width (≥ its natural width → no overflow). Header on top.
+export async function tableOf(headers: string[], rows: string[][]): Promise<FrameNode> {
+  const registros = [headers, ...rows];
   const ncols = headers.length;
 
   const celdas: TextNode[][] = [];
   for (const registro of registros) {
     const row: TextNode[] = [];
-    for (let c = 0; c < ncols; c++) row.push(await texto(registro[c] ?? "", 14));
+    for (let c = 0; c < ncols; c++) row.push(await text(registro[c] ?? "", 14));
     celdas.push(row);
   }
 
@@ -245,15 +245,15 @@ export async function tablaDe(headers: string[], filas: string[][]): Promise<Fra
     maxW.push(m);
   }
 
-  const cont = frameVertical("Table", 8);
+  const container = verticalFrame("Table", 8);
   for (const row of celdas) {
-    const filaFrame = frameHorizontal("Row", 24);
+    const frameRow = horizontalFrame("Row", 24);
     for (let c = 0; c < ncols; c++) {
-      filaFrame.appendChild(row[c]);
+      frameRow.appendChild(row[c]);
       row[c].layoutSizingHorizontal = "FIXED";
       row[c].resize(maxW[c], row[c].height);
     }
-    cont.appendChild(filaFrame);
+    container.appendChild(frameRow);
   }
-  return cont;
+  return container;
 }

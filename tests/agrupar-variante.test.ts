@@ -1,28 +1,28 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { agruparPorVariante } from "../src/plugin/utils/agrupar-variante.ts";
+import { groupByVariant } from "../src/plugin/utils/agrupar-variante.ts";
 
-test("agrupa por variante preservando el orden de primera aparición", () => {
-  const elementos = [
-    { variante: "Size=M", nombre: "Icon", tipo: "INSTANCE" },
-    { variante: "Size=L", nombre: "Badge", tipo: "FRAME" },
-    { variante: "Size=M", nombre: "Label", tipo: "TEXT" },
+test("agrupa por variant preservando el orden de primera aparición", () => {
+  const elements = [
+    { variant: "Size=M", name: "Icon", type: "INSTANCE" },
+    { variant: "Size=L", name: "Badge", type: "FRAME" },
+    { variant: "Size=M", name: "Label", type: "TEXT" },
   ];
-  assert.deepEqual(agruparPorVariante(elementos), [
+  assert.deepEqual(groupByVariant(elements), [
     {
-      variante: "Size=M",
-      elementos: [
-        { variante: "Size=M", nombre: "Icon", tipo: "INSTANCE" },
-        { variante: "Size=M", nombre: "Label", tipo: "TEXT" },
+      variant: "Size=M",
+      elements: [
+        { variant: "Size=M", name: "Icon", type: "INSTANCE" },
+        { variant: "Size=M", name: "Label", type: "TEXT" },
       ],
     },
     {
-      variante: "Size=L",
-      elementos: [{ variante: "Size=L", nombre: "Badge", tipo: "FRAME" }],
+      variant: "Size=L",
+      elements: [{ variant: "Size=L", name: "Badge", type: "FRAME" }],
     },
   ]);
 });
 
 test("lista vacía → []", () => {
-  assert.deepEqual(agruparPorVariante([]), []);
+  assert.deepEqual(groupByVariant([]), []);
 });

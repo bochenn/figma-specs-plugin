@@ -1,4 +1,4 @@
-import { frameHorizontal, textoValor, BORDE_PILL } from "./frames.ts";
+import { horizontalFrame, valueText, BORDER_PILL } from "./frames.ts";
 import iconWidth from "../../../resources/figma-UI3/icon.24.prop-width.svg";
 import iconHeight from "../../../resources/figma-UI3/icon.24.prop-height.svg";
 import iconWidthFixed from "../../../resources/figma-UI3/icon.24.al.constrain-horiz.svg";
@@ -33,8 +33,8 @@ import iconAlignHCenter from "../../../resources/figma-UI3/icon.16.autolayoutgri
 import iconAlignHBottom from "../../../resources/figma-UI3/icon.16.autolayoutgrid.horizontal.bottom.svg";
 import iconAlignBaseline from "../../../resources/figma-UI3/icon.16.autolayout.alignment.baseline.svg";
 
-// key lógica → SVG crudo de la librería UI3.
-const ICONOS_UI3: Record<string, string> = {
+// logical key → raw SVG from the UI3 library.
+const UI3_ICONS: Record<string, string> = {
   width: iconWidth,
   height: iconHeight,
   "dir-horizontal": iconDirH,
@@ -64,61 +64,61 @@ const ICONOS_UI3: Record<string, string> = {
   "height-hug": iconHeightHug,
 };
 
-// Key del ícono de resizing (Fixed/Hug/Fill) para una fila de width/height,
-// o undefined si el atributo no es dimensional o no tiene modo de resizing.
-export function iconoResizingKey(clave: string, prefijo?: string): string | undefined {
-  if (!prefijo || (clave !== "width" && clave !== "height")) return undefined;
-  return `${clave}-${prefijo.toLowerCase()}`; // ej. "width-hug"
+// Resizing icon key (Fixed/Hug/Fill) for a width/height row,
+// or undefined if the attribute isn't dimensional or has no resizing mode.
+export function resizingIconKey(key: string, prefix?: string): string | undefined {
+  if (!prefix || (key !== "width" && key !== "height")) return undefined;
+  return `${key}-${prefix.toLowerCase()}`; // e.g. "width-hug"
 }
 
-// Indicador del modo de dimensión que va al FINAL de una fila de width/height:
-// cajita con borde + ícono del modo, seguida del texto ("Fixed" | "Hug" | "Fill").
-export async function indicadorDimension(clave: string, modo: string): Promise<FrameNode> {
-  const cont = frameHorizontal("dimMode", 6);
-  cont.counterAxisAlignItems = "CENTER";
-  const key = iconoResizingKey(clave, modo);
-  if (key) {
-    const caja = frameHorizontal("dimIcon", 0);
-    caja.counterAxisAlignItems = "CENTER";
-    caja.primaryAxisAlignItems = "CENTER";
-    caja.paddingTop = caja.paddingBottom = caja.paddingLeft = caja.paddingRight = 3;
-    caja.cornerRadius = 4;
-    caja.strokes = [{ type: "SOLID", color: BORDE_PILL }];
-    caja.strokeWeight = 1;
-    caja.appendChild(nodoIcono(key, 16));
-    cont.appendChild(caja);
+// Dimension-mode indicator that goes at the END of a width/height row:
+// small bordered box + mode icon, followed by the text ("Fixed" | "Hug" | "Fill").
+export async function dimensionIndicator(key: string, mode: string): Promise<FrameNode> {
+  const container = horizontalFrame("dimMode", 6);
+  container.counterAxisAlignItems = "CENTER";
+  const iconKey = resizingIconKey(key, mode);
+  if (iconKey) {
+    const box = horizontalFrame("dimIcon", 0);
+    box.counterAxisAlignItems = "CENTER";
+    box.primaryAxisAlignItems = "CENTER";
+    box.paddingTop = box.paddingBottom = box.paddingLeft = box.paddingRight = 3;
+    box.cornerRadius = 4;
+    box.strokes = [{ type: "SOLID", color: BORDER_PILL }];
+    box.strokeWeight = 1;
+    box.appendChild(nodeIcon(iconKey, 16));
+    container.appendChild(box);
   }
-  cont.appendChild(await textoValor(modo));
-  return cont;
+  container.appendChild(await valueText(mode));
+  return container;
 }
 
-const GRIS_ICONO = "#666666";
+const ICON_GRAY = "#666666";
 
-// Crea el nodo del ícono normalizado a 24px y recoloreado al gris del panel.
-// Los íconos UI3 vienen en negro (fill="black") o azul de acento (#007BE5); se
-// recolorean al gris del panel manteniendo white/none y las opacidades.
-export function nodoIcono(key: string, tam = 24): SceneNode {
-  const raw = ICONOS_UI3[key] ?? ICONOS_UI3.width;
-  // Se quita el `style` inline porque puede traer un override en P3
-  // (`fill:color(display-p3 ...)`) que pisa al atributo `fill` recoloreado.
+// Creates the icon node normalized to 24px and recolored to the panel gray.
+// The UI3 icons come in black (fill="black") or accent blue (#007BE5); they're
+// recolored to the panel gray, keeping white/none and the opacities.
+export function nodeIcon(key: string, tam = 24): SceneNode {
+  const raw = UI3_ICONS[key] ?? UI3_ICONS.width;
+  // The inline `style` is removed because it may carry a P3 override
+  // (`fill:color(display-p3 ...)`) that overrides the recolored `fill` attribute.
   const svg = raw
     .replace(/width="\d+"/, `width="${tam}"`)
     .replace(/height="\d+"/, `height="${tam}"`)
     .replace(/\s*style="[^"]*"/g, "")
-    .split("black").join(GRIS_ICONO)
-    .split("#171717").join(GRIS_ICONO)
-    .split("#007BE5").join(GRIS_ICONO);
+    .split("black").join(ICON_GRAY)
+    .split("#171717").join(ICON_GRAY)
+    .split("#007BE5").join(ICON_GRAY);
   return figma.createNodeFromSvg(svg);
 }
 
-const ICONOS_TIPO: Record<string, string> = {
+const TYPE_ICONS: Record<string, string> = {
   FRAME: iconFrame, INSTANCE: iconInstance, COMPONENT: iconComponent,
   COMPONENT_SET: iconComponentSet, GROUP: iconGroup, TEXT: iconText, VECTOR: iconImage,
 };
 
-// Nodo del ícono del tipo de capa (o undefined si no hay ícono para ese tipo).
-export function nodoIconoTipo(tipo: string, tam = 24): SceneNode | undefined {
-  const raw = ICONOS_TIPO[tipo];
+// Layer-type icon node (or undefined if there's no icon for that type).
+export function nodeTypeIcon(type: string, tam = 24): SceneNode | undefined {
+  const raw = TYPE_ICONS[type];
   if (!raw) return undefined;
   const svg = raw
     .replace(/width="\d+"/, `width="${tam}"`)

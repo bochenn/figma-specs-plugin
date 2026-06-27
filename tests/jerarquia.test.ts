@@ -1,12 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { prefijoProfundidad } from "../src/plugin/utils/jerarquia.ts";
+import { depthPrefix } from "../src/plugin/utils/jerarquia.ts";
 
-test("profundidad 0 → sin prefijo", () => {
-  assert.equal(prefijoProfundidad(0), "");
+test("depth 0 → sin prefix", () => {
+  assert.equal(depthPrefix(0), "");
 });
 
-test("profundidad >0 → sangría + flecha por nivel", () => {
-  assert.equal(prefijoProfundidad(1), "  ↳ ");
-  assert.equal(prefijoProfundidad(2), "    ↳ ");
+test("depth >0 → sangría + flecha por nivel", () => {
+  assert.equal(depthPrefix(1), "  ↳ ");
+  assert.equal(depthPrefix(2), "    ↳ ");
 });

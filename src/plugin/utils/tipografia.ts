@@ -1,45 +1,45 @@
-import type { FormatoTipo, AlturaLinea, EspaciadoLetra } from "../modelo/tipos.ts";
-import { formatearEspaciado, unidadActual } from "./espaciado.ts";
+import type { TypeFormat, LineHeightVal, LetterSpacingVal } from "../modelo/tipos.ts";
+import { formatSpacing, currentUnit } from "./espaciado.ts";
 
-// Valor en px formateado según la unidad actual:
+// Value in px formatted per the current unit:
 // px → "16" (Plain) o "16px" (CSS); rem → "1rem" en ambos.
-function valorPx(n: number, conSufijo: boolean): string {
-  if (unidadActual() === "rem") return formatearEspaciado(n, "rem");
-  return conSufijo ? `${n}px` : String(n);
+function pxValue(n: number, withSuffix: boolean): string {
+  if (currentUnit() === "rem") return formatSpacing(n, "rem");
+  return withSuffix ? `${n}px` : String(n);
 }
 
-// Formatea la tipografía de un nodo (line-height y letter-spacing incluidos) según el formato elegido.
-export function formatearTipografia(
-  t: { family: string; style: string; size: number; lineHeight?: AlturaLinea; letterSpacing?: EspaciadoLetra },
-  formato: FormatoTipo,
+// Formats a node's typography (line-height and letter-spacing included) per the chosen format.
+export function formatTypography(
+  t: { family: string; style: string; size: number; lineHeight?: LineHeightVal; letterSpacing?: LetterSpacingVal },
+  format: TypeFormat,
 ): string {
   const lh = t.lineHeight;
   const ls = t.letterSpacing;
-  if (formato === "CSS") {
-    let medida = valorPx(t.size, true);
-    if (lh && lh.unidad === "px") medida += `/${valorPx(lh.valor, true)}`;
-    else if (lh && lh.unidad === "percent") medida += `/${lh.valor}%`;
-    let s = `${medida} ${t.style} ${t.family}`;
-    if (ls && ls.valor !== 0) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : valorPx(ls.valor, true)}`;
+  if (format === "CSS") {
+    let measure = pxValue(t.size, true);
+    if (lh && lh.unit === "px") measure += `/${pxValue(lh.value, true)}`;
+    else if (lh && lh.unit === "percent") measure += `/${lh.value}%`;
+    let s = `${measure} ${t.style} ${t.family}`;
+    if (ls && ls.value !== 0) s += ` · LS ${ls.unit === "percent" ? `${ls.value}%` : pxValue(ls.value, true)}`;
     return s;
   }
-  let s = `${t.family} ${t.style} ${valorPx(t.size, false)}`;
+  let s = `${t.family} ${t.style} ${pxValue(t.size, false)}`;
   if (lh) {
-    const lhStr = lh.unidad === "auto" ? "auto" : lh.unidad === "percent" ? `${lh.valor}%` : valorPx(lh.valor, false);
+    const lhStr = lh.unit === "auto" ? "auto" : lh.unit === "percent" ? `${lh.value}%` : pxValue(lh.value, false);
     s += ` / ${lhStr}`;
   }
-  if (ls && ls.valor !== 0) s += ` · LS ${ls.unidad === "percent" ? `${ls.valor}%` : valorPx(ls.valor, false)}`;
+  if (ls && ls.value !== 0) s += ` · LS ${ls.unit === "percent" ? `${ls.value}%` : pxValue(ls.value, false)}`;
   return s;
 }
 
-let formato: FormatoTipo = "Plain";
+let format: TypeFormat = "Plain";
 
-// Setea el formato de tipografía actual (default Plain).
-export function aplicarFormatoTipo(f: FormatoTipo): void {
-  formato = f;
+// Sets the current typography format (default Plain).
+export function applyTypeFormat(f: TypeFormat): void {
+  format = f;
 }
 
-// Devuelve el formato de tipografía actual.
-export function formatoTipoActual(): FormatoTipo {
-  return formato;
+// Returns the current typography format.
+export function currentTypeFormat(): TypeFormat {
+  return format;
 }

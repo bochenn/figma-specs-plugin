@@ -1,21 +1,21 @@
-import type { FilaInventario, GradienteData, AlturaLinea, EspaciadoLetra } from "../modelo/tipos.ts";
-import { hexDeColor } from "../variables/modes.ts";
-import { limpiarPrefijoColeccion } from "../utils/nombre-variable.ts";
+import type { InventoryRow, GradientData, LineHeightVal, LetterSpacingVal } from "../modelo/tipos.ts";
+import { hexOfColor } from "../variables/modes.ts";
+import { stripCollectionPrefix } from "../utils/nombre-variable.ts";
 
-// AlturaLinea desde el LineHeight de Figma.
-function alturaLinea(lh: LineHeight): AlturaLinea {
-  if (lh.unit === "AUTO") return { unidad: "auto" };
-  if (lh.unit === "PERCENT") return { unidad: "percent", valor: lh.value };
-  return { unidad: "px", valor: lh.value };
+// LineHeightVal from Figma's LineHeight.
+function alturaLinea(lh: LineHeight): LineHeightVal {
+  if (lh.unit === "AUTO") return { unit: "auto" };
+  if (lh.unit === "PERCENT") return { unit: "percent", value: lh.value };
+  return { unit: "px", value: lh.value };
 }
 
-// EspaciadoLetra desde el LetterSpacing de Figma.
-function espaciadoLetra(ls: LetterSpacing): EspaciadoLetra {
-  return { unidad: ls.unit === "PERCENT" ? "percent" : "px", valor: ls.value };
+// LetterSpacingVal from Figma's LetterSpacing.
+function espaciadoLetra(ls: LetterSpacing): LetterSpacingVal {
+  return { unit: ls.unit === "PERCENT" ? "percent" : "px", value: ls.value };
 }
 
-// Gradiente (stops + transform) desde un GradientPaint.
-function gradienteDe(p: GradientPaint): GradienteData {
+// Gradient (stops + transform) from a GradientPaint.
+function gradienteDe(p: GradientPaint): GradientData {
   return {
     type: p.type,
     gradientStops: p.gradientStops.map((s) => ({ position: s.position, color: { r: s.color.r, g: s.color.g, b: s.color.b, a: s.color.a } })),
@@ -23,7 +23,7 @@ function gradienteDe(p: GradientPaint): GradienteData {
   };
 }
 
-// Resuelve el color de una variable en su mode default, siguiendo alias.
+// Resolves a variable's color in its default mode, following aliases.
 async function colorVariable(v: Variable): Promise<string | undefined> {
   const col = await figma.variables.getVariableCollectionByIdAsync(v.variableCollectionId);
   let modeId = col?.defaultModeId ?? Object.keys(v.valuesByMode)[0];
@@ -36,41 +36,41 @@ async function colorVariable(v: Variable): Promise<string | undefined> {
     modeId = aliasCol?.defaultModeId ?? Object.keys(alias.valuesByMode)[0];
     raw = alias.valuesByMode[modeId];
   }
-  if (raw && typeof raw === "object" && "r" in raw) return hexDeColor(raw);
+  if (raw && typeof raw === "object" && "r" in raw) return hexOfColor(raw);
   return undefined;
 }
 
-// Inventario de TODOS los estilos/variables locales del documento (catálogo).
-// Las filas no llevan applied-where: no es sobre un elemento puntual.
-export async function inventarioDocumento(): Promise<FilaInventario[]> {
-  const filas: FilaInventario[] = [];
+// Inventory of ALL the document's local styles/variables (catalog).
+// The rows carry no applied-where: it's not about a specific element.
+export async function documentInventory(): Promise<InventoryRow[]> {
+  const rows: InventoryRow[] = [];
 
   for (const v of await figma.variables.getLocalVariablesAsync("COLOR")) {
     const col = await figma.variables.getVariableCollectionByIdAsync(v.variableCollectionId);
-    const nombre = col ? `${limpiarPrefijoColeccion(col.name)}/${v.name}` : v.name;
-    const fila: FilaInventario = { tabla: "variable", nombre, appliedAs: "", appliedTo: "" };
+    const name = col ? `${stripCollectionPrefix(col.name)}/${v.name}` : v.name;
+    const row: InventoryRow = { table: "variable", name, appliedAs: "", appliedTo: "" };
     const hex = await colorVariable(v);
-    if (hex) fila.swatchHex = hex;
-    filas.push(fila);
+    if (hex) row.swatchHex = hex;
+    rows.push(row);
   }
 
   for (const ps of await figma.getLocalPaintStylesAsync()) {
-    const fila: FilaInventario = { tabla: "color", nombre: ps.name, appliedAs: "", appliedTo: "" };
+    const row: InventoryRow = { table: "color", name: ps.name, appliedAs: "", appliedTo: "" };
     const p = ps.paints[0];
-    if (p?.type === "SOLID") fila.swatchHex = hexDeColor(p.color);
-    else if (p && p.type.startsWith("GRADIENT_")) fila.gradiente = gradienteDe(p as GradientPaint);
-    filas.push(fila);
+    if (p?.type === "SOLID") row.swatchHex = hexOfColor(p.color);
+    else if (p && p.type.startsWith("GRADIENT_")) row.gradient = gradienteDe(p as GradientPaint);
+    rows.push(row);
   }
 
   for (const ts of await figma.getLocalTextStylesAsync()) {
-    filas.push({
-      tabla: "text", nombre: ts.name, appliedAs: "", appliedTo: "",
-      tipo: {
-        family: ts.fontName.family, estilo: ts.fontName.style, size: ts.fontSize,
+    rows.push({
+      table: "text", name: ts.name, appliedAs: "", appliedTo: "",
+      type: {
+        family: ts.fontName.family, style: ts.fontName.style, size: ts.fontSize,
         lineHeight: alturaLinea(ts.lineHeight), letterSpacing: espaciadoLetra(ts.letterSpacing),
       },
     });
   }
 
-  return filas;
+  return rows;
 }

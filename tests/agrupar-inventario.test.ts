@@ -1,49 +1,49 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { agruparInventario } from "../src/plugin/inventario/agrupar.ts";
-import type { EntradaEstilo } from "../src/plugin/modelo/tipos.ts";
+import { groupInventory } from "../src/plugin/inventario/agrupar.ts";
+import type { StyleEntry } from "../src/plugin/modelo/tipos.ts";
 
-test("mismo estilo + mismo appliedAs en dos capas → una fila", () => {
-  const entradas: EntradaEstilo[] = [
-    { tabla: "color", nombre: "Error", appliedAs: "Border color", capa: "Active indicator" },
-    { tabla: "color", nombre: "Error", appliedAs: "Border color", capa: "Caret" },
+test("mismo style + mismo appliedAs en dos capas → una row", () => {
+  const entries: StyleEntry[] = [
+    { table: "color", name: "Error", appliedAs: "Border color", layer: "Active indicator" },
+    { table: "color", name: "Error", appliedAs: "Border color", layer: "Caret" },
   ];
-  const filas = agruparInventario(entradas);
-  assert.equal(filas.length, 1);
-  assert.deepEqual(filas[0], {
-    tabla: "color", nombre: "Error", appliedAs: "Border color", appliedTo: "Active indicator, Caret",
+  const rows = groupInventory(entries);
+  assert.equal(rows.length, 1);
+  assert.deepEqual(rows[0], {
+    table: "color", name: "Error", appliedAs: "Border color", appliedTo: "Active indicator, Caret",
   });
 });
 
-test("mismo estilo con distinto appliedAs → dos filas", () => {
-  const entradas: EntradaEstilo[] = [
-    { tabla: "color", nombre: "Error", appliedAs: "Background color", capa: "Alert" },
-    { tabla: "color", nombre: "Error", appliedAs: "Border color", capa: "Caret" },
+test("mismo style con distinto appliedAs → dos rows", () => {
+  const entries: StyleEntry[] = [
+    { table: "color", name: "Error", appliedAs: "Background color", layer: "Alert" },
+    { table: "color", name: "Error", appliedAs: "Border color", layer: "Caret" },
   ];
-  const filas = agruparInventario(entradas);
-  assert.equal(filas.length, 2);
-  assert.equal(filas[0].appliedAs, "Background color");
-  assert.equal(filas[1].appliedAs, "Border color");
+  const rows = groupInventory(entries);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].appliedAs, "Background color");
+  assert.equal(rows[1].appliedAs, "Border color");
 });
 
-test("separa por tabla color/text", () => {
-  const entradas: EntradaEstilo[] = [
-    { tabla: "color", nombre: "Surface", appliedAs: "Background color", capa: "Card" },
-    { tabla: "text", nombre: "Body", appliedAs: "Text style", capa: "Label" },
+test("separa por table color/text", () => {
+  const entries: StyleEntry[] = [
+    { table: "color", name: "Surface", appliedAs: "Background color", layer: "Card" },
+    { table: "text", name: "Body", appliedAs: "Text style", layer: "Label" },
   ];
-  const filas = agruparInventario(entradas);
-  assert.equal(filas.filter((f) => f.tabla === "color").length, 1);
-  assert.equal(filas.filter((f) => f.tabla === "text").length, 1);
+  const rows = groupInventory(entries);
+  assert.equal(rows.filter((f) => f.table === "color").length, 1);
+  assert.equal(rows.filter((f) => f.table === "text").length, 1);
 });
 
-test("entradas variable con swatchHex → fila con swatchHex", () => {
-  const entradas: EntradaEstilo[] = [
-    { tabla: "variable", nombre: "Color/Action", appliedAs: "Background color", capa: "A", swatchHex: "#0E68D4" },
-    { tabla: "variable", nombre: "Color/Action", appliedAs: "Background color", capa: "B", swatchHex: "#0E68D4" },
+test("entries variable con swatchHex → row con swatchHex", () => {
+  const entries: StyleEntry[] = [
+    { table: "variable", name: "Color/Action", appliedAs: "Background color", layer: "A", swatchHex: "#0E68D4" },
+    { table: "variable", name: "Color/Action", appliedAs: "Background color", layer: "B", swatchHex: "#0E68D4" },
   ];
-  const filas = agruparInventario(entradas);
-  assert.equal(filas.length, 1);
-  assert.deepEqual(filas[0], {
-    tabla: "variable", nombre: "Color/Action", appliedAs: "Background color", appliedTo: "A, B", swatchHex: "#0E68D4",
+  const rows = groupInventory(entries);
+  assert.equal(rows.length, 1);
+  assert.deepEqual(rows[0], {
+    table: "variable", name: "Color/Action", appliedAs: "Background color", appliedTo: "A, B", swatchHex: "#0E68D4",
   });
 });
