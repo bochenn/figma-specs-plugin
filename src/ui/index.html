@@ -44,22 +44,16 @@
       .spec-card {
         position: relative; text-align: left; cursor: pointer; font-family: inherit;
         border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
-        padding: 14px 14px 16px;
+        padding: 14px 14px 16px; min-height: 116px;
       }
-      .spec-card .t { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; padding-right: 20px; }
-      .spec-card .d { font-size: 11px; color: var(--text-2); }
-      .spec-card .check {
-        position: absolute; top: 13px; right: 13px; width: 16px; height: 16px;
-        border-radius: 50%; border: 1.5px solid var(--border); background: var(--bg);
-      }
+      .spec-card .ico { display: block; color: var(--text); margin-bottom: 10px; }
+      .spec-card .ico svg { display: block; }
+      .spec-card .t { font-size: 11px; font-weight: 600; line-height: 16px; letter-spacing: 0.005em; color: var(--text); margin-bottom: 6px; }
+      .spec-card .d { font-size: 11px; font-weight: 500; line-height: 16px; letter-spacing: 0.005em; color: var(--text-2); }
       .spec-card.selected { border-color: var(--brand); background: var(--brand-tint); }
+      .spec-card.selected .ico { color: var(--brand-text); }
       .spec-card.selected .t { color: var(--brand-text); }
       .spec-card.selected .d { color: var(--brand-text); opacity: 0.85; }
-      .spec-card.selected .check { border-color: var(--brand); background: var(--brand); }
-      .spec-card.selected .check::after {
-        content: ""; position: absolute; left: 4px; top: 1.5px; width: 4px; height: 8px;
-        border: solid var(--on-brand); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
-      }
       /* Options: groups per section */
       .group { margin-bottom: 8px; }
       .group + .group { border-top: 1px solid var(--border); padding-top: 14px; }
@@ -107,14 +101,14 @@
       <section class="panel" data-panel="specs">
         <p class="subtitle">Select what to include in your spec document.</p>
         <div class="cards">
-          <button class="spec-card selected" data-spec="anatomy"><span class="check"></span><div class="t">Anatomy</div><div class="d">Elements and styling.</div></button>
-          <button class="spec-card" data-spec="properties"><span class="check"></span><div class="t">Properties</div><div class="d">Variants, booleans, slots.</div></button>
-          <button class="spec-card selected" data-spec="layout"><span class="check"></span><div class="t">Layout &amp; Spacing</div><div class="d">Spacing, padding, sizes.</div></button>
-          <button class="spec-card" data-spec="styling"><span class="check"></span><div class="t">Styling Inventory</div><div class="d">Color, typography, and styles.</div></button>
-          <button class="spec-card" data-spec="twoway"><span class="check"></span><div class="t">Two Way</div><div class="d">Crosses two variant properties.</div></button>
-          <button class="spec-card" data-spec="data"><span class="check"></span><div class="t">Data (JSON)</div><div class="d">Represents the element as JSON.</div></button>
-          <button class="spec-card" data-spec="modes"><span class="check"></span><div class="t">Modes</div><div class="d">Shows variable values in modes.</div></button>
-          <button class="spec-card" data-spec="complete"><span class="check"></span><div class="t">Complete</div><div class="d">Anatomy and layout of each variant.</div></button>
+          <button class="spec-card selected" data-spec="anatomy"><div class="t">Anatomy</div><div class="d">Elements and styling.</div></button>
+          <button class="spec-card" data-spec="properties"><div class="t">Properties</div><div class="d">Variants, booleans, slots.</div></button>
+          <button class="spec-card selected" data-spec="layout"><div class="t">Layout &amp; Spacing</div><div class="d">Spacing, padding, sizes.</div></button>
+          <button class="spec-card" data-spec="styling"><div class="t">Styling Inventory</div><div class="d">Color, typography, and styles.</div></button>
+          <button class="spec-card" data-spec="twoway"><div class="t">Two Way</div><div class="d">Crosses two variant properties.</div></button>
+          <button class="spec-card" data-spec="data"><div class="t">Data (JSON)</div><div class="d">Represents the element as JSON.</div></button>
+          <button class="spec-card" data-spec="modes"><div class="t">Modes</div><div class="d">Shows variable values in modes.</div></button>
+          <button class="spec-card" data-spec="complete"><div class="t">Complete</div><div class="d">Anatomy and layout of each variant.</div></button>
         </div>
       </section>
 
