@@ -94,9 +94,25 @@ Each feature has its **spec** in `specs/`: what it does, what it shows, its outp
 
 ## 🤝 Open source
 
-This plugin is open source. You're free to modify and improve it — if you do, please let me know and credit the original plugin in your version. Feature requests and ideas are welcome.
+This plugin is open source under the **MIT license** (see [`LICENSE`](LICENSE)). You're free to use, modify and improve it, including for commercial purposes — the only requirement is keeping the copyright notice. If you do build on it, a heads-up and a credit to the original plugin are appreciated (a courtesy, not a legal obligation). Feature requests and ideas are welcome.
 
 Created and maintained by **bochenn**. If it saves you time, a donation helps keep the development going: [buymeacoffee.com/bochenn](https://buymeacoffee.com/bochenn).
+
+---
+
+## 📜 License
+
+[MIT](LICENSE) © 2026 bochenn.
+
+The MIT license covers the **original source code** of this project. It does **not** cover the bundled third-party icon assets — see Credits below.
+
+---
+
+## 🙏 Credits
+
+- **Icons** — the UI icons in `resources/figma-UI3/` are taken from **[UI3 — Figma's UI Kit](https://www.figma.com/community/file/1486123838948777078/)** on the Figma Community. The kit does **not** state an explicit license, so these icons are included in good faith under [Figma's Community terms](https://www.figma.com/community) and remain the property of their original author(s). They are **not** covered by this project's MIT license; if you redistribute or reuse them, verify their terms yourself.
+- **Fonts** — *Inter*, *SF Mono* and *JetBrains Mono* are referenced **by name** and loaded from the user's Figma environment at runtime. No font files are bundled or redistributed by this plugin.
+- **Build tooling** (dev dependencies) — [esbuild](https://github.com/evanw/esbuild), [TypeScript](https://github.com/microsoft/TypeScript), [@figma/plugin-typings](https://github.com/figma/plugin-typings) and [@types/node](https://github.com/DefinitelyTyped/DefinitelyTyped), all under the MIT license.
 
 ---
 
