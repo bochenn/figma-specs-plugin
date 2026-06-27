@@ -1,44 +1,44 @@
-import type { ElementoAnatomy, Atributo } from "../modelo/tipos.ts";
-import { TAM_MARCADOR } from "../utils/marcadores.ts";
-import { frameVertical, frameHorizontal, texto, tablaDe, fillTematizado, tarjeta, filaPill, chipVariable, FONT_BOLD, textoClave, textoValor, FONT_MEDIUM, textoHeaderCard } from "./frames.ts";
-import { varsTema } from "../utils/variables-tema.ts";
-import { HEADERS_ANATOMY, filaAnatomy } from "../utils/tabla-anatomy.ts";
-import { hexARgb } from "../utils/color.ts";
-import { nodoIconoTipo, iconoResizingKey, indicadorDimension } from "./iconos.ts";
-import { parseVariantes } from "../utils/anatomy-variantes.ts";
+import type { AnatomyElement, Attribute } from "../modelo/tipos.ts";
+import { BADGE_SIZE } from "../utils/marcadores.ts";
+import { verticalFrame, horizontalFrame, text, tableOf, themedFill, card, pillRow, variableChip, FONT_BOLD, keyText, valueText, FONT_MEDIUM, cardHeaderText } from "./frames.ts";
+import { themeVars } from "../utils/variables-tema.ts";
+import { HEADERS_ANATOMY, anatomyRow } from "../utils/tabla-anatomy.ts";
+import { hexToRgb } from "../utils/color.ts";
+import { nodeTypeIcon, resizingIconKey, dimensionIndicator } from "./iconos.ts";
+import { parseVariants } from "../utils/anatomy-variantes.ts";
 
-const GRIS = (n: number): RGB => ({ r: n, g: n, b: n });
+const GRAY = (n: number): RGB => ({ r: n, g: n, b: n });
 
-// Mapa id → caja (x/y/w/h) relativa a la esquina del nodo raíz.
-function cajasRelativas(raiz: SceneNode): Map<string, { x: number; y: number; width: number; height: number }> {
-  const mapa = new Map<string, { x: number; y: number; width: number; height: number }>();
-  const base = raiz.absoluteBoundingBox;
+// Map id → box (x/y/w/h) relative to the root node's corner.
+function relativeBoxes(root: SceneNode): Map<string, { x: number; y: number; width: number; height: number }> {
+  const idMap = new Map<string, { x: number; y: number; width: number; height: number }>();
+  const base = root.absoluteBoundingBox;
   function walk(n: SceneNode): void {
     const b = n.absoluteBoundingBox;
-    if (base && b) mapa.set(n.id, { x: b.x - base.x, y: b.y - base.y, width: b.width, height: b.height });
+    if (base && b) idMap.set(n.id, { x: b.x - base.x, y: b.y - base.y, width: b.width, height: b.height });
     if ("children" in n) for (const c of n.children) walk(c);
   }
-  walk(raiz);
-  return mapa;
+  walk(root);
+  return idMap;
 }
 
-// Paleta de colores de marcador (badge + borde), cicla por índice. Texto blanco.
-const COLORES_MARCA: RGB[] = [
-  hexARgb("#0D80FF"), // azul
-  hexARgb("#FF2D9C"), // magenta
-  hexARgb("#9747FF"), // violeta
-  hexARgb("#F0411E"), // rojo
-  hexARgb("#F5C518"), // amarillo
-  hexARgb("#1FA855"), // verde
-  hexARgb("#5E6B8A"), // slate
-  hexARgb("#F5921E"), // naranja
+// Marker color palette (badge + border), cycles by index. White text.
+const BADGE_COLORS: RGB[] = [
+  hexToRgb("#0D80FF"), // blue
+  hexToRgb("#FF2D9C"), // magenta
+  hexToRgb("#9747FF"), // violeta
+  hexToRgb("#F0411E"), // red
+  hexToRgb("#F5C518"), // amarillo
+  hexToRgb("#1FA855"), // green
+  hexToRgb("#5E6B8A"), // slate
+  hexToRgb("#F5921E"), // naranja
 ];
 
-// Borde punteado alrededor de la caja, del color del marcador.
-function bordeMarca(caja: { x: number; y: number; width: number; height: number }, color: RGB, artwork: FrameNode): void {
+// Dashed border around the box, in the marker's color.
+function badgeBorder(box: { x: number; y: number; width: number; height: number }, color: RGB, artwork: FrameNode): void {
   const r = figma.createRectangle();
-  r.x = caja.x; r.y = caja.y;
-  r.resize(Math.max(caja.width, 0.01), Math.max(caja.height, 0.01));
+  r.x = box.x; r.y = box.y;
+  r.resize(Math.max(box.width, 0.01), Math.max(box.height, 0.01));
   r.fills = [];
   r.strokes = [{ type: "SOLID", color }];
   r.strokeWeight = 1;
@@ -46,124 +46,124 @@ function bordeMarca(caja: { x: number; y: number; width: number; height: number 
   artwork.appendChild(r);
 }
 
-// Dibuja un atributo como fila-pill: swatch (si color) + "clave:" + valor/ChipVar + (raw).
-async function filaAtributo(attr: Atributo): Promise<FrameNode> {
-  const nodos: SceneNode[] = [];
+// Draws an attribute as a row-pill: swatch (if color) + "key:" + value/ChipVar + (raw).
+async function attributeRow(attr: Attribute): Promise<FrameNode> {
+  const nodes: SceneNode[] = [];
   if (attr.swatchHex) {
     const swatch = figma.createRectangle();
     swatch.resize(12, 12);
-    swatch.fills = [{ type: "SOLID", color: hexARgb(attr.swatchHex) }];
-    swatch.strokes = [{ type: "SOLID", color: GRIS(0.8) }];
+    swatch.fills = [{ type: "SOLID", color: hexToRgb(attr.swatchHex) }];
+    swatch.strokes = [{ type: "SOLID", color: GRAY(0.8) }];
     swatch.strokeWeight = 1;
-    nodos.push(swatch);
+    nodes.push(swatch);
   }
-  nodos.push(await textoClave(`${attr.clave}:`));
-  if (attr.formato !== "HARDCODED") {
-    nodos.push(await chipVariable(attr.valor));
-    if (attr.rawValue) nodos.push(await textoValor(`(${attr.rawValue})`));
+  nodes.push(await keyText(`${attr.key}:`));
+  if (attr.format !== "HARDCODED") {
+    nodes.push(await variableChip(attr.value));
+    if (attr.rawValue) nodes.push(await valueText(`(${attr.rawValue})`));
   } else {
-    nodos.push(await textoValor(attr.valor));
+    nodes.push(await valueText(attr.value));
   }
-  // width/height: el modo (Fixed/Hug/Fill) va al final como cajita-ícono + texto.
-  if (iconoResizingKey(attr.clave, attr.prefijo)) nodos.push(await indicadorDimension(attr.clave, attr.prefijo!));
-  return filaPill(nodos);
+  // width/height: the mode (Fixed/Hug/Fill) goes at the end as an icon box + text.
+  if (resizingIconKey(attr.key, attr.prefix)) nodes.push(await dimensionIndicator(attr.key, attr.prefix!));
+  return pillRow(nodes);
 }
 
-// Construye la entrada de un elemento como card (header + filas-pill).
-async function entradaLista(indice: number, el: ElementoAnatomy, color: RGB): Promise<FrameNode> {
-  const headerNodos: SceneNode[] = [await badgePanel(indice, color)];
-  const icono = nodoIconoTipo(el.tipo);
-  if (icono) headerNodos.push(icono);
-  headerNodos.push(await textoHeaderCard(`${el.nombre} · ${el.tipo}`));
+// Builds an element's entry as a card (header + pill-rows).
+async function listEntry(indice: number, el: AnatomyElement, color: RGB): Promise<FrameNode> {
+  const headerNodes: SceneNode[] = [await badgePanel(indice, color)];
+  const icon = nodeTypeIcon(el.type);
+  if (icon) headerNodes.push(icon);
+  headerNodes.push(await cardHeaderText(`${el.name} · ${el.type}`));
 
-  const filas: FrameNode[] = [];
-  const variantes = parseVariantes(el.dependeDe);
-  if (variantes.length > 0) {
-    for (const v of variantes) filas.push(filaPill([await textoClave(`${v.clave}:`), await textoValor(v.valor)]));
-  } else if (el.dependeDe) {
-    filas.push(filaPill([await textoValor(`Depends on: ${el.dependeDe}`)]));
+  const rows: FrameNode[] = [];
+  const variants = parseVariants(el.dependsOn);
+  if (variants.length > 0) {
+    for (const v of variants) rows.push(pillRow([await keyText(`${v.key}:`), await valueText(v.value)]));
+  } else if (el.dependsOn) {
+    rows.push(pillRow([await valueText(`Depends on: ${el.dependsOn}`)]));
   }
-  for (const attr of el.atributos) filas.push(await filaAtributo(attr));
-  return tarjeta(headerNodos, filas);
+  for (const attr of el.attributes) rows.push(await attributeRow(attr));
+  return card(headerNodes, rows);
 }
 
-// Crea el badge del panel (círculo pequeño + número), sin posición absoluta.
-async function badgePanel(numero: number, color: RGB): Promise<FrameNode> {
-  const circulo = figma.createEllipse();
-  circulo.resize(TAM_MARCADOR, TAM_MARCADOR);
-  circulo.fills = [{ type: "SOLID", color }];
-  const num = await texto(String(numero), 11, FONT_MEDIUM);
-  num.fills = [{ type: "SOLID", color: GRIS(1) }];
-  const cont = figma.createFrame();
-  cont.name = `Badge ${numero}`;
-  cont.layoutMode = "NONE";
-  cont.resize(TAM_MARCADOR, TAM_MARCADOR);
-  cont.fills = [];
-  cont.clipsContent = false;
-  cont.appendChild(circulo);
-  cont.appendChild(num);
-  num.x = (TAM_MARCADOR - num.width) / 2;
-  num.y = (TAM_MARCADOR - num.height) / 2;
-  return cont;
+// Creates the panel badge (small circle + number), without absolute position.
+async function badgePanel(badgeNum: number, color: RGB): Promise<FrameNode> {
+  const circle = figma.createEllipse();
+  circle.resize(BADGE_SIZE, BADGE_SIZE);
+  circle.fills = [{ type: "SOLID", color }];
+  const num = await text(String(badgeNum), 11, FONT_MEDIUM);
+  num.fills = [{ type: "SOLID", color: GRAY(1) }];
+  const container = figma.createFrame();
+  container.name = `Badge ${badgeNum}`;
+  container.layoutMode = "NONE";
+  container.resize(BADGE_SIZE, BADGE_SIZE);
+  container.fills = [];
+  container.clipsContent = false;
+  container.appendChild(circle);
+  container.appendChild(num);
+  num.x = (BADGE_SIZE - num.width) / 2;
+  num.y = (BADGE_SIZE - num.height) / 2;
+  return container;
 }
 
-// Crea un marcador numerado (círculo + número).
-async function marcador(numero: number, x: number, y: number, color: RGB): Promise<FrameNode> {
-  const circulo = figma.createEllipse();
-  circulo.resize(TAM_MARCADOR, TAM_MARCADOR);
-  circulo.fills = [{ type: "SOLID", color }];
+// Creates a numbered marker (circle + number).
+async function marker(badgeNum: number, x: number, y: number, color: RGB): Promise<FrameNode> {
+  const circle = figma.createEllipse();
+  circle.resize(BADGE_SIZE, BADGE_SIZE);
+  circle.fills = [{ type: "SOLID", color }];
 
-  const num = await texto(String(numero), 14, FONT_MEDIUM);
-  num.fills = [{ type: "SOLID", color: GRIS(1) }];
+  const num = await text(String(badgeNum), 14, FONT_MEDIUM);
+  num.fills = [{ type: "SOLID", color: GRAY(1) }];
 
-  const cont = figma.createFrame();
-  cont.name = `Marcador ${numero}`;
-  cont.layoutMode = "NONE";
-  cont.resize(TAM_MARCADOR, TAM_MARCADOR);
-  cont.fills = [];
-  cont.clipsContent = false;
-  cont.appendChild(circulo);
-  cont.appendChild(num);
-  num.x = (TAM_MARCADOR - num.width) / 2;
-  num.y = (TAM_MARCADOR - num.height) / 2;
-  cont.x = x;
-  cont.y = y;
-  return cont;
+  const container = figma.createFrame();
+  container.name = `Badge `;
+  container.layoutMode = "NONE";
+  container.resize(BADGE_SIZE, BADGE_SIZE);
+  container.fills = [];
+  container.clipsContent = false;
+  container.appendChild(circle);
+  container.appendChild(num);
+  num.x = (BADGE_SIZE - num.width) / 2;
+  num.y = (BADGE_SIZE - num.height) / 2;
+  container.x = x;
+  container.y = y;
+  return container;
 }
 
-// Línea guía horizontal recta (del color del marcador): de `desdeX` a `haciaX` en la Y dada.
-function lineaGuiaH(artwork: FrameNode, desdeX: number, y: number, haciaX: number, color: RGB): void {
+// Straight horizontal guide line (marker color): from `fromX` to `toX` at the given Y.
+function guideLineH(artwork: FrameNode, fromX: number, y: number, toX: number, color: RGB): void {
   const h = figma.createRectangle();
-  h.x = Math.min(desdeX, haciaX);
+  h.x = Math.min(fromX, toX);
   h.y = y - 0.5;
-  h.resize(Math.max(Math.abs(haciaX - desdeX), 0.01), 1);
+  h.resize(Math.max(Math.abs(toX - fromX), 0.01), 1);
   h.fills = [{ type: "SOLID", color }];
   artwork.appendChild(h);
 }
 
-// Línea guía vertical recta (del color del marcador): de `desdeY` a `haciaY` en la X dada.
-function lineaGuiaV(artwork: FrameNode, x: number, desdeY: number, haciaY: number, color: RGB): void {
+// Straight vertical guide line (marker color): from `fromY` to `toY` at the given X.
+function guideLineV(artwork: FrameNode, x: number, fromY: number, toY: number, color: RGB): void {
   const v = figma.createRectangle();
   v.x = x - 0.5;
-  v.y = Math.min(desdeY, haciaY);
-  v.resize(1, Math.max(Math.abs(haciaY - desdeY), 0.01));
+  v.y = Math.min(fromY, toY);
+  v.resize(1, Math.max(Math.abs(toY - fromY), 0.01));
   v.fills = [{ type: "SOLID", color }];
   artwork.appendChild(v);
 }
 
-// Construye el [Nombre] Spec (heading + sección Anatomy con lista + artwork).
-async function specDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
-  const spec = frameVertical(`${seleccionado.name} Spec`, 48);
-  spec.appendChild(await texto(seleccionado.name, 64));
-  spec.appendChild(await seccionDeAnatomy(seleccionado, elementos, tabla));
+// Builds the [Name] Spec (heading + Anatomy section with list + artwork).
+async function specDeAnatomy(selected: SceneNode, elements: AnatomyElement[], table: boolean): Promise<FrameNode> {
+  const spec = verticalFrame(`${selected.name} Spec`, 48);
+  spec.appendChild(await text(selected.name, 64));
+  spec.appendChild(await anatomySection(selected, elements, table));
   return spec;
 }
 
-// Construye solo la sección Anatomy (sin Specifications ni título de nodo).
-export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
-  const seccion = frameVertical("Anatomy", 24);
+// Builds only the Anatomy section (without Specifications or node title).
+export async function anatomySection(selected: SceneNode, elements: AnatomyElement[], table: boolean): Promise<FrameNode> {
+  const section = verticalFrame("Anatomy", 24);
 
-  // Display horizontal: lista a la izquierda, artwork a la derecha.
+  // Horizontal display: list on the left, artwork on the right.
   const display = figma.createFrame();
   display.name = "Display";
   display.layoutMode = "HORIZONTAL";
@@ -171,124 +171,124 @@ export async function seccionDeAnatomy(seleccionado: SceneNode, elementos: Eleme
   display.primaryAxisSizingMode = "AUTO";
   display.counterAxisSizingMode = "AUTO";
   display.fills = [];
-  seccion.appendChild(display);
+  section.appendChild(display);
 
-  // Artwork: clon del seleccionado + marcadores (va a la IZQUIERDA).
+  // Artwork: clone of the selected + markers (goes on the LEFT).
   const artwork = figma.createFrame();
   artwork.name = "Artwork";
   artwork.layoutMode = "NONE";
-  artwork.clipsContent = false; // los marcadores van fuera del borde izquierdo
-  artwork.fills = fillTematizado(varsTema().fondoArtwork);
+  artwork.clipsContent = false; // the markers go outside the left border
+  artwork.fills = themedFill(themeVars().bgArtwork);
   display.appendChild(artwork);
 
-  // Margen para que los badges de las capas pegadas al borde no se corten.
-  const MARGEN_ARTWORK = 20;
-  // Distancia del marcador al borde de su box, y margen reservado para los marcadores.
-  const OFFSET_MARCA = 48;
-  // Margen generoso y simétrico en los 4 lados: aloja el badge (a OFFSET del borde)
-  // y varios corridos cuando se acumulan, para que todo entre cómodo y respire.
-  const MARGEN_MARCA = OFFSET_MARCA + TAM_MARCADOR * 3;
-  // Tamaño mínimo del canvas gris: un elemento chico queda centrado en una caja amplia.
+  // Margin so the badges of edge-flush layers aren't clipped.
+  const ARTWORK_MARGIN = 20;
+  // Distance from the marker to its box border, and margin reserved for the markers.
+  const BADGE_GAP = 48;
+  // Generous, symmetric margin on all 4 sides: holds the badge (at OFFSET from the border)
+  // and several shifted ones when they pile up, so everything fits comfortably and breathes.
+  const BADGE_MARGIN = BADGE_GAP + BADGE_SIZE * 3;
+  // Minimum gray canvas size: a small element stays centered in a wide box.
   const ARTWORK_MIN = 440;
-  const clon = seleccionado.clone();
-  artwork.appendChild(clon);
-  const canvasW = Math.max(ARTWORK_MIN, clon.width + 2 * (MARGEN_ARTWORK + MARGEN_MARCA));
-  const canvasH = Math.max(ARTWORK_MIN, clon.height + 2 * (MARGEN_ARTWORK + MARGEN_MARCA));
+  const clone = selected.clone();
+  artwork.appendChild(clone);
+  const canvasW = Math.max(ARTWORK_MIN, clone.width + 2 * (ARTWORK_MARGIN + BADGE_MARGIN));
+  const canvasH = Math.max(ARTWORK_MIN, clone.height + 2 * (ARTWORK_MARGIN + BADGE_MARGIN));
   artwork.resize(canvasW, canvasH);
-  const offsetX = (canvasW - clon.width) / 2;
-  const offsetY = (canvasH - clon.height) / 2;
-  clon.x = offsetX;
-  clon.y = offsetY;
+  const offsetX = (canvasW - clone.width) / 2;
+  const offsetY = (canvasH - clone.height) / 2;
+  clone.x = offsetX;
+  clone.y = offsetY;
 
-  // Badges en los 4 LADOS del elemento. Se elige el lado cuyo badge NO caiga sobre
-  // otro elemento hermano (el contenedor no obstruye); orden de preferencia
-  // izq → der → arriba → abajo. Si el lado libre choca con un badge ya puesto, se
-  // aleja el badge sobre su eje. La línea es perpendicular: del borde del elemento
-  // al badge. Así, en filas horizontales los badges van arriba/abajo y en pilas
-  // verticales a los costados, sin amontonarse.
-  const cajas = cajasRelativas(seleccionado);
-  type Caja = { x: number; y: number; w: number; h: number };
-  const boxes: (Caja | null)[] = elementos.map((e) => {
-    const c = cajas.get(e.id);
+  // Badges on all 4 SIDES of the element. The chosen side is the one whose badge does NOT land on
+  // another sibling element (the container doesn't obstruct); preference order
+  // left → right → top → bottom. If the free side collides with an already-placed badge,
+  // the badge is moved away along its axis. The line is perpendicular: from the element's border
+  // to the badge. So, in horizontal rows the badges go top/bottom and in vertical
+  // stacks to the sides, without crowding.
+  const relBoxes = relativeBoxes(selected);
+  type Box = { x: number; y: number; w: number; h: number };
+  const boxes: (Box | null)[] = elements.map((e) => {
+    const c = relBoxes.get(e.id);
     return c ? { x: c.x + offsetX, y: c.y + offsetY, w: c.width, h: c.height } : null;
   });
-  const contiene = (a: Caja, b: Caja): boolean =>
+  const contains = (a: Box, b: Box): boolean =>
     a.x <= b.x && a.y <= b.y && a.x + a.w >= b.x + b.w && a.y + a.h >= b.y + b.h;
-  // ¿El punto cae dentro de un elemento hermano de i (ni su contenedor ni su contenido)?
-  const sobreOtro = (x: number, y: number, i: number, bi: Caja): boolean =>
-    boxes.some((bj, j) => bj != null && j !== i && !contiene(bj, bi) && !contiene(bi, bj)
+  // Does the point fall inside a sibling element of i (neither its container nor its content)?
+  const overOther = (x: number, y: number, i: number, bi: Box): boolean =>
+    boxes.some((bj, j) => bj != null && j !== i && !contains(bj, bi) && !contains(bi, bj)
       && x >= bj.x && x <= bj.x + bj.w && y >= bj.y && y <= bj.y + bj.h);
-  const colocados: { x: number; y: number }[] = [];
-  const colisiona = (x: number, y: number): boolean =>
-    colocados.some((p) => Math.abs(p.x - x) < TAM_MARCADOR + 4 && Math.abs(p.y - y) < TAM_MARCADOR + 4);
-  const R = TAM_MARCADOR / 2;
-  for (let i = 0; i < elementos.length; i++) {
+  const placed: { x: number; y: number }[] = [];
+  const collides = (x: number, y: number): boolean =>
+    placed.some((p) => Math.abs(p.x - x) < BADGE_SIZE + 4 && Math.abs(p.y - y) < BADGE_SIZE + 4);
+  const R = BADGE_SIZE / 2;
+  for (let i = 0; i < elements.length; i++) {
     const bi = boxes[i];
     if (!bi) continue;
-    const color = COLORES_MARCA[i % COLORES_MARCA.length];
-    bordeMarca({ x: bi.x, y: bi.y, width: bi.w, height: bi.h }, color, artwork);
+    const color = BADGE_COLORS[i % BADGE_COLORS.length];
+    badgeBorder({ x: bi.x, y: bi.y, width: bi.w, height: bi.h }, color, artwork);
     const cx = bi.x + bi.w / 2;
     const cy = bi.y + bi.h / 2;
     const lados = [
-      { lado: "left",   x: bi.x - OFFSET_MARCA - R,        y: cy },
-      { lado: "right",  x: bi.x + bi.w + OFFSET_MARCA + R, y: cy },
-      { lado: "top",    x: cx,                             y: bi.y - OFFSET_MARCA - R },
-      { lado: "bottom", x: cx,                             y: bi.y + bi.h + OFFSET_MARCA + R },
+      { side: "left",   x: bi.x - BADGE_GAP - R,        y: cy },
+      { side: "right",  x: bi.x + bi.w + BADGE_GAP + R, y: cy },
+      { side: "top",    x: cx,                             y: bi.y - BADGE_GAP - R },
+      { side: "bottom", x: cx,                             y: bi.y + bi.h + BADGE_GAP + R },
     ];
-    let validos = lados.filter((l) => !sobreOtro(l.x, l.y, i, bi));
+    let validos = lados.filter((l) => !overOther(l.x, l.y, i, bi));
     if (validos.length === 0) validos = lados;
-    const elegido = validos.find((l) => !colisiona(l.x, l.y)) ?? validos[0];
+    const elegido = validos.find((l) => !collides(l.x, l.y)) ?? validos[0];
     let mcx = elegido.x;
     let mcy = elegido.y;
-    while (colisiona(mcx, mcy)) {
-      if (elegido.lado === "left") mcx -= TAM_MARCADOR + 4;
-      else if (elegido.lado === "right") mcx += TAM_MARCADOR + 4;
-      else if (elegido.lado === "top") mcy -= TAM_MARCADOR + 4;
-      else mcy += TAM_MARCADOR + 4;
+    while (collides(mcx, mcy)) {
+      if (elegido.side === "left") mcx -= BADGE_SIZE + 4;
+      else if (elegido.side === "right") mcx += BADGE_SIZE + 4;
+      else if (elegido.side === "top") mcy -= BADGE_SIZE + 4;
+      else mcy += BADGE_SIZE + 4;
     }
-    colocados.push({ x: mcx, y: mcy });
-    if (elegido.lado === "left") lineaGuiaH(artwork, mcx + R, cy, bi.x, color);
-    else if (elegido.lado === "right") lineaGuiaH(artwork, bi.x + bi.w, cy, mcx - R, color);
-    else if (elegido.lado === "top") lineaGuiaV(artwork, cx, mcy + R, bi.y, color);
-    else lineaGuiaV(artwork, cx, bi.y + bi.h, mcy - R, color);
-    artwork.appendChild(await marcador(i + 1, mcx - R, mcy - R, color));
+    placed.push({ x: mcx, y: mcy });
+    if (elegido.side === "left") guideLineH(artwork, mcx + R, cy, bi.x, color);
+    else if (elegido.side === "right") guideLineH(artwork, bi.x + bi.w, cy, mcx - R, color);
+    else if (elegido.side === "top") guideLineV(artwork, cx, mcy + R, bi.y, color);
+    else guideLineV(artwork, cx, bi.y + bi.h, mcy - R, color);
+    artwork.appendChild(await marker(i + 1, mcx - R, mcy - R, color));
   }
 
-  // Contenido: tabla o lista (va a la DERECHA).
-  if (elementos.length === 0) {
-    display.appendChild(await texto("No elements found", 16));
-  } else if (tabla) {
-    display.appendChild(await tablaDe(HEADERS_ANATOMY, elementos.map((e, i) => filaAnatomy(i + 1, e))));
+  // Content: table or list (goes on the RIGHT).
+  if (elements.length === 0) {
+    display.appendChild(await text("No elements found", 16));
+  } else if (table) {
+    display.appendChild(await tableOf(HEADERS_ANATOMY, elements.map((e, i) => anatomyRow(i + 1, e))));
   } else {
-    const lista = frameVertical("Content", 16);
-    for (let i = 0; i < elementos.length; i++) {
-      lista.appendChild(await entradaLista(i + 1, elementos[i], COLORES_MARCA[i % COLORES_MARCA.length]));
+    const lista = verticalFrame("Content", 16);
+    for (let i = 0; i < elements.length; i++) {
+      lista.appendChild(await listEntry(i + 1, elements[i], BADGE_COLORS[i % BADGE_COLORS.length]));
     }
     display.appendChild(lista);
   }
 
-  return seccion;
+  return section;
 }
 
-// Genera el spec de Anatomy de un solo ítem. Devuelve el frame Specifications.
-export async function generarAnatomy(seleccionado: SceneNode, elementos: ElementoAnatomy[], tabla: boolean): Promise<FrameNode> {
-  const specifications = frameVertical("Specifications", 128, 64);
-  specifications.appendChild(await specDeAnatomy(seleccionado, elementos, tabla));
+// Generates the Anatomy spec of a single item. Returns the Specifications frame.
+export async function generateAnatomy(selected: SceneNode, elements: AnatomyElement[], table: boolean): Promise<FrameNode> {
+  const specifications = verticalFrame("Specifications", 128, 64);
+  specifications.appendChild(await specDeAnatomy(selected, elements, table));
   figma.currentPage.appendChild(specifications);
   return specifications;
 }
 
-// Genera el spec del principal + un spec por cada instancia anidada.
-export async function generarAnatomyConNested(
-  seleccionado: SceneNode,
-  elementos: ElementoAnatomy[],
-  nested: { nodo: SceneNode; elementos: ElementoAnatomy[] }[],
-  tabla: boolean,
+// Generates the main spec + one spec per nested instance.
+export async function generateAnatomyWithNested(
+  selected: SceneNode,
+  elements: AnatomyElement[],
+  nested: { node: SceneNode; elements: AnatomyElement[] }[],
+  table: boolean,
 ): Promise<FrameNode> {
-  const specifications = frameVertical("Specifications", 128, 64);
-  specifications.appendChild(await specDeAnatomy(seleccionado, elementos, tabla));
+  const specifications = verticalFrame("Specifications", 128, 64);
+  specifications.appendChild(await specDeAnatomy(selected, elements, table));
   for (const n of nested) {
-    specifications.appendChild(await specDeAnatomy(n.nodo, n.elementos, tabla));
+    specifications.appendChild(await specDeAnatomy(n.node, n.elements, table));
   }
   figma.currentPage.appendChild(specifications);
   return specifications;

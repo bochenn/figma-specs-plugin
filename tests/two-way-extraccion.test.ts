@@ -1,58 +1,58 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { extraerDosWay } from "../src/plugin/extraccion/properties.ts";
-import type { SetNorm, NodoLike } from "../src/plugin/modelo/tipos.ts";
+import { extractTwoWay } from "../src/plugin/extraccion/properties.ts";
+import type { NormSet, NodeLike } from "../src/plugin/modelo/tipos.ts";
 
-// Construye una variante con un Label de cierto color.
-function variante(props: Record<string, string>, color: { r: number; g: number; b: number }): {
+// Construye una variant con un Label de cierto color.
+function variant(props: Record<string, string>, color: { r: number; g: number; b: number }): {
   variantProperties: Record<string, string>;
-  raiz: NodoLike;
+  root: NodeLike;
 } {
   return {
     variantProperties: props,
-    raiz: {
+    root: {
       id: "root", name: "Root", type: "COMPONENT",
       children: [{ id: "l", name: "Label", type: "RECTANGLE", fills: [{ type: "SOLID", color }] }],
     },
   };
 }
 
-function setDosProps(): SetNorm {
+function setDosProps(): NormSet {
   return {
-    propiedades: { Size: ["S", "M"], Type: ["P", "Sec"] },
+    properties: { Size: ["S", "M"], Type: ["P", "Sec"] },
     defaultProps: { Size: "S", Type: "P" },
-    variantes: [
-      variante({ Size: "S", Type: "P" }, { r: 0, g: 0, b: 0 }),
-      variante({ Size: "S", Type: "Sec" }, { r: 0.1, g: 0.1, b: 0.1 }),
-      variante({ Size: "M", Type: "P" }, { r: 0.2, g: 0.2, b: 0.2 }),
-      variante({ Size: "M", Type: "Sec" }, { r: 0.3, g: 0.3, b: 0.3 }),
+    variants: [
+      variant({ Size: "S", Type: "P" }, { r: 0, g: 0, b: 0 }),
+      variant({ Size: "S", Type: "Sec" }, { r: 0.1, g: 0.1, b: 0.1 }),
+      variant({ Size: "M", Type: "P" }, { r: 0.2, g: 0.2, b: 0.2 }),
+      variant({ Size: "M", Type: "Sec" }, { r: 0.3, g: 0.3, b: 0.3 }),
     ],
   };
 }
 
-test("2 props × 2 valores → 4 combinaciones con valor1/valor2", () => {
-  const dosway = extraerDosWay(setDosProps());
+test("2 props × 2 values → 4 combinations con value1/value2", () => {
+  const dosway = extractTwoWay(setDosProps());
   assert.notEqual(dosway, null);
   assert.equal(dosway!.prop1, "Size");
   assert.equal(dosway!.prop2, "Type");
   assert.deepEqual(
-    dosway!.combinaciones.map((c) => `${c.valor1}+${c.valor2}`),
+    dosway!.combinations.map((c) => `${c.value1}+${c.value2}`),
     ["S+P", "S+Sec", "M+P", "M+Sec"],
   );
 });
 
-test("set con una sola propiedad → null", () => {
-  const set: SetNorm = {
-    propiedades: { Size: ["S", "M"] },
+test("set con una sola property → null", () => {
+  const set: NormSet = {
+    properties: { Size: ["S", "M"] },
     defaultProps: { Size: "S" },
-    variantes: [variante({ Size: "S" }, { r: 0, g: 0, b: 0 })],
+    variants: [variant({ Size: "S" }, { r: 0, g: 0, b: 0 })],
   };
-  assert.equal(extraerDosWay(set), null);
+  assert.equal(extractTwoWay(set), null);
 });
 
-test("combinación cuyo variante no existe → se saltea", () => {
+test("combinación cuyo variant no existe → se saltea", () => {
   const set = setDosProps();
-  set.variantes = set.variantes.filter((v) => !(v.variantProperties.Size === "M" && v.variantProperties.Type === "Sec"));
-  const dosway = extraerDosWay(set);
-  assert.equal(dosway!.combinaciones.length, 3);
+  set.variants = set.variants.filter((v) => !(v.variantProperties.Size === "M" && v.variantProperties.Type === "Sec"));
+  const dosway = extractTwoWay(set);
+  assert.equal(dosway!.combinations.length, 3);
 });

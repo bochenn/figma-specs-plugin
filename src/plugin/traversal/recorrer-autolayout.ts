@@ -1,24 +1,24 @@
-import type { NodoLike } from "../modelo/tipos.ts";
-import type { Recorrido } from "./recorrer.ts";
+import type { NodeLike } from "../modelo/tipos.ts";
+import type { Traversal } from "./recorrer.ts";
 
-const CONTENEDOR = ["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET"];
+const CONTAINER = ["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET"];
 
-function tieneAutoLayout(n: NodoLike): boolean {
+function tieneAutoLayout(n: NodeLike): boolean {
   return n.layoutMode === "HORIZONTAL" || n.layoutMode === "VERTICAL" || n.layoutMode === "GRID";
 }
 
-// Nodos con Auto Layout y su profundidad (instancias atravesadas). Sin itemizar
-// frena en instancias; con itemizar entra (prof +1). La raíz va con prof 0.
-// `camino` son los nombres desde la raíz hasta el nodo inclusive.
-export function recorrerAutoLayout(nodo: NodoLike, itemizar = false, prof = 0, camino: { nombre: string; tipo: string }[] = []): Recorrido[] {
-  const resultado: Recorrido[] = [];
-  const propio = [...camino, { nombre: nodo.name, tipo: nodo.type }];
-  if (tieneAutoLayout(nodo)) resultado.push({ nodo, profundidad: prof, camino: propio });
-  for (const hijo of nodo.children ?? []) {
-    if (hijo.type === "INSTANCE") {
-      if (itemizar) resultado.push(...recorrerAutoLayout(hijo, itemizar, prof + 1, propio));
-    } else if (CONTENEDOR.includes(hijo.type)) {
-      resultado.push(...recorrerAutoLayout(hijo, itemizar, prof, propio));
+// Auto Layout nodes and their depth (instances traversed). Without itemize
+// stops at instances; with itemize it descends (depth +1). The root goes with depth 0.
+// `path` are the names from the root to the node inclusive.
+export function traverseAutoLayout(node: NodeLike, itemize = false, prof = 0, path: { name: string; type: string }[] = []): Traversal[] {
+  const resultado: Traversal[] = [];
+  const propio = [...path, { name: node.name, type: node.type }];
+  if (tieneAutoLayout(node)) resultado.push({ node, depth: prof, path: propio });
+  for (const child of node.children ?? []) {
+    if (child.type === "INSTANCE") {
+      if (itemize) resultado.push(...traverseAutoLayout(child, itemize, prof + 1, propio));
+    } else if (CONTAINER.includes(child.type)) {
+      resultado.push(...traverseAutoLayout(child, itemize, prof, propio));
     }
   }
   return resultado;

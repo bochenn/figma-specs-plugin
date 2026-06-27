@@ -1,29 +1,29 @@
-import type { EntradaModo, ColeccionModes } from "../modelo/tipos.ts";
+import type { ModeEntry, ModesCollection } from "../modelo/tipos.ts";
 
-// Convierte un color (canales 0..1) a hex #RRGGBB en mayúsculas.
-export function hexDeColor(rgb: { r: number; g: number; b: number }): string {
+// Converts a color (0..1 channels) to uppercase hex #RRGGBB.
+export function hexOfColor(rgb: { r: number; g: number; b: number }): string {
   const canal = (n: number) => Math.round(n * 255).toString(16).padStart(2, "0").toUpperCase();
   return "#" + canal(rgb.r) + canal(rgb.g) + canal(rgb.b);
 }
 
-// Agrupa las entradas por collection (orden de primera aparición); toma los
-// modos de la primera entrada de cada collection.
-export function agruparModes(entradas: EntradaModo[]): ColeccionModes[] {
+// Groups the entries by collection (first-appearance order); takes the
+// modes of the first entry of each collection.
+export function groupModes(entries: ModeEntry[]): ModesCollection[] {
   const orden: string[] = [];
-  const grupos = new Map<string, ColeccionModes>();
-  for (const e of entradas) {
-    let g = grupos.get(e.coleccionNombre);
+  const groups = new Map<string, ModesCollection>();
+  for (const e of entries) {
+    let g = groups.get(e.collectionName);
     if (!g) {
-      orden.push(e.coleccionNombre);
-      g = { coleccionNombre: e.coleccionNombre, coleccionId: e.coleccionId, modos: e.modos, atributos: [] };
-      grupos.set(e.coleccionNombre, g);
+      orden.push(e.collectionName);
+      g = { collectionName: e.collectionName, collectionId: e.collectionId, modes: e.modes, attributes: [] };
+      groups.set(e.collectionName, g);
     }
-    g.atributos.push({
-      capa: e.capa,
+    g.attributes.push({
+      layer: e.layer,
       appliedAs: e.appliedAs,
-      variableNombre: e.variableNombre,
-      valores: e.valores,
+      variableName: e.variableName,
+      values: e.values,
     });
   }
-  return orden.map((n) => grupos.get(n)!);
+  return orden.map((n) => groups.get(n)!);
 }

@@ -1,45 +1,45 @@
-import type { EntradaEstilo, FilaInventario } from "../modelo/tipos.ts";
+import type { StyleEntry, InventoryRow } from "../modelo/tipos.ts";
 
-// Junta nombres de capa separados por coma, en orden de primera aparición;
-// los repetidos se muestran una vez con la cantidad entre paréntesis.
-export function formatearAplicadoA(capas: string[]): string {
+// Joins layer names separated by comma, in first-appearance order;
+// repeats are shown once with the count in parentheses.
+export function formatAppliedTo(capas: string[]): string {
   const orden: string[] = [];
-  const conteo = new Map<string, number>();
+  const count = new Map<string, number>();
   for (const c of capas) {
-    if (!conteo.has(c)) orden.push(c);
-    conteo.set(c, (conteo.get(c) ?? 0) + 1);
+    if (!count.has(c)) orden.push(c);
+    count.set(c, (count.get(c) ?? 0) + 1);
   }
   return orden
     .map((c) => {
-      const n = conteo.get(c) ?? 1;
+      const n = count.get(c) ?? 1;
       return n > 1 ? `${c} (${n})` : c;
     })
     .join(", ");
 }
 
-// Agrupa las entradas por (tabla, nombre, appliedAs); cada combinación única
-// es una fila, con las capas juntadas en "Applied to".
-export function agruparInventario(entradas: EntradaEstilo[]): FilaInventario[] {
+// Groups the entries by (table, name, appliedAs); each unique combination
+// it's a row, with the layers joined into "Applied to".
+export function groupInventory(entries: StyleEntry[]): InventoryRow[] {
   const orden: string[] = [];
-  const grupos = new Map<string, { tabla: "color" | "text" | "variable"; nombre: string; appliedAs: string; capas: string[]; swatchHex?: string; gradiente?: EntradaEstilo["gradiente"]; tipo?: EntradaEstilo["tipo"] }>();
+  const groups = new Map<string, { table: "color" | "text" | "variable"; name: string; appliedAs: string; capas: string[]; swatchHex?: string; gradient?: StyleEntry["gradient"]; type?: StyleEntry["type"] }>();
 
-  for (const e of entradas) {
-    const clave = `${e.tabla}|${e.nombre}|${e.appliedAs}`;
-    let grupo = grupos.get(clave);
-    if (!grupo) {
-      orden.push(clave);
-      grupo = { tabla: e.tabla, nombre: e.nombre, appliedAs: e.appliedAs, capas: [], swatchHex: e.swatchHex, gradiente: e.gradiente, tipo: e.tipo };
-      grupos.set(clave, grupo);
+  for (const e of entries) {
+    const key = `${e.table}|${e.name}|${e.appliedAs}`;
+    let group = groups.get(key);
+    if (!group) {
+      orden.push(key);
+      group = { table: e.table, name: e.name, appliedAs: e.appliedAs, capas: [], swatchHex: e.swatchHex, gradient: e.gradient, type: e.type };
+      groups.set(key, group);
     }
-    grupo.capas.push(e.capa);
+    group.capas.push(e.layer);
   }
 
-  return orden.map((clave) => {
-    const g = grupos.get(clave)!;
-    const fila: FilaInventario = { tabla: g.tabla, nombre: g.nombre, appliedAs: g.appliedAs, appliedTo: formatearAplicadoA(g.capas) };
-    if (g.swatchHex) fila.swatchHex = g.swatchHex;
-    if (g.gradiente) fila.gradiente = g.gradiente;
-    if (g.tipo) fila.tipo = g.tipo;
-    return fila;
+  return orden.map((key) => {
+    const g = groups.get(key)!;
+    const row: InventoryRow = { table: g.table, name: g.name, appliedAs: g.appliedAs, appliedTo: formatAppliedTo(g.capas) };
+    if (g.swatchHex) row.swatchHex = g.swatchHex;
+    if (g.gradient) row.gradient = g.gradient;
+    if (g.type) row.type = g.type;
+    return row;
   });
 }

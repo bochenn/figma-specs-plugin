@@ -1,20 +1,20 @@
 import type { AnatomyJson } from "../modelo/tipos.ts";
-import { frameVertical, texto, FONT_MONO } from "./frames.ts";
-import { hexARgb } from "../utils/color.ts";
+import { verticalFrame, text, FONT_MONO } from "./frames.ts";
+import { hexToRgb } from "../utils/color.ts";
 
-const ANCHO_JSON = 720;
+const JSON_WIDTH = 720;
 
-// Paleta de sintaxis (colores ya usados en el plugin) y fondo del bloque de código.
-const COL_PUNTUACION = hexARgb("#6B7280"); // base: llaves, comas, dos puntos
-const COL_KEY = hexARgb("#EA10AC");        // nombres de propiedad (rosa del ChipVar)
-const COL_STRING = hexARgb("#1FA855");     // valores string (verde)
-const COL_NUM = hexARgb("#0D80FF");        // números, true/false/null (azul)
-const FONDO_CODIGO = hexARgb("#F3F4F6");   // gris claro: legible con los colores
+// Syntax palette (colors already used in the plugin) and code-block bg.
+const COL_PUNCT = hexToRgb("#6B7280"); // base: braces, commas, colons
+const COL_KEY = hexToRgb("#EA10AC");        // property names (ChipVar pink)
+const COL_STRING = hexToRgb("#1FA855");     // values string (green)
+const COL_NUM = hexToRgb("#0D80FF");        // numbers, true/false/null (blue)
+const CODE_BG = hexToRgb("#F3F4F6");   // light gray: legible with the colors
 
-// Tokeniza un JSON ya formateado en rangos de color (key, string, número/literal).
-// Lo demás (llaves, comas, ":") queda con el color base de puntuación.
-function tokensJson(s: string): { desde: number; hasta: number; color: RGB }[] {
-  const out: { desde: number; hasta: number; color: RGB }[] = [];
+// Tokenizes an already-formatted JSON into color ranges (key, string, number/literal).
+// Everything else (braces, commas, ":") keeps the base punctuation color.
+function tokensJson(s: string): { from: number; to: number; color: RGB }[] {
+  const out: { from: number; to: number; color: RGB }[] = [];
   let i = 0;
   while (i < s.length) {
     const ch = s[i];
@@ -24,16 +24,16 @@ function tokensJson(s: string): { desde: number; hasta: number; color: RGB }[] {
       j = Math.min(j + 1, s.length);
       let k = j;
       while (k < s.length && (s[k] === " " || s[k] === "\n")) k++;
-      out.push({ desde: i, hasta: j, color: s[k] === ":" ? COL_KEY : COL_STRING });
+      out.push({ from: i, to: j, color: s[k] === ":" ? COL_KEY : COL_STRING });
       i = j;
     } else if (ch === "-" || (ch >= "0" && ch <= "9")) {
       let j = i + 1;
       while (j < s.length && "0123456789.eE+-".includes(s[j])) j++;
-      out.push({ desde: i, hasta: j, color: COL_NUM });
+      out.push({ from: i, to: j, color: COL_NUM });
       i = j;
     } else if (s.startsWith("true", i) || s.startsWith("false", i) || s.startsWith("null", i)) {
       const lit = s.startsWith("true", i) ? "true" : s.startsWith("false", i) ? "false" : "null";
-      out.push({ desde: i, hasta: i + lit.length, color: COL_NUM });
+      out.push({ from: i, to: i + lit.length, color: COL_NUM });
       i += lit.length;
     } else {
       i++;
@@ -42,40 +42,40 @@ function tokensJson(s: string): { desde: number; hasta: number; color: RGB }[] {
   return out;
 }
 
-// Genera el output de Data: el JSON de Anatomy en un text node.
-// Devuelve el frame Specifications creado.
-export async function generarData(nombre: string, json: AnatomyJson): Promise<FrameNode> {
-  const specifications = frameVertical("Specifications", 128, 64);
-  const spec = frameVertical(`${nombre} Spec`, 48);
+// Generates the Data output: the Anatomy JSON in a text node.
+// Returns the created Specifications frame.
+export async function generateData(name: string, json: AnatomyJson): Promise<FrameNode> {
+  const specifications = verticalFrame("Specifications", 128, 64);
+  const spec = verticalFrame(`${name} Spec`, 48);
   specifications.appendChild(spec);
-  spec.appendChild(await texto(nombre, 64));
-  spec.appendChild(await seccionDeData(nombre, json));
+  spec.appendChild(await text(name, 64));
+  spec.appendChild(await dataSection(name, json));
   figma.currentPage.appendChild(specifications);
   return specifications;
 }
 
-// Construye solo la sección Data (JSON) (sin Specifications ni título de nodo).
-export async function seccionDeData(nombre: string, json: AnatomyJson): Promise<FrameNode> {
-  const seccion = frameVertical("Data (JSON)", 64);
-  seccion.appendChild(await texto("Data (JSON)", 48));
+// Builds only the Data (JSON) section (without Specifications or node title).
+export async function dataSection(name: string, json: AnatomyJson): Promise<FrameNode> {
+  const section = verticalFrame("Data (JSON)", 64);
+  section.appendChild(await text("Data (JSON)", 48));
 
   const codigo = JSON.stringify(json, null, 2);
-  const jsonNode = await texto(codigo, 14, FONT_MONO);
-  jsonNode.fills = [{ type: "SOLID", color: COL_PUNTUACION }]; // base
+  const jsonNode = await text(codigo, 14, FONT_MONO);
+  jsonNode.fills = [{ type: "SOLID", color: COL_PUNCT }]; // base
   for (const t of tokensJson(codigo)) {
-    jsonNode.setRangeFills(t.desde, t.hasta, [{ type: "SOLID", color: t.color }]);
+    jsonNode.setRangeFills(t.from, t.to, [{ type: "SOLID", color: t.color }]);
   }
-  // Ancho fijo con wrap: primero HEIGHT, después fijar el ancho.
+  // Fixed width with wrap: HEIGHT first, then fix the width.
   jsonNode.textAutoResize = "HEIGHT";
-  jsonNode.resize(ANCHO_JSON, jsonNode.height);
+  jsonNode.resize(JSON_WIDTH, jsonNode.height);
 
-  // Bloque con fondo para que el código coloreado sea legible.
-  const bloque = frameVertical("codeBlock", 0);
-  bloque.paddingTop = bloque.paddingBottom = bloque.paddingLeft = bloque.paddingRight = 24;
-  bloque.cornerRadius = 8;
-  bloque.fills = [{ type: "SOLID", color: FONDO_CODIGO }];
-  bloque.appendChild(jsonNode);
-  seccion.appendChild(bloque);
+  // Block with bg so the colored code is legible.
+  const block = verticalFrame("codeBlock", 0);
+  block.paddingTop = block.paddingBottom = block.paddingLeft = block.paddingRight = 24;
+  block.cornerRadius = 8;
+  block.fills = [{ type: "SOLID", color: CODE_BG }];
+  block.appendChild(jsonNode);
+  section.appendChild(block);
 
-  return seccion;
+  return section;
 }

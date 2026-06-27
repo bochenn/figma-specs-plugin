@@ -1,5 +1,5 @@
-// Saca el sufijo "#id" de la clave de una propiedad de componente.
-export function nombrePropiedad(clave: string): string {
-  const i = clave.indexOf("#");
-  return i >= 0 ? clave.slice(0, i) : clave;
+// Strips the "#id" suffix from a component property's key.
+export function propertyName(key: string): string {
+  const i = key.indexOf("#");
+  return i >= 0 ? key.slice(0, i) : key;
 }

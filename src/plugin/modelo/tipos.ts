@@ -1,43 +1,43 @@
-export interface AlturaLinea {
-  unidad: "px" | "percent" | "auto";
-  valor?: number;
+export interface LineHeightVal {
+  unit: "px" | "percent" | "auto";
+  value?: number;
 }
 
-export interface EspaciadoLetra {
-  unidad: "px" | "percent";
-  valor: number;
+export interface LetterSpacingVal {
+  unit: "px" | "percent";
+  value: number;
 }
 
-// Stops de un gradiente (color RGBA + posición 0..1), con su transform.
-export interface GradienteData {
+// Gradient stops (RGBA color + position 0..1), with its transform.
+export interface GradientData {
   type: string; // "GRADIENT_LINEAR" | "GRADIENT_RADIAL" | ...
   gradientStops: { position: number; color: { r: number; g: number; b: number; a: number } }[];
   gradientTransform?: number[][];
 }
 
-// Paint mínimo: color sólido o datos del gradiente.
+// Minimal paint: solid color or gradient data.
 export interface PaintLike {
   type: string;
   color?: { r: number; g: number; b: number };
-  gradiente?: GradienteData;
+  gradient?: GradientData;
 }
 
-// Interfaz mínima de un nodo de Figma: solo lo que leen los módulos puros.
-// Permite testear sin cargar la API real de Figma.
-export interface NodoLike {
+// Minimal interface of a Figma node: only what the pure modules read.
+// Allows testing without loading the real Figma API.
+export interface NodeLike {
   id: string;
   name: string;
   type: string;
-  children?: NodoLike[];
-  // atributos visuales (opcionales según el tipo de nodo):
+  children?: NodeLike[];
+  // visual attributes (optional per node type):
   width?: number;
   height?: number;
   opacity?: number;
   fills?: ReadonlyArray<PaintLike>;
   strokes?: ReadonlyArray<PaintLike>;
-  // solo en instancias:
+  // instances only:
   mainComponentName?: string;
-  // layout (solo en nodos con Auto Layout):
+  // layout (only on Auto Layout nodes):
   layoutMode?: "NONE" | "HORIZONTAL" | "VERTICAL" | "GRID";
   gridColumnCount?: number;
   gridRowCount?: number;
@@ -57,157 +57,157 @@ export interface NodoLike {
   spacingVars?: { paddingLeft?: string; paddingTop?: string; paddingRight?: string; paddingBottom?: string; itemSpacing?: string };
   layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
-  // estilos resueltos (Styling Inventory):
+  // resolved styles (Styling Inventory):
   fillStyleName?: string;
   strokeStyleName?: string;
   textStyleName?: string;
   fontFamily?: string;
   fontStyle?: string;
   fontSize?: number;
-  lineHeight?: AlturaLinea;
-  letterSpacing?: EspaciadoLetra;
-  textAlign?: string;            // alineación horizontal del texto ("LEFT" | "CENTER" | ...)
-  textCase?: string;             // transformación de caja ("ORIGINAL" | "UPPER" | ...)
-  // variables de color resueltas (Variable Formatting):
-  fillVariableName?: string;     // "Colección/Variable" del fill
+  lineHeight?: LineHeightVal;
+  letterSpacing?: LetterSpacingVal;
+  textAlign?: string;            // horizontal text alignment ("LEFT" | "CENTER" | ...)
+  textCase?: string;             // case transformation ("ORIGINAL" | "UPPER" | ...)
+  // resolved color variables (Variable Formatting):
+  fillVariableName?: string;     // "Collection/Variable" of the fill
   strokeVariableName?: string;   // idem stroke
-  widthVariableName?: string;    // variable atada al ancho
-  heightVariableName?: string;   // variable atada al alto
-  cornerRadius?: number;         // radio de esquina (uniforme)
-  cornerRadiusVar?: string;      // variable atada al radio de esquina
+  widthVariableName?: string;    // variable bound to the width
+  heightVariableName?: string;   // variable bound to the height
+  cornerRadius?: number;         // corner radius (uniform)
+  cornerRadiusVar?: string;      // variable bound to the corner radius
 }
 
-export interface Atributo {
-  clave: string;        // "background-color", "border-color", "width", "opacity"
-  valor: string;        // hex, "Colección/Variable", o nombre del style
-  formato: "HARDCODED" | "VARIABLE" | "STYLE";
-  rawValue?: string;    // hex resuelto (para variable/style)
-  swatchHex?: string;   // color del swatch (presente en atributos de color)
-  prefijo?: string;     // modo de resizing para width/height ("Fixed" | "Hug" | "Fill")
+export interface Attribute {
+  key: string;        // "background-color", "border-color", "width", "opacity"
+  value: string;        // hex, "Collection/Variable", or style name
+  format: "HARDCODED" | "VARIABLE" | "STYLE";
+  rawValue?: string;    // resolved hex (for variable/style)
+  swatchHex?: string;   // swatch color (present on color attributes)
+  prefix?: string;     // resizing mode for width/height ("Fixed" | "Hug" | "Fill")
 }
 
-export interface ElementoAnatomy {
+export interface AnatomyElement {
   id: string;
-  nombre: string;
-  tipo: string; // NodeType de Figma: "FRAME" | "TEXT" | "INSTANCE" | ...
-  esInstancia: boolean;
-  dependeDe?: string; // "Depends on"
-  atributos: Atributo[];
-  profundidad?: number; // instancias atravesadas (ausente = 0, capa propia)
+  name: string;
+  type: string; // Figma NodeType: "FRAME" | "TEXT" | "INSTANCE" | ...
+  isInstance: boolean;
+  dependsOn?: string; // "Depends on"
+  attributes: Attribute[];
+  depth?: number; // instances traversed (absent = 0, own layer)
 }
 
-// Mensajes UI ↔ plugin.
-export type Seccion = "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway" | "complete";
+// UI ↔ plugin messages.
+export type Section = "anatomy" | "properties" | "layout" | "data" | "styling" | "modes" | "twoway" | "complete";
 
-export type FormatoColor = "HEX" | "RGB" | "HSL";
+export type ColorFormat = "HEX" | "RGB" | "HSL";
 
-export type Unidad = "px" | "rem";
+export type Unit = "px" | "rem";
 
-export type Preferencia = "VARIABLE" | "STYLE";
+export type Preference = "VARIABLE" | "STYLE";
 
-export type FormatoTipo = "Plain" | "CSS";
+export type TypeFormat = "Plain" | "CSS";
 
-export type MensajeUI = { tipo: "generar"; secciones: Seccion[]; nested?: boolean; dark?: boolean; columnas?: number; tabla?: boolean; hideOuter?: boolean; itemizar?: boolean; medirHijos?: boolean; leyenda?: boolean; stylingTotal?: boolean; formatoColor?: FormatoColor; unidad?: Unidad; formatoTipo?: FormatoTipo; formatoRaw?: FormatoColor; mostrarRaw?: boolean; preferencia?: Preferencia; anatomyDepth?: "self" | "children" | "all" } | { tipo: "cancelar" } | { tipo: "abrir"; url: string };
+export type UIMessage = { type: "generate"; sections: Section[]; nested?: boolean; dark?: boolean; columns?: number; table?: boolean; hideOuter?: boolean; itemize?: boolean; measureChildren?: boolean; legend?: boolean; stylingTotal?: boolean; colorFormat?: ColorFormat; unit?: Unit; typeFormat?: TypeFormat; rawFormat?: ColorFormat; showRaw?: boolean; preference?: Preference; anatomyDepth?: "self" | "children" | "all" } | { type: "cancel" } | { type: "open"; url: string };
 
-export type MensajePlugin =
-  | { tipo: "resultado"; ok: true }
-  | { tipo: "resultado"; ok: false; error: string };
+export type PluginMessage =
+  | { type: "result"; ok: true }
+  | { type: "result"; ok: false; error: string };
 
 // --- Properties (Variant) ---
 
-// Un atributo que cambia entre el default y una opción. Lleva ambos valores
-// para poder mostrar "valorOpcion (default: valorDefault)".
-export interface AtributoCambiado {
-  clave: string;          // "background-color", "width", "opacity"
-  valorDefault?: string;  // ausente si el atributo no existía en el default
-  valorOpcion?: string;   // ausente si el atributo desaparece en la opción
-  rawValueDefault?: string; // valor resuelto del default (variables/styles)
-  rawValueOpcion?: string;  // valor resuelto de la opción
-  swatchHex?: string;     // color del swatch (el de la opción; solo atributos de color)
-  formatoDefault?: "VARIABLE" | "STYLE"; // presente solo si es token (para usar ChipVar)
-  formatoOpcion?: "VARIABLE" | "STYLE";
-  prefijoDefault?: string; // modo de resizing del default (width/height): Fixed/Hug/Fill
-  prefijoOpcion?: string;
+// An attribute that changes between the default and an option. Carries both values
+// to be able to show "optionValue (default: defaultValue)".
+export interface ChangedAttribute {
+  key: string;          // "background-color", "width", "opacity"
+  defaultValue?: string;  // absent if the attribute didn't exist in the default
+  optionValue?: string;   // absent if the attribute disappears in the option
+  rawValueDefault?: string; // resolved value of the default (variables/styles)
+  rawValueOption?: string;  // resolved value of the option
+  swatchHex?: string;     // swatch color (the option's; color attributes only)
+  formatDefault?: "VARIABLE" | "STYLE"; // present only if it's a token (to use ChipVar)
+  formatOption?: "VARIABLE" | "STYLE";
+  prefixDefault?: string; // default resizing mode (width/height): Fixed/Hug/Fill
+  prefixOption?: string;
 }
 
-export interface ElementoCambiado {
-  elementoNombre: string;
-  estado: "modificado" | "agregado" | "removido";
-  atributos: AtributoCambiado[]; // vacío si estado es "agregado"/"removido"
+export interface ChangedElement {
+  elementName: string;
+  state: "modified" | "added" | "removed";
+  attributes: ChangedAttribute[]; // empty if state is "added"/"removed"
 }
 
-export interface OpcionSpec {
-  nombre: string;                // "Small"
-  cambios: ElementoCambiado[];
+export interface OptionSpec {
+  name: string;                // "Small"
+  changes: ChangedElement[];
 }
 
-export interface PropiedadSpec {
-  nombre: string;                // "Size"
-  tipo: "VARIANT";
-  default: string;               // valor de esta prop en el default, ej "Medium"
-  opciones: OpcionSpec[];
+export interface PropertySpec {
+  name: string;                // "Size"
+  type: "VARIANT";
+  default: string;               // this prop's value in the default, e.g. "Medium"
+  options: OptionSpec[];
 }
 
-export interface CombinacionSpec {
-  valor1: string;
-  valor2: string;
-  cambios: ElementoCambiado[];
+export interface CombinationSpec {
+  value1: string;
+  value2: string;
+  changes: ChangedElement[];
 }
 
-export interface DosWaySpec {
+export interface TwoWaySpec {
   prop1: string;
   prop2: string;
-  combinaciones: CombinacionSpec[];
+  combinations: CombinationSpec[];
 }
 
-export interface ElementoAdicional {
-  variante: string;   // etiqueta de la variante, ej. "Size=M, Type=Sec"
-  nombre: string;
-  tipo: string;
+export interface ExtraElement {
+  variant: string;   // variant label, e.g. "Size=M, Type=Sec"
+  name: string;
+  type: string;
 }
 
-// Par de elementos emparejados entre default y opción.
-export interface ParElementos {
-  default?: NodoLike;
-  opcion?: NodoLike;
+// A pair of elements matched between default and option.
+export interface ElementPair {
+  default?: NodeLike;
+  option?: NodeLike;
 }
 
-// Una variante normalizada: su mapa de props + su árbol como NodoLike.
-export interface VarianteNorm {
+// A normalized variant: its props map + its tree as NodeLike.
+export interface NormVariant {
   variantProperties: Record<string, string>;
-  raiz: NodoLike;
+  root: NodeLike;
 }
 
-// El Component Set normalizado para la extracción pura.
-export interface SetNorm {
-  propiedades: Record<string, string[]>;  // de variantGroupProperties: prop → opciones
-  variantes: VarianteNorm[];
-  defaultProps: Record<string, string>;   // variantProperties del default
+// The Component Set normalized for pure extraction.
+export interface NormSet {
+  properties: Record<string, string[]>;  // from variantGroupProperties: prop → options
+  variants: NormVariant[];
+  defaultProps: Record<string, string>;   // the default's variantProperties
 }
 
 // --- Layout and Spacing ---
 
 export interface GridSpec {
-  patron: "GRID" | "COLUMNS" | "ROWS";
-  alineacion?: "MIN" | "MAX" | "CENTER" | "STRETCH";
-  count?: number;        // puede venir Infinity ("Auto")
+  pattern: "GRID" | "COLUMNS" | "ROWS";
+  alignment?: "MIN" | "MAX" | "CENTER" | "STRETCH";
+  count?: number;        // may come as Infinity ("Auto")
   gutter?: number;
   sectionSize?: number;
   offset?: number;
 }
 
 export interface LayoutSpec {
-  elementoNombre: string;
-  tipo: string;                  // FRAME, COMPONENT, etc.
-  direccion: "HORIZONTAL" | "VERTICAL" | "GRID";
-  alineacionPrimaria: string;    // "Start" | "Center" | "End" | "Space between"
-  alineacionContraria: string;
+  elementName: string;
+  type: string;                  // FRAME, COMPONENT, etc.
+  direction: "HORIZONTAL" | "VERTICAL" | "GRID";
+  primaryAlignment: string;    // "Start" | "Center" | "End" | "Space between"
+  counterAlignment: string;
   resizingHorizontal: string;    // "Fill" | "Hug" | "Fixed"
   resizingVertical: string;
   padding: { left: number; top: number; right: number; bottom: number };
   itemSpacing: number;
   wrap: boolean;          // layoutWrap === "WRAP"
-  spacingAuto: boolean;   // primaryAxisAlignItems === "SPACE_BETWEEN" → marcador "Auto"
+  spacingAuto: boolean;   // primaryAxisAlignItems === "SPACE_BETWEEN" → marker "Auto"
   grids: GridSpec[];
   spacingVars: { paddingLeft?: string; paddingTop?: string; paddingRight?: string; paddingBottom?: string; itemSpacing?: string };
   width: number;
@@ -216,100 +216,100 @@ export interface LayoutSpec {
   heightVar?: string;
   cornerRadius?: number;
   cornerRadiusVar?: string;
-  textStyle?: { nombre?: string; resumen?: string };
+  textStyle?: { name?: string; summary?: string };
   gridColumnGapVar?: string;
   gridRowGapVar?: string;
-  fill?: Atributo;
-  stroke?: Atributo;
-  profundidad?: number; // instancias atravesadas (ausente = 0)
-  gridColumnas?: number;
-  gridFilas?: number;
+  fill?: Attribute;
+  stroke?: Attribute;
+  depth?: number; // instances traversed (absent = 0)
+  gridColumns?: number;
+  gridRows?: number;
   gridColumnGap?: number;
   gridRowGap?: number;
 }
 
-export interface VarianteLayout {
-  variante: string;
+export interface LayoutVariant {
+  variant: string;
   spec: LayoutSpec;
 }
 
 // --- Data (JSON export) ---
 
-export interface AtributoJson {
+export interface JsonAttribute {
   value: string;
   format: string;   // "HARDCODED" | "VARIABLE" | "STYLE"
   key: string;      // "background-color", etc.
 }
 
-export interface ElementoJson {
+export interface JsonElement {
   name: string;
   type: string;
-  instanceOf?: string;        // solo en instancias
-  attributes: AtributoJson[];
+  instanceOf?: string;        // instances only
+  attributes: JsonAttribute[];
 }
 
 export interface AnatomyJson {
-  anatomy: ElementoJson[];
+  anatomy: JsonElement[];
 }
 
 // --- Styling Inventory ---
 
-// Tipografía de un text style (para el preview y la lista de propiedades).
-export interface TipoTexto {
+// Typography of a text style (for the preview and the properties list).
+export interface TextType {
   family: string;
-  estilo: string;
+  style: string;
   size: number;
-  lineHeight?: AlturaLinea;
-  letterSpacing?: EspaciadoLetra;
+  lineHeight?: LineHeightVal;
+  letterSpacing?: LetterSpacingVal;
 }
 
-export interface EntradaEstilo {
-  tabla: "color" | "text" | "variable";
-  nombre: string;       // nombre del estilo o variable
+export interface StyleEntry {
+  table: "color" | "text" | "variable";
+  name: string;       // style or variable name
   appliedAs: string;    // "Background color" | "Text color" | "Border color" | "Text style"
-  capa: string;         // nombre de la capa
-  swatchHex?: string;   // color del chip (solo variables)
-  gradiente?: GradienteData; // swatch de gradiente (color styles de gradiente)
-  tipo?: TipoTexto;     // tipografía del estilo (solo text styles)
+  layer: string;         // layer name
+  swatchHex?: string;   // chip color (variables only)
+  gradient?: GradientData; // gradient swatch (gradient color styles)
+  type?: TextType;     // the style's typography (text styles only)
 }
 
-export interface FilaInventario {
-  tabla: "color" | "text" | "variable";
-  nombre: string;
+export interface InventoryRow {
+  table: "color" | "text" | "variable";
+  name: string;
   appliedAs: string;
-  appliedTo: string;    // capas formateadas
-  swatchHex?: string;   // color del chip (solo variables)
-  gradiente?: GradienteData; // swatch de gradiente (color styles de gradiente)
-  tipo?: TipoTexto;     // tipografía del estilo (solo text styles)
+  appliedTo: string;    // formatted layers
+  swatchHex?: string;   // chip color (variables only)
+  gradient?: GradientData; // gradient swatch (gradient color styles)
+  type?: TextType;     // the style's typography (text styles only)
 }
 
 // --- Modes ---
 
-export interface ValorModo {
+export interface ModeValue {
   modeId: string;
-  valor: string;   // hex o "→ nombreAlias"
+  value: string;   // hex o "→ nombreAlias"
 }
 
-export interface EntradaModo {
-  coleccionNombre: string;
-  coleccionId?: string;
-  modos: { modeId: string; nombre: string }[];
-  capa: string;
+export interface ModeEntry {
+  collectionName: string;
+  collectionId?: string;
+  modes: { modeId: string; name: string }[];
+  layer: string;
   appliedAs: string;
-  variableNombre: string;
-  valores: ValorModo[];
+  variableName: string;
+  values: ModeValue[];
 }
 
-export interface AtributoModo {
-  capa: string;
+export interface ModeAttribute {
+  layer: string;
   appliedAs: string;
-  variableNombre: string;
-  valores: ValorModo[];
+  variableName: string;
+  values: ModeValue[];
 }
 
-export interface ColeccionModes {
-  coleccionNombre: string;
-  coleccionId?: string;
-  modos: { modeId: string; nombre: string }[];
-  atributos: AtributoModo[];
+export interface ModesCollection {
+  collectionName: string;
+  collectionId?: string;
+  modes: { modeId: string; name: string }[];
+  attributes: ModeAttribute[];
 }

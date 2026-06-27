@@ -1,73 +1,73 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { extraerAnatomy } from "../src/plugin/extraccion/anatomy.ts";
-import type { NodoLike } from "../src/plugin/modelo/tipos.ts";
+import { extractAnatomy } from "../src/plugin/extraccion/anatomy.ts";
+import type { NodeLike } from "../src/plugin/modelo/tipos.ts";
 
-test("convierte un texto en ElementoAnatomy básico", () => {
-  const raiz: NodoLike = {
-    id: "raiz", name: "Card", type: "FRAME",
+test("convierte un text en AnatomyElement básico", () => {
+  const root: NodeLike = {
+    id: "root", name: "Card", type: "FRAME",
     children: [{ id: "t", name: "Título", type: "TEXT" }],
   };
-  const elementos = extraerAnatomy(raiz);
-  assert.equal(elementos.length, 1);
-  assert.deepEqual(elementos[0], {
-    id: "t", nombre: "Título", tipo: "TEXT", esInstancia: false, atributos: [],
+  const elements = extractAnatomy(root);
+  assert.equal(elements.length, 1);
+  assert.deepEqual(elements[0], {
+    id: "t", name: "Título", type: "TEXT", isInstance: false, attributes: [],
   });
 });
 
-test("marca instancia y resuelve dependeDe desde mainComponentName", () => {
-  const raiz: NodoLike = {
-    id: "raiz", name: "Card", type: "FRAME",
+test("badge instancia y resuelve dependsOn from mainComponentName", () => {
+  const root: NodeLike = {
+    id: "root", name: "Card", type: "FRAME",
     children: [{ id: "b", name: "Botón", type: "INSTANCE", mainComponentName: "ESDSV Button" }],
   };
-  const elementos = extraerAnatomy(raiz);
-  assert.equal(elementos[0].esInstancia, true);
-  assert.equal(elementos[0].dependeDe, "ESDSV Button");
+  const elements = extractAnatomy(root);
+  assert.equal(elements[0].isInstance, true);
+  assert.equal(elements[0].dependsOn, "ESDSV Button");
 });
 
-test("extraerAnatomy con itemizar incluye capas internas con profundidad", () => {
-  const raiz: NodoLike = {
+test("extractAnatomy con itemize incluye capas internas con depth", () => {
+  const root: NodeLike = {
     id: "r", name: "card", type: "FRAME",
     children: [{ id: "t", name: "tag", type: "INSTANCE", children: [{ id: "l", name: "Label", type: "TEXT" }] }],
   };
-  const els = extraerAnatomy(raiz, true);
-  assert.deepEqual(els.map((e) => [e.nombre, e.profundidad ?? 0]), [["tag", 0], ["Label", 1]]);
+  const els = extractAnatomy(root, true);
+  assert.deepEqual(els.map((e) => [e.name, e.depth ?? 0]), [["tag", 0], ["Label", 1]]);
 });
 
-test("incluye atributos visuales del elemento", () => {
-  const raiz: NodoLike = {
-    id: "raiz", name: "Card", type: "FRAME",
+test("incluye attributes visuales del element", () => {
+  const root: NodeLike = {
+    id: "root", name: "Card", type: "FRAME",
     children: [{
-      id: "fondo", name: "Fondo", type: "RECTANGLE", width: 100,
+      id: "bg", name: "Fondo", type: "RECTANGLE", width: 100,
       fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
     }],
   };
-  const elementos = extraerAnatomy(raiz);
-  assert.deepEqual(elementos[0].atributos, [
-    { clave: "background-color", valor: "#000000", formato: "HARDCODED", swatchHex: "#000000" },
-    { clave: "width", valor: "100px", formato: "HARDCODED" },
+  const elements = extractAnatomy(root);
+  assert.deepEqual(elements[0].attributes, [
+    { key: "background-color", value: "#000000", format: "HARDCODED", swatchHex: "#000000" },
+    { key: "width", value: "100px", format: "HARDCODED" },
   ]);
 });
 
-const arbol: NodoLike = { id: "r", name: "screen", type: "FRAME", children: [
+const arbol: NodeLike = { id: "r", name: "screen", type: "FRAME", children: [
   { id: "c", name: "card", type: "INSTANCE", mainComponentName: "Type=A, Orientation=V", children: [
     { id: "t", name: "title", type: "TEXT" },
   ] },
 ] };
 
-test("extraerAnatomy: incluirRaiz + nivelMax self → solo la raíz", () => {
-  const els = extraerAnatomy(arbol, false, { nivelMax: 0, incluirRaiz: true });
+test("extractAnatomy: includeRoot + maxLevel self → solo la raíz", () => {
+  const els = extractAnatomy(arbol, false, { maxLevel: 0, includeRoot: true });
   assert.deepEqual(els.map((e) => e.id), ["r"]);
 });
-test("extraerAnatomy: incluirRaiz + children → raíz + hijos directos", () => {
-  const els = extraerAnatomy(arbol, false, { nivelMax: 1, incluirRaiz: true });
+test("extractAnatomy: includeRoot + children → raíz + children directos", () => {
+  const els = extractAnatomy(arbol, false, { maxLevel: 1, includeRoot: true });
   assert.deepEqual(els.map((e) => e.id), ["r", "c"]);
 });
-test("extraerAnatomy: sin opts → solo descendientes, sin entrar a instancias (compat Data)", () => {
-  const els = extraerAnatomy(arbol);
-  assert.deepEqual(els.map((e) => e.id), ["c"]); // no entra a la instancia card sin itemizar
+test("extractAnatomy: sin opts → solo descendientes, sin entrar a instancias (compat Data)", () => {
+  const els = extractAnatomy(arbol);
+  assert.deepEqual(els.map((e) => e.id), ["c"]); // no entra a la instancia card sin itemize
 });
-test("extraerAnatomy: textosProfundos surfacea el texto interno de una instancia", () => {
-  const els = extraerAnatomy(arbol, false, { nivelMax: 1, incluirRaiz: true, textosProfundos: true });
+test("extractAnatomy: deepTexts surfacea el text interno de una instancia", () => {
+  const els = extractAnatomy(arbol, false, { maxLevel: 1, includeRoot: true, deepTexts: true });
   assert.deepEqual(els.map((e) => e.id), ["r", "c", "t"]); // el title interno de la card aparece
 });

@@ -1,159 +1,159 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { leerAtributos } from "../src/plugin/utils/atributos.ts";
-import type { NodoLike } from "../src/plugin/modelo/tipos.ts";
+import { readAttributes } from "../src/plugin/utils/atributos.ts";
+import type { NodeLike } from "../src/plugin/modelo/tipos.ts";
 
 test("fill SOLID hardcoded → background-color HARDCODED con swatchHex", () => {
-  const nodo: NodoLike = {
+  const node: NodeLike = {
     id: "x", name: "x", type: "RECTANGLE",
     fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
   };
   assert.deepEqual(
-    leerAtributos(nodo).find((a) => a.clave === "background-color"),
-    { clave: "background-color", valor: "#FFFFFF", formato: "HARDCODED", swatchHex: "#FFFFFF" },
+    readAttributes(node).find((a) => a.key === "background-color"),
+    { key: "background-color", value: "#FFFFFF", format: "HARDCODED", swatchHex: "#FFFFFF" },
   );
 });
 
 test("fill con variable → background-color VARIABLE con rawValue", () => {
-  const nodo: NodoLike = {
+  const node: NodeLike = {
     id: "x", name: "x", type: "RECTANGLE",
     fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
     fillVariableName: "Color/Action",
   };
   assert.deepEqual(
-    leerAtributos(nodo).find((a) => a.clave === "background-color"),
-    { clave: "background-color", valor: "Color/Action", formato: "VARIABLE", rawValue: "#000000", swatchHex: "#000000" },
+    readAttributes(node).find((a) => a.key === "background-color"),
+    { key: "background-color", value: "Color/Action", format: "VARIABLE", rawValue: "#000000", swatchHex: "#000000" },
   );
 });
 
 test("stroke SOLID → border-color", () => {
-  const nodo: NodoLike = {
+  const node: NodeLike = {
     id: "x", name: "x", type: "FRAME",
     strokes: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
   };
   assert.deepEqual(
-    leerAtributos(nodo).find((a) => a.clave === "border-color"),
-    { clave: "border-color", valor: "#000000", formato: "HARDCODED", swatchHex: "#000000" },
+    readAttributes(node).find((a) => a.key === "border-color"),
+    { key: "border-color", value: "#000000", format: "HARDCODED", swatchHex: "#000000" },
   );
 });
 
 test("incluye width cuando está presente (sin swatch)", () => {
-  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 240 };
+  const node: NodeLike = { id: "x", name: "x", type: "FRAME", width: 240 };
   assert.deepEqual(
-    leerAtributos(nodo).find((a) => a.clave === "width"),
-    { clave: "width", valor: "240px", formato: "HARDCODED" },
+    readAttributes(node).find((a) => a.key === "width"),
+    { key: "width", value: "240px", format: "HARDCODED" },
   );
 });
 
 test("width con variable atada → VARIABLE + rawValue", () => {
-  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 343, widthVariableName: "DS Sizing/iOS width" };
+  const node: NodeLike = { id: "x", name: "x", type: "FRAME", width: 343, widthVariableName: "DS Sizing/iOS width" };
   assert.deepEqual(
-    leerAtributos(nodo).find((a) => a.clave === "width"),
-    { clave: "width", valor: "DS Sizing/iOS width", formato: "VARIABLE", rawValue: "343px" },
+    readAttributes(node).find((a) => a.key === "width"),
+    { key: "width", value: "DS Sizing/iOS width", format: "VARIABLE", rawValue: "343px" },
   );
 });
 
 test("height sin variable → no aparece", () => {
-  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 100, height: 200 };
-  assert.equal(leerAtributos(nodo).find((a) => a.clave === "height"), undefined);
+  const node: NodeLike = { id: "x", name: "x", type: "FRAME", width: 100, height: 200 };
+  assert.equal(readAttributes(node).find((a) => a.key === "height"), undefined);
 });
 
 test("height con variable atada → aparece como VARIABLE", () => {
-  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 100, height: 48, heightVariableName: "DS Sizing/button" };
+  const node: NodeLike = { id: "x", name: "x", type: "FRAME", width: 100, height: 48, heightVariableName: "DS Sizing/button" };
   assert.deepEqual(
-    leerAtributos(nodo).find((a) => a.clave === "height"),
-    { clave: "height", valor: "DS Sizing/button", formato: "VARIABLE", rawValue: "48px" },
+    readAttributes(node).find((a) => a.key === "height"),
+    { key: "height", value: "DS Sizing/button", format: "VARIABLE", rawValue: "48px" },
   );
 });
 
 test("incluye opacity como porcentaje cuando es menor a 1", () => {
-  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", opacity: 0.8 };
+  const node: NodeLike = { id: "x", name: "x", type: "FRAME", opacity: 0.8 };
   assert.deepEqual(
-    leerAtributos(nodo).find((a) => a.clave === "opacity"),
-    { clave: "opacity", valor: "80%", formato: "HARDCODED" },
+    readAttributes(node).find((a) => a.key === "opacity"),
+    { key: "opacity", value: "80%", format: "HARDCODED" },
   );
 });
 
 test("opacity 1 (totalmente opaco) no se incluye", () => {
-  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", opacity: 1 };
-  assert.equal(leerAtributos(nodo).find((a) => a.clave === "opacity"), undefined);
+  const node: NodeLike = { id: "x", name: "x", type: "FRAME", opacity: 1 };
+  assert.equal(readAttributes(node).find((a) => a.key === "opacity"), undefined);
 });
 
-test("typography con estilo aplicado → fila 'Text Style' (nombre) + propiedades de la fuente", () => {
-  const nodo: NodoLike = {
+test("typography con style aplicado → row 'Text Style' (name) + properties de la fuente", () => {
+  const node: NodeLike = {
     id: "x", name: "x", type: "TEXT",
     fontFamily: "Inter", fontStyle: "Medium", fontSize: 14,
     textStyleName: "Text SM/Medium",
   };
-  const attrs = leerAtributos(nodo);
+  const attrs = readAttributes(node);
   assert.deepEqual(
-    attrs.find((a) => a.clave === "Text Style"),
-    { clave: "Text Style", valor: "Text SM/Medium", formato: "STYLE" },
+    attrs.find((a) => a.key === "Text Style"),
+    { key: "Text Style", value: "Text SM/Medium", format: "STYLE" },
   );
   assert.deepEqual(
-    attrs.find((a) => a.clave === "Font Family"),
-    { clave: "Font Family", valor: "Inter", formato: "HARDCODED" },
+    attrs.find((a) => a.key === "Font Family"),
+    { key: "Font Family", value: "Inter", format: "HARDCODED" },
   );
   assert.deepEqual(
-    attrs.find((a) => a.clave === "Font Weight"),
-    { clave: "Font Weight", valor: "Medium", formato: "HARDCODED" },
+    attrs.find((a) => a.key === "Font Weight"),
+    { key: "Font Weight", value: "Medium", format: "HARDCODED" },
   );
-  assert.equal(attrs.find((a) => a.clave === "Font Size")?.valor, "14px");
+  assert.equal(attrs.find((a) => a.key === "Font Size")?.value, "14px");
 });
 
-test("typography sin estilo → Text Style N/A + propiedades de la fuente", () => {
-  const nodo: NodoLike = {
+test("typography sin style → Text Style N/A + properties de la fuente", () => {
+  const node: NodeLike = {
     id: "x", name: "x", type: "TEXT",
     fontFamily: "Inter", fontStyle: "Medium", fontSize: 14,
   };
-  const attrs = leerAtributos(nodo);
+  const attrs = readAttributes(node);
   assert.deepEqual(
-    attrs.find((a) => a.clave === "Text Style"),
-    { clave: "Text Style", valor: "N/A", formato: "HARDCODED" },
+    attrs.find((a) => a.key === "Text Style"),
+    { key: "Text Style", value: "N/A", format: "HARDCODED" },
   );
-  assert.equal(attrs.find((a) => a.clave === "Font Family")?.valor, "Inter");
+  assert.equal(attrs.find((a) => a.key === "Font Family")?.value, "Inter");
 });
 
-test("width con layoutSizing FIXED → incluye prefijo Fixed", () => {
-  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 67, layoutSizingHorizontal: "FIXED" };
+test("width con layoutSizing FIXED → incluye prefix Fixed", () => {
+  const node: NodeLike = { id: "x", name: "x", type: "FRAME", width: 67, layoutSizingHorizontal: "FIXED" };
   assert.deepEqual(
-    leerAtributos(nodo).find((a) => a.clave === "width"),
-    { clave: "width", valor: "67px", formato: "HARDCODED", prefijo: "Fixed" },
-  );
-});
-
-test("width con layoutSizing HUG → incluye prefijo Hug", () => {
-  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 88, layoutSizingHorizontal: "HUG" };
-  assert.deepEqual(
-    leerAtributos(nodo).find((a) => a.clave === "width"),
-    { clave: "width", valor: "88px", formato: "HARDCODED", prefijo: "Hug" },
+    readAttributes(node).find((a) => a.key === "width"),
+    { key: "width", value: "67px", format: "HARDCODED", prefix: "Fixed" },
   );
 });
 
-test("width sin layoutSizing → sin prefijo (igual que antes)", () => {
-  const nodo: NodoLike = { id: "x", name: "x", type: "FRAME", width: 240 };
+test("width con layoutSizing HUG → incluye prefix Hug", () => {
+  const node: NodeLike = { id: "x", name: "x", type: "FRAME", width: 88, layoutSizingHorizontal: "HUG" };
   assert.deepEqual(
-    leerAtributos(nodo).find((a) => a.clave === "width"),
-    { clave: "width", valor: "240px", formato: "HARDCODED" },
+    readAttributes(node).find((a) => a.key === "width"),
+    { key: "width", value: "88px", format: "HARDCODED", prefix: "Hug" },
   );
 });
 
-test("texto con layoutSizing HUG → su width incluye prefijo Hug", () => {
-  const nodo: NodoLike = { id: "t", name: "t", type: "TEXT", width: 86, fontFamily: "Inter", fontSize: 14, layoutSizingHorizontal: "HUG" };
+test("width sin layoutSizing → sin prefix (igual que antes)", () => {
+  const node: NodeLike = { id: "x", name: "x", type: "FRAME", width: 240 };
   assert.deepEqual(
-    leerAtributos(nodo).find((a) => a.clave === "width"),
-    { clave: "width", valor: "86px", formato: "HARDCODED", prefijo: "Hug" },
+    readAttributes(node).find((a) => a.key === "width"),
+    { key: "width", value: "240px", format: "HARDCODED" },
   );
 });
 
-test("texto: agrega filas Alignment y Case", () => {
-  const nodo: NodoLike = { id: "t", name: "t", type: "TEXT", fontFamily: "Inter", fontSize: 14, textAlign: "CENTER", textCase: "UPPER" };
-  const attrs = leerAtributos(nodo);
-  assert.equal(attrs.find((a) => a.clave === "Alignment")?.valor, "Center");
-  assert.equal(attrs.find((a) => a.clave === "Case")?.valor, "Uppercase");
+test("text con layoutSizing HUG → su width incluye prefix Hug", () => {
+  const node: NodeLike = { id: "t", name: "t", type: "TEXT", width: 86, fontFamily: "Inter", fontSize: 14, layoutSizingHorizontal: "HUG" };
+  assert.deepEqual(
+    readAttributes(node).find((a) => a.key === "width"),
+    { key: "width", value: "86px", format: "HARDCODED", prefix: "Hug" },
+  );
 });
 
-test("texto con letter-spacing 0 → muestra la fila Letter Spacing", () => {
-  const nodo: NodoLike = { id: "t", name: "t", type: "TEXT", fontFamily: "Inter", fontSize: 14, letterSpacing: { unidad: "px", valor: 0 } };
-  assert.equal(leerAtributos(nodo).find((a) => a.clave === "Letter Spacing")?.valor, "0px");
+test("text: agrega rows Alignment y Case", () => {
+  const node: NodeLike = { id: "t", name: "t", type: "TEXT", fontFamily: "Inter", fontSize: 14, textAlign: "CENTER", textCase: "UPPER" };
+  const attrs = readAttributes(node);
+  assert.equal(attrs.find((a) => a.key === "Alignment")?.value, "Center");
+  assert.equal(attrs.find((a) => a.key === "Case")?.value, "Uppercase");
+});
+
+test("text con letter-spacing 0 → muestra la row Letter Spacing", () => {
+  const node: NodeLike = { id: "t", name: "t", type: "TEXT", fontFamily: "Inter", fontSize: 14, letterSpacing: { unit: "px", value: 0 } };
+  assert.equal(readAttributes(node).find((a) => a.key === "Letter Spacing")?.value, "0px");
 });

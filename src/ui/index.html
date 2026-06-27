@@ -26,7 +26,7 @@
         display: flex;
         flex-direction: column;
       }
-      /* Tabs (fijas arriba) */
+      /* Tabs (pinned to top) */
       .tabs { display: flex; gap: 4px; padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
       .tab {
         font-family: inherit; font-size: 12px; font-weight: 500;
@@ -35,11 +35,11 @@
       }
       .tab:hover { color: var(--text); }
       .tab.active { color: var(--text); background: var(--bg-2); }
-      /* Contenido scrolleable (alto fijo via flex) */
+      /* Scrollable content (fixed height via flex) */
       .content { flex: 1 1 auto; overflow-y: auto; padding: 16px; }
       .panel.hidden { display: none; }
       .subtitle { margin: 0 0 14px; color: var(--text-2); font-size: 12px; }
-      /* Specs: grid de cards seleccionables */
+      /* Specs: grid of selectable cards */
       .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
       .spec-card {
         position: relative; text-align: left; cursor: pointer; font-family: inherit;
@@ -60,11 +60,11 @@
         content: ""; position: absolute; left: 4px; top: 1.5px; width: 4px; height: 8px;
         border: solid var(--on-brand); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
       }
-      /* Options: grupos por sección */
+      /* Options: groups per section */
       .group { margin-bottom: 8px; }
       .group + .group { border-top: 1px solid var(--border); padding-top: 14px; }
       .group-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-2); margin-bottom: 12px; }
-      /* Fila: label (izq) + control + descripción (der) */
+      /* Row: label (left) + control + description (right) */
       .row { display: flex; gap: 16px; align-items: flex-start; padding: 8px 0; }
       .row-label { width: 150px; flex-shrink: 0; padding-top: 3px; font-size: 11px; }
       .row-control { flex: 1; min-width: 0; }
@@ -83,7 +83,7 @@
       .about b { color: var(--text); font-weight: 500; }
       .about a { color: var(--brand); text-decoration: none; cursor: pointer; }
       .about a:hover { text-decoration: underline; }
-      /* Footer fijo */
+      /* Fixed footer */
       .footer { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
       .status { flex: 1; min-width: 0; color: var(--text-2); font-size: 11px; }
       .btn {
@@ -125,7 +125,7 @@
           <div class="row">
             <div class="row-label">Legend</div>
             <div class="row-control">
-              <label class="cb"><input type="checkbox" id="leyenda" /> Show legend</label>
+              <label class="cb"><input type="checkbox" id="legend" /> Show legend</label>
               <div class="row-desc">Show the color legend for Layout overlays.</div>
             </div>
           </div>
@@ -143,7 +143,7 @@
           <div class="row">
             <div class="row-label">Tabular anatomy</div>
             <div class="row-control">
-              <label class="cb"><input type="checkbox" id="tabla" /> Use table</label>
+              <label class="cb"><input type="checkbox" id="table" /> Use table</label>
               <div class="row-desc">Show Anatomy as a table instead of cards.</div>
             </div>
           </div>
@@ -164,7 +164,7 @@
           <div class="row">
             <div class="row-label">Itemize instances</div>
             <div class="row-control">
-              <label class="cb"><input type="checkbox" id="itemizar" checked /> Show</label>
+              <label class="cb"><input type="checkbox" id="itemize" checked /> Show</label>
               <div class="row-desc">Break instances open to list their inner layers.</div>
             </div>
           </div>
@@ -182,14 +182,14 @@
           <div class="row">
             <div class="row-label">Element measures</div>
             <div class="row-control">
-              <label class="cb"><input type="checkbox" id="medirHijos" checked /> Add element measures</label>
+              <label class="cb"><input type="checkbox" id="measureChildren" checked /> Add element measures</label>
               <div class="row-desc">Add dimension lines to child elements too.</div>
             </div>
           </div>
           <div class="row">
             <div class="row-label">Itemize instances</div>
             <div class="row-control">
-              <label class="cb"><input type="checkbox" id="itemizar2" checked /> Show</label>
+              <label class="cb"><input type="checkbox" id="itemize2" checked /> Show</label>
               <div class="row-desc">Break instances open to list their inner layers.</div>
             </div>
           </div>
@@ -223,44 +223,44 @@
         <div class="row">
           <div class="row-label">Columns</div>
           <div class="row-control">
-            <select id="columnas"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+            <select id="columns"><option>1</option><option>2</option><option>3</option><option>4</option></select>
             <div class="row-desc">Cards per row.</div>
           </div>
         </div>
         <div class="row">
           <div class="row-label">Color</div>
           <div class="row-control">
-            <select id="formatoColor"><option>HEX</option><option>RGB</option><option>HSL</option></select>
+            <select id="colorFormat"><option>HEX</option><option>RGB</option><option>HSL</option></select>
             <div class="row-desc">Format for hardcoded colors.</div>
           </div>
         </div>
         <div class="row">
           <div class="row-label">Units</div>
           <div class="row-control">
-            <select id="unidad"><option>px</option><option>rem</option></select>
+            <select id="unit"><option>px</option><option>rem</option></select>
             <div class="row-desc">Unit for all measurements.</div>
           </div>
         </div>
         <div class="row">
           <div class="row-label">Type</div>
           <div class="row-control">
-            <select id="formatoTipo"><option>Plain</option><option>CSS</option></select>
+            <select id="typeFormat"><option>Plain</option><option>CSS</option></select>
             <div class="row-desc">Typography format: readable or CSS shorthand.</div>
           </div>
         </div>
         <div class="row">
           <div class="row-label">Raw values</div>
           <div class="row-control">
-            <select id="formatoRaw"><option>HEX</option><option>RGB</option><option>HSL</option></select>
+            <select id="rawFormat"><option>HEX</option><option>RGB</option><option>HSL</option></select>
             <div class="row-desc">Format of the resolved color shown next to a variable or style.</div>
-            <label class="cb" style="margin-top: 8px;"><input type="checkbox" id="mostrarRaw" checked /> Show raw value</label>
+            <label class="cb" style="margin-top: 8px;"><input type="checkbox" id="showRaw" checked /> Show raw value</label>
             <div class="row-desc">Show the resolved value next to tokens.</div>
           </div>
         </div>
         <div class="row">
           <div class="row-label">Preferred</div>
           <div class="row-control">
-            <select id="preferencia"><option value="VARIABLE">Variable</option><option value="STYLE">Style</option></select>
+            <select id="preference"><option value="VARIABLE">Variable</option><option value="STYLE">Style</option></select>
             <div class="row-desc">Which to show when both apply.</div>
           </div>
         </div>
@@ -295,9 +295,9 @@
     </div>
 
     <div class="footer">
-      <span class="status" id="estado"></span>
-      <button id="cancelar" class="btn">Cancel</button>
-      <button id="crear" class="btn primary">Create Spec</button>
+      <span class="status" id="status"></span>
+      <button id="cancel" class="btn">Cancel</button>
+      <button id="create" class="btn primary">Create Spec</button>
     </div>
     <script src="ui.js"></script>
   </body>

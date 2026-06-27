@@ -1,18 +1,18 @@
 # Modes
 
-## Qué hace
-Muestra el valor de cada variable de color a través de sus modes (ej. Light/Dark), para ver cómo cambia el elemento entre temas.
+## What it does
+Shows the value of each color variable across its modes (e.g. Light/Dark), to see how the element changes between themes.
 
-## Qué muestra
-Por cada **variable collection con ≥2 modes** usada por el elemento: el nombre de la variable, su `appliedAs` (Background/Text/Border color) y la **comparación de valores por mode** (hex por cada mode, o alias `→ otra/variable`).
+## What it shows
+Per **variable collection with ≥2 modes** used by the element: the variable's name, its `appliedAs` (Background/Text/Border color) and the **comparison of values per mode** (hex for each mode, or alias `→ another/variable`).
 
-## Recolección
-Recorre el elemento y sus capas — **también dentro de las instancias** — y junta las variables de color atadas a fill/stroke cuya colección tiene 2+ modes. Las variables en colecciones de un solo mode no aparecen (no hay nada multi-mode que mostrar).
+## Collection
+It walks the element and its layers — **including inside instances** — and gathers the color variables bound to fill/stroke whose collection has 2+ modes. Variables in single-mode collections don't appear (there's nothing multi-mode to show).
 
-## Opciones que la afectan
+## Options that affect it
 - **Columns**.
 
-## Archivos clave
-- `variables/recolectar-modes.ts` (recolección, entra a instancias)
-- `variables/modes.ts` (agrupado, `hexDeColor`)
+## Key files
+- `variables/recolectar-modes.ts` (collection, descends into instances)
+- `variables/modes.ts` (grouping, `hexDeColor`)
 - `generadores/modes.ts`

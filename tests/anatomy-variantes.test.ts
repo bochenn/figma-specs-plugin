@@ -1,17 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { parseVariantes } from "../src/plugin/utils/anatomy-variantes.ts";
+import { parseVariants } from "../src/plugin/utils/anatomy-variantes.ts";
 
-test("parseVariantes: 'k=v, k=v' → pares", () => {
-  assert.deepEqual(parseVariantes("Type=Card 03, Orientation=Vertical, Breakpoint=Mobile"), [
-    { clave: "Type", valor: "Card 03" },
-    { clave: "Orientation", valor: "Vertical" },
-    { clave: "Breakpoint", valor: "Mobile" },
+test("parseVariants: 'k=v, k=v' → pares", () => {
+  assert.deepEqual(parseVariants("Type=Card 03, Orientation=Vertical, Breakpoint=Mobile"), [
+    { key: "Type", value: "Card 03" },
+    { key: "Orientation", value: "Vertical" },
+    { key: "Breakpoint", value: "Mobile" },
   ]);
 });
-test("parseVariantes: sin '=' → vacío (no es variante)", () => {
-  assert.deepEqual(parseVariantes("Blog post card"), []);
+test("parseVariants: sin '=' → vacío (no es variant)", () => {
+  assert.deepEqual(parseVariants("Blog post card"), []);
 });
-test("parseVariantes: undefined → vacío", () => {
-  assert.deepEqual(parseVariantes(undefined), []);
+test("parseVariants: undefined → vacío", () => {
+  assert.deepEqual(parseVariants(undefined), []);
 });

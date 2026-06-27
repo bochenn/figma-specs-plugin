@@ -1,40 +1,40 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { agruparModes } from "../src/plugin/variables/modes.ts";
-import type { EntradaModo } from "../src/plugin/modelo/tipos.ts";
+import { groupModes } from "../src/plugin/variables/modes.ts";
+import type { ModeEntry } from "../src/plugin/modelo/tipos.ts";
 
-const MODOS = [{ modeId: "L", nombre: "Light" }, { modeId: "D", nombre: "Dark" }];
+const MODOS = [{ modeId: "L", name: "Light" }, { modeId: "D", name: "Dark" }];
 
-function entrada(coleccion: string, appliedAs: string, variableNombre: string): EntradaModo {
+function entry(collection: string, appliedAs: string, variableName: string): ModeEntry {
   return {
-    coleccionNombre: coleccion,
-    coleccionId: `${coleccion}-id`,
-    modos: MODOS,
-    capa: "Alert",
+    collectionName: collection,
+    collectionId: `${collection}-id`,
+    modes: MODOS,
+    layer: "Alert",
     appliedAs,
-    variableNombre,
-    valores: [{ modeId: "L", valor: "#FFFFFF" }, { modeId: "D", valor: "#000000" }],
+    variableName,
+    values: [{ modeId: "L", value: "#FFFFFF" }, { modeId: "D", value: "#000000" }],
   };
 }
 
-test("dos entradas de la misma collection → una ColeccionModes con dos atributos", () => {
-  const cols = agruparModes([
-    entrada("Color", "Background color", "Bg"),
-    entrada("Color", "Border color", "Bd"),
+test("dos entries de la misma collection → una ModesCollection con dos attributes", () => {
+  const cols = groupModes([
+    entry("Color", "Background color", "Bg"),
+    entry("Color", "Border color", "Bd"),
   ]);
   assert.equal(cols.length, 1);
-  assert.equal(cols[0].coleccionNombre, "Color");
-  assert.equal(cols[0].coleccionId, "Color-id");
-  assert.deepEqual(cols[0].modos, MODOS);
-  assert.equal(cols[0].atributos.length, 2);
-  assert.equal(cols[0].atributos[0].variableNombre, "Bg");
-  assert.equal(cols[0].atributos[1].variableNombre, "Bd");
+  assert.equal(cols[0].collectionName, "Color");
+  assert.equal(cols[0].collectionId, "Color-id");
+  assert.deepEqual(cols[0].modes, MODOS);
+  assert.equal(cols[0].attributes.length, 2);
+  assert.equal(cols[0].attributes[0].variableName, "Bg");
+  assert.equal(cols[0].attributes[1].variableName, "Bd");
 });
 
-test("entradas de dos collections → dos ColeccionModes, en orden de aparición", () => {
-  const cols = agruparModes([
-    entrada("Color", "Background color", "Bg"),
-    entrada("Spacing", "Border color", "Sp"),
+test("entries de dos collections → dos ModesCollection, en orden de aparición", () => {
+  const cols = groupModes([
+    entry("Color", "Background color", "Bg"),
+    entry("Spacing", "Border color", "Sp"),
   ]);
-  assert.deepEqual(cols.map((c) => c.coleccionNombre), ["Color", "Spacing"]);
+  assert.deepEqual(cols.map((c) => c.collectionName), ["Color", "Spacing"]);
 });

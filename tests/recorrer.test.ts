@@ -1,127 +1,127 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { recorrer } from "../src/plugin/traversal/recorrer.ts";
-import type { NodoLike } from "../src/plugin/modelo/tipos.ts";
+import { traverse } from "../src/plugin/traversal/recorrer.ts";
+import type { NodeLike } from "../src/plugin/modelo/tipos.ts";
 
-function nodo(parcial: Partial<NodoLike> & { id: string; type: string }): NodoLike {
+function node(parcial: Partial<NodeLike> & { id: string; type: string }): NodeLike {
   return { name: parcial.id, ...parcial };
 }
 
-test("itemiza textos y shapes como hojas, en orden de árbol", () => {
-  const raiz = nodo({
-    id: "raiz",
+test("itemiza texts y shapes como hojas, en orden de árbol", () => {
+  const root = node({
+    id: "root",
     type: "FRAME",
     children: [
-      nodo({ id: "titulo", type: "TEXT" }),
-      nodo({ id: "fondo", type: "RECTANGLE" }),
+      node({ id: "title", type: "TEXT" }),
+      node({ id: "bg", type: "RECTANGLE" }),
     ],
   });
-  const elementos = recorrer(raiz);
-  assert.deepEqual(elementos.map((r) => r.nodo.id), ["titulo", "fondo"]);
+  const elements = traverse(root);
+  assert.deepEqual(elements.map((r) => r.node.id), ["title", "bg"]);
 });
 
-test("frena en instancias: la instancia es elemento pero sus hijos NO", () => {
-  const raiz = nodo({
-    id: "raiz",
+test("frena en instancias: la instancia es element pero sus children NO", () => {
+  const root = node({
+    id: "root",
     type: "FRAME",
     children: [
-      nodo({
+      node({
         id: "boton",
         type: "INSTANCE",
-        children: [nodo({ id: "label-interno", type: "TEXT" })],
+        children: [node({ id: "label-interno", type: "TEXT" })],
       }),
     ],
   });
-  const elementos = recorrer(raiz);
-  assert.deepEqual(elementos.map((r) => r.nodo.id), ["boton"]);
+  const elements = traverse(root);
+  assert.deepEqual(elements.map((r) => r.node.id), ["boton"]);
 });
 
-test("frames: son elemento y además se recorren hacia adentro", () => {
-  const raiz = nodo({
-    id: "raiz",
+test("frames: son element y además se recorren to adentro", () => {
+  const root = node({
+    id: "root",
     type: "FRAME",
     children: [
-      nodo({
-        id: "grupo",
+      node({
+        id: "group",
         type: "FRAME",
-        children: [nodo({ id: "hijo", type: "TEXT" })],
+        children: [node({ id: "child", type: "TEXT" })],
       }),
     ],
   });
-  const elementos = recorrer(raiz);
-  assert.deepEqual(elementos.map((r) => r.nodo.id), ["grupo", "hijo"]);
+  const elements = traverse(root);
+  assert.deepEqual(elements.map((r) => r.node.id), ["group", "child"]);
 });
 
-test("nodo sin hijos devuelve lista vacía", () => {
-  const raiz = nodo({ id: "raiz", type: "FRAME", children: [] });
-  assert.deepEqual(recorrer(raiz), []);
+test("node sin children devuelve lista vacía", () => {
+  const root = node({ id: "root", type: "FRAME", children: [] });
+  assert.deepEqual(traverse(root), []);
 });
 
-test("con itemizar entra en la instancia y marca profundidad +1", () => {
-  const raiz = nodo({
-    id: "raiz", type: "FRAME",
+test("con itemize entra en la instancia y badge depth +1", () => {
+  const root = node({
+    id: "root", type: "FRAME",
     children: [
-      nodo({ id: "boton", type: "INSTANCE", children: [nodo({ id: "label-interno", type: "TEXT" })] }),
+      node({ id: "boton", type: "INSTANCE", children: [node({ id: "label-interno", type: "TEXT" })] }),
     ],
   });
-  const r = recorrer(raiz, true);
-  assert.deepEqual(r.map((x) => [x.nodo.id, x.profundidad]), [["boton", 0], ["label-interno", 1]]);
+  const r = traverse(root, true);
+  assert.deepEqual(r.map((x) => [x.node.id, x.depth]), [["boton", 0], ["label-interno", 1]]);
 });
 
-test("frame normal mantiene la profundidad del contexto", () => {
-  const raiz = nodo({
-    id: "raiz", type: "FRAME",
-    children: [nodo({ id: "grupo", type: "FRAME", children: [nodo({ id: "hijo", type: "TEXT" })] })],
+test("frame normal mantiene la depth del contexto", () => {
+  const root = node({
+    id: "root", type: "FRAME",
+    children: [node({ id: "group", type: "FRAME", children: [node({ id: "child", type: "TEXT" })] })],
   });
-  assert.deepEqual(recorrer(raiz, true).map((x) => [x.nodo.id, x.profundidad]), [["grupo", 0], ["hijo", 0]]);
+  assert.deepEqual(traverse(root, true).map((x) => [x.node.id, x.depth]), [["group", 0], ["child", 0]]);
 });
 
-test("itemizar es recursivo (instancia dentro de instancia)", () => {
-  const raiz = nodo({
-    id: "raiz", type: "FRAME",
-    children: [nodo({ id: "a", type: "INSTANCE", children: [
-      nodo({ id: "b", type: "INSTANCE", children: [nodo({ id: "c", type: "TEXT" })] }),
+test("itemize es recursivo (instancia dentro de instancia)", () => {
+  const root = node({
+    id: "root", type: "FRAME",
+    children: [node({ id: "a", type: "INSTANCE", children: [
+      node({ id: "b", type: "INSTANCE", children: [node({ id: "c", type: "TEXT" })] }),
     ] })],
   });
-  assert.deepEqual(recorrer(raiz, true).map((x) => [x.nodo.id, x.profundidad]), [["a", 0], ["b", 1], ["c", 2]]);
+  assert.deepEqual(traverse(root, true).map((x) => [x.node.id, x.depth]), [["a", 0], ["b", 1], ["c", 2]]);
 });
 
-test("recorrer: nivelMax 1 → solo hijos directos", () => {
-  const raiz: NodoLike = { id: "r", name: "R", type: "FRAME", children: [
+test("traverse: maxLevel 1 → solo children directos", () => {
+  const root: NodeLike = { id: "r", name: "R", type: "FRAME", children: [
     { id: "a", name: "A", type: "FRAME", children: [{ id: "a1", name: "A1", type: "FRAME", children: [] }] },
     { id: "b", name: "B", type: "TEXT" },
   ] };
-  assert.deepEqual(recorrer(raiz, false, 0, 0, 1).map((x) => x.nodo.id), ["a", "b"]);
+  assert.deepEqual(traverse(root, false, 0, 0, 1).map((x) => x.node.id), ["a", "b"]);
 });
-test("recorrer: nivelMax 0 → vacío", () => {
-  const raiz: NodoLike = { id: "r", name: "R", type: "FRAME", children: [{ id: "a", name: "A", type: "FRAME" }] };
-  assert.deepEqual(recorrer(raiz, false, 0, 0, 0), []);
+test("traverse: maxLevel 0 → vacío", () => {
+  const root: NodeLike = { id: "r", name: "R", type: "FRAME", children: [{ id: "a", name: "A", type: "FRAME" }] };
+  assert.deepEqual(traverse(root, false, 0, 0, 0), []);
 });
 
-test("textosProfundos: una instancia muestra sus TEXT internos (no sus shapes)", () => {
-  const raiz: NodoLike = { id: "r", name: "R", type: "FRAME", children: [
+test("deepTexts: una instancia muestra sus TEXT internos (no sus shapes)", () => {
+  const root: NodeLike = { id: "r", name: "R", type: "FRAME", children: [
     { id: "boton", name: "boton", type: "INSTANCE", children: [
-      { id: "icono", name: "icono", type: "VECTOR" },
+      { id: "icon", name: "icon", type: "VECTOR" },
       { id: "label", name: "label", type: "TEXT" },
     ] },
   ] };
-  const r = recorrer(raiz, false, 0, 0, Infinity, true);
-  assert.deepEqual(r.map((x) => [x.nodo.id, x.profundidad]), [["boton", 0], ["label", 1]]);
+  const r = traverse(root, false, 0, 0, Infinity, true);
+  assert.deepEqual(r.map((x) => [x.node.id, x.depth]), [["boton", 0], ["label", 1]]);
 });
 
-test("textosProfundos: el TEXT anidado aparece aunque supere nivelMax", () => {
-  const raiz: NodoLike = { id: "r", name: "R", type: "FRAME", children: [
+test("deepTexts: el TEXT anidado aparece aunque supere maxLevel", () => {
+  const root: NodeLike = { id: "r", name: "R", type: "FRAME", children: [
     { id: "a", name: "A", type: "FRAME", children: [
       { id: "wrapper", name: "wrapper", type: "FRAME", children: [{ id: "txt", name: "txt", type: "TEXT" }] },
     ] },
   ] };
-  const r = recorrer(raiz, false, 0, 0, 1, true);
-  assert.deepEqual(r.map((x) => x.nodo.id), ["a", "txt"]);
+  const r = traverse(root, false, 0, 0, 1, true);
+  assert.deepEqual(r.map((x) => x.node.id), ["a", "txt"]);
 });
 
-test("textosProfundos false: no rescata texto interno de instancias (compat)", () => {
-  const raiz: NodoLike = { id: "r", name: "R", type: "FRAME", children: [
+test("deepTexts false: no rescata text interno de instancias (compat)", () => {
+  const root: NodeLike = { id: "r", name: "R", type: "FRAME", children: [
     { id: "boton", name: "boton", type: "INSTANCE", children: [{ id: "label", name: "label", type: "TEXT" }] },
   ] };
-  assert.deepEqual(recorrer(raiz, false, 0, 0, Infinity, false).map((x) => x.nodo.id), ["boton"]);
+  assert.deepEqual(traverse(root, false, 0, 0, Infinity, false).map((x) => x.node.id), ["boton"]);
 });

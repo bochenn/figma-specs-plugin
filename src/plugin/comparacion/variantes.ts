@@ -1,99 +1,99 @@
-import type { NodoLike, Atributo, AtributoCambiado, ParElementos, ElementoCambiado } from "../modelo/tipos.ts";
-import { recorrer } from "../traversal/recorrer.ts";
-import { leerAtributos } from "../utils/atributos.ts";
+import type { NodeLike, Attribute, ChangedAttribute, ElementPair, ChangedElement } from "../modelo/tipos.ts";
+import { traverse } from "../traversal/recorrer.ts";
+import { readAttributes } from "../utils/atributos.ts";
 
-// Indica si dos mapas prop→valor son exactamente iguales.
-export function mismasProps(a: Record<string, string>, b: Record<string, string>): boolean {
+// Indicates whether two prop→value maps are exactly equal.
+export function sameProps(a: Record<string, string>, b: Record<string, string>): boolean {
   const clavesA = Object.keys(a);
   const clavesB = Object.keys(b);
   if (clavesA.length !== clavesB.length) return false;
   return clavesA.every((k) => a[k] === b[k]);
 }
 
-// Empareja elementos del default con los de la opción por nombre; los nombres
-// repetidos se emparejan por orden de aparición. Los que no tienen contraparte
-// quedan con un solo lado.
-export function emparejar(a: NodoLike[], b: NodoLike[]): ParElementos[] {
-  const pares: ParElementos[] = [];
+// Matches default elements with the option's by name; repeated
+// names are matched by order of appearance. Those without a counterpart
+// are left with a single side.
+export function pairUp(a: NodeLike[], b: NodeLike[]): ElementPair[] {
+  const pares: ElementPair[] = [];
   const usados = new Set<number>();
 
   for (const elemA of a) {
-    let encontrado = -1;
+    let found = -1;
     for (let i = 0; i < b.length; i++) {
       if (!usados.has(i) && b[i].name === elemA.name) {
-        encontrado = i;
+        found = i;
         break;
       }
     }
-    if (encontrado >= 0) {
-      usados.add(encontrado);
-      pares.push({ default: elemA, opcion: b[encontrado] });
+    if (found >= 0) {
+      usados.add(found);
+      pares.push({ default: elemA, option: b[found] });
     } else {
       pares.push({ default: elemA });
     }
   }
 
   for (let i = 0; i < b.length; i++) {
-    if (!usados.has(i)) pares.push({ opcion: b[i] });
+    if (!usados.has(i)) pares.push({ option: b[i] });
   }
 
   return pares;
 }
 
-// Devuelve solo los atributos cuyo valor difiere entre default y opción,
-// con ambos valores para poder mostrar el antes/después.
-export function diffAtributos(attrsDefault: Atributo[], attrsOpcion: Atributo[]): AtributoCambiado[] {
+// Returns only the attributes whose value differs between default and option,
+// with both values to be able to show the before/after.
+export function diffAttributes(attrsDefault: Attribute[], attrsOpcion: Attribute[]): ChangedAttribute[] {
   const claves = new Set<string>();
-  for (const a of attrsDefault) claves.add(a.clave);
-  for (const a of attrsOpcion) claves.add(a.clave);
+  for (const a of attrsDefault) claves.add(a.key);
+  for (const a of attrsOpcion) claves.add(a.key);
 
-  const cambios: AtributoCambiado[] = [];
-  for (const clave of claves) {
-    const aDef = attrsDefault.find((a) => a.clave === clave);
-    const aOpc = attrsOpcion.find((a) => a.clave === clave);
-    if (aDef?.valor !== aOpc?.valor) {
-      const cambio: AtributoCambiado = { clave, valorDefault: aDef?.valor, valorOpcion: aOpc?.valor };
-      if (aDef?.rawValue) cambio.rawValueDefault = aDef.rawValue;
-      if (aOpc?.rawValue) cambio.rawValueOpcion = aOpc.rawValue;
+  const changes: ChangedAttribute[] = [];
+  for (const key of claves) {
+    const aDef = attrsDefault.find((a) => a.key === key);
+    const aOpc = attrsOpcion.find((a) => a.key === key);
+    if (aDef?.value !== aOpc?.value) {
+      const change: ChangedAttribute = { key, defaultValue: aDef?.value, optionValue: aOpc?.value };
+      if (aDef?.rawValue) change.rawValueDefault = aDef.rawValue;
+      if (aOpc?.rawValue) change.rawValueOption = aOpc.rawValue;
       const swatch = aOpc?.swatchHex ?? aDef?.swatchHex;
-      if (swatch) cambio.swatchHex = swatch;
-      // Solo se guarda el formato si es token (VARIABLE/STYLE): así el generador
-      // muestra ChipVar solo para tokens y texto plano para valores hardcoded.
-      if (aDef && aDef.formato !== "HARDCODED") cambio.formatoDefault = aDef.formato;
-      if (aOpc && aOpc.formato !== "HARDCODED") cambio.formatoOpcion = aOpc.formato;
-      if (aDef?.prefijo) cambio.prefijoDefault = aDef.prefijo;
-      if (aOpc?.prefijo) cambio.prefijoOpcion = aOpc.prefijo;
-      cambios.push(cambio);
+      if (swatch) change.swatchHex = swatch;
+      // The format is only stored if it's a token (VARIABLE/STYLE): so the generator
+      // shows ChipVar only for tokens and plain text for hardcoded values.
+      if (aDef && aDef.format !== "HARDCODED") change.formatDefault = aDef.format;
+      if (aOpc && aOpc.format !== "HARDCODED") change.formatOption = aOpc.format;
+      if (aDef?.prefix) change.prefixDefault = aDef.prefix;
+      if (aOpc?.prefix) change.prefixOption = aOpc.prefix;
+      changes.push(change);
     }
   }
-  return cambios;
+  return changes;
 }
 
-// Compara dos variantes (default vs opción) y devuelve los elementos que cambian.
-export function compararVariante(defaultRaiz: NodoLike, opcionRaiz: NodoLike): ElementoCambiado[] {
-  const cambios: ElementoCambiado[] = [];
+// Compares two variants (default vs option) and returns the elements that change.
+export function compareVariant(defaultRaiz: NodeLike, opcionRaiz: NodeLike): ChangedElement[] {
+  const changes: ChangedElement[] = [];
 
-  // La raíz de la variante en sí también puede cambiar (ej. el color de fondo
-  // del componente), no solo sus hijos.
-  const diffRaiz = diffAtributos(leerAtributos(defaultRaiz), leerAtributos(opcionRaiz));
+  // The variant's root itself can also change (e.g. the component's bg
+  // of the component), not just its children.
+  const diffRaiz = diffAttributes(readAttributes(defaultRaiz), readAttributes(opcionRaiz));
   if (diffRaiz.length > 0) {
-    cambios.push({ elementoNombre: defaultRaiz.name, estado: "modificado", atributos: diffRaiz });
+    changes.push({ elementName: defaultRaiz.name, state: "modified", attributes: diffRaiz });
   }
 
-  const pares = emparejar(recorrer(defaultRaiz).map((r) => r.nodo), recorrer(opcionRaiz).map((r) => r.nodo));
+  const pares = pairUp(traverse(defaultRaiz).map((r) => r.node), traverse(opcionRaiz).map((r) => r.node));
 
   for (const par of pares) {
-    if (par.default && par.opcion) {
-      const diff = diffAtributos(leerAtributos(par.default), leerAtributos(par.opcion));
+    if (par.default && par.option) {
+      const diff = diffAttributes(readAttributes(par.default), readAttributes(par.option));
       if (diff.length > 0) {
-        cambios.push({ elementoNombre: par.default.name, estado: "modificado", atributos: diff });
+        changes.push({ elementName: par.default.name, state: "modified", attributes: diff });
       }
     } else if (par.default) {
-      cambios.push({ elementoNombre: par.default.name, estado: "removido", atributos: [] });
-    } else if (par.opcion) {
-      cambios.push({ elementoNombre: par.opcion.name, estado: "agregado", atributos: [] });
+      changes.push({ elementName: par.default.name, state: "removed", attributes: [] });
+    } else if (par.option) {
+      changes.push({ elementName: par.option.name, state: "added", attributes: [] });
     }
   }
 
-  return cambios;
+  return changes;
 }

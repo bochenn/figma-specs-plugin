@@ -1,12 +1,12 @@
-// Parsea el nombre de variante "Type=A, Orientation=V" en pares clave/valor.
-// Si no tiene formato de variante (sin '='), devuelve [] (es un nombre común).
-export function parseVariantes(dependeDe: string | undefined): { clave: string; valor: string }[] {
-  if (!dependeDe || !dependeDe.includes("=")) return [];
-  const out: { clave: string; valor: string }[] = [];
-  for (const parte of dependeDe.split(",")) {
-    const i = parte.indexOf("=");
+// Parses the variant name "Type=A, Orientation=V" into key/value pairs.
+// If it has no variant format (no '='), returns [] (it's a plain name).
+export function parseVariants(dependsOn: string | undefined): { key: string; value: string }[] {
+  if (!dependsOn || !dependsOn.includes("=")) return [];
+  const out: { key: string; value: string }[] = [];
+  for (const part of dependsOn.split(",")) {
+    const i = part.indexOf("=");
     if (i === -1) continue;
-    out.push({ clave: parte.slice(0, i).trim(), valor: parte.slice(i + 1).trim() });
+    out.push({ key: part.slice(0, i).trim(), value: part.slice(i + 1).trim() });
   }
   return out;
 }

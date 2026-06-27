@@ -1,69 +1,69 @@
-import type { NodoLike, EntradaEstilo, GradienteData } from "../modelo/tipos.ts";
-import { hexDeColor } from "../variables/modes.ts";
+import type { NodeLike, StyleEntry, GradientData } from "../modelo/tipos.ts";
+import { hexOfColor } from "../variables/modes.ts";
 
-// Hex del primer paint SOLID de una lista, o undefined.
-function hexSolido(paints: NodoLike["fills"]): string | undefined {
+// Hex of the first SOLID paint in a list, or undefined.
+function solidHex(paints: NodeLike["fills"]): string | undefined {
   const p = paints?.find((f) => f.type === "SOLID" && f.color);
-  return p && p.color ? hexDeColor(p.color) : undefined;
+  return p && p.color ? hexOfColor(p.color) : undefined;
 }
 
-// Datos del primer paint de gradiente de una lista, o undefined.
-function gradienteDe(paints: NodoLike["fills"]): GradienteData | undefined {
-  return paints?.find((f) => f.gradiente)?.gradiente;
+// Data of the first gradient paint in a list, or undefined.
+function gradienteDe(paints: NodeLike["fills"]): GradientData | undefined {
+  return paints?.find((f) => f.gradient)?.gradient;
 }
 
-// Emite las entradas de estilo/variable de un solo nodo (prioridad variable > style).
-function emitir(nodo: NodoLike, entradas: EntradaEstilo[]): void {
-  const appliedFill = nodo.type === "TEXT" ? "Text color" : "Background color";
+// Emits the style/variable entries of a single node (variable > style priority).
+function emitir(node: NodeLike, entries: StyleEntry[]): void {
+  const appliedFill = node.type === "TEXT" ? "Text color" : "Background color";
 
-  if (nodo.fillVariableName) {
-    entradas.push({ tabla: "variable", nombre: nodo.fillVariableName, appliedAs: appliedFill, capa: nodo.name, swatchHex: hexSolido(nodo.fills) });
-  } else if (nodo.fillStyleName) {
-    const entrada: EntradaEstilo = { tabla: "color", nombre: nodo.fillStyleName, appliedAs: appliedFill, capa: nodo.name };
-    const hex = hexSolido(nodo.fills);
-    if (hex) entrada.swatchHex = hex;
-    else { const g = gradienteDe(nodo.fills); if (g) entrada.gradiente = g; }
-    entradas.push(entrada);
+  if (node.fillVariableName) {
+    entries.push({ table: "variable", name: node.fillVariableName, appliedAs: appliedFill, layer: node.name, swatchHex: solidHex(node.fills) });
+  } else if (node.fillStyleName) {
+    const entry: StyleEntry = { table: "color", name: node.fillStyleName, appliedAs: appliedFill, layer: node.name };
+    const hex = solidHex(node.fills);
+    if (hex) entry.swatchHex = hex;
+    else { const g = gradienteDe(node.fills); if (g) entry.gradient = g; }
+    entries.push(entry);
   }
 
-  if (nodo.strokeVariableName) {
-    entradas.push({ tabla: "variable", nombre: nodo.strokeVariableName, appliedAs: "Border color", capa: nodo.name, swatchHex: hexSolido(nodo.strokes) });
-  } else if (nodo.strokeStyleName) {
-    const entrada: EntradaEstilo = { tabla: "color", nombre: nodo.strokeStyleName, appliedAs: "Border color", capa: nodo.name };
-    const hex = hexSolido(nodo.strokes);
-    if (hex) entrada.swatchHex = hex;
-    else { const g = gradienteDe(nodo.strokes); if (g) entrada.gradiente = g; }
-    entradas.push(entrada);
+  if (node.strokeVariableName) {
+    entries.push({ table: "variable", name: node.strokeVariableName, appliedAs: "Border color", layer: node.name, swatchHex: solidHex(node.strokes) });
+  } else if (node.strokeStyleName) {
+    const entry: StyleEntry = { table: "color", name: node.strokeStyleName, appliedAs: "Border color", layer: node.name };
+    const hex = solidHex(node.strokes);
+    if (hex) entry.swatchHex = hex;
+    else { const g = gradienteDe(node.strokes); if (g) entry.gradient = g; }
+    entries.push(entry);
   }
 
-  if (nodo.textStyleName) {
-    const entrada: EntradaEstilo = { tabla: "text", nombre: nodo.textStyleName, appliedAs: "Text style", capa: nodo.name };
-    // Captura la tipografía del estilo (para el preview y la lista de propiedades).
-    if (nodo.fontFamily && typeof nodo.fontSize === "number") {
-      entrada.tipo = {
-        family: nodo.fontFamily,
-        estilo: nodo.fontStyle ?? "Regular",
-        size: nodo.fontSize,
-        lineHeight: nodo.lineHeight,
-        letterSpacing: nodo.letterSpacing,
+  if (node.textStyleName) {
+    const entry: StyleEntry = { table: "text", name: node.textStyleName, appliedAs: "Text style", layer: node.name };
+    // Captures the style's typography (for the preview and the properties list).
+    if (node.fontFamily && typeof node.fontSize === "number") {
+      entry.type = {
+        family: node.fontFamily,
+        style: node.fontStyle ?? "Regular",
+        size: node.fontSize,
+        lineHeight: node.lineHeight,
+        letterSpacing: node.letterSpacing,
       };
     }
-    entradas.push(entrada);
+    entries.push(entry);
   }
 }
 
-// Visita un nodo: emite sus estilos y baja por sus hijos, también dentro de las
-// instancias (para inventariar los tokens que usan los componentes anidados).
-function visitar(nodo: NodoLike, entradas: EntradaEstilo[]): void {
-  emitir(nodo, entradas);
-  for (const hijo of nodo.children ?? []) {
-    visitar(hijo, entradas);
+// Visits a node: emits its styles and descends through its children, also inside
+// instances (to inventory the tokens the nested components use).
+function visitar(node: NodeLike, entries: StyleEntry[]): void {
+  emitir(node, entries);
+  for (const child of node.children ?? []) {
+    visitar(child, entries);
   }
 }
 
-// Recolecta todas las entradas de estilo de la selección (raíz + descendientes).
-export function recolectarEstilos(raiz: NodoLike): EntradaEstilo[] {
-  const entradas: EntradaEstilo[] = [];
-  visitar(raiz, entradas);
-  return entradas;
+// Collects all the style entries of the selection (root + descendants).
+export function collectStyles(root: NodeLike): StyleEntry[] {
+  const entries: StyleEntry[] = [];
+  visitar(root, entries);
+  return entries;
 }

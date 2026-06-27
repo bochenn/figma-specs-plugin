@@ -1,15 +1,15 @@
-import type { ElementoAnatomy } from "../modelo/tipos.ts";
-import { prefijoProfundidad } from "./jerarquia.ts";
+import type { AnatomyElement } from "../modelo/tipos.ts";
+import { depthPrefix } from "./jerarquia.ts";
 
 export const HEADERS_ANATOMY = ["#", "Name", "Type", "Attributes"];
 
-// Mapea un elemento a una fila de la tabla de Anatomy (con sus atributos
-// aplanados). Incluye el valor resuelto (rawValue) de variables/styles, igual
-// que la lista normal.
-export function filaAnatomy(numero: number, elemento: ElementoAnatomy): string[] {
-  const attrs = elemento.atributos
-    .map((a) => (a.rawValue ? `${a.clave}: ${a.valor} (${a.rawValue})` : `${a.clave}: ${a.valor}`))
+// Maps an element to a row of the Anatomy table (with its attributes
+// flattened). Includes the resolved value (rawValue) of variables/styles, same as
+// than the normal list.
+export function anatomyRow(badgeNum: number, element: AnatomyElement): string[] {
+  const attrs = element.attributes
+    .map((a) => (a.rawValue ? `${a.key}: ${a.value} (${a.rawValue})` : `${a.key}: ${a.value}`))
     .join(", ");
-  const nombre = prefijoProfundidad(elemento.profundidad ?? 0) + elemento.nombre;
-  return [String(numero), nombre, elemento.tipo, attrs];
+  const name = depthPrefix(element.depth ?? 0) + element.name;
+  return [String(badgeNum), name, element.type, attrs];
 }

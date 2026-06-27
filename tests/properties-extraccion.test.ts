@@ -1,54 +1,54 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { extraerProperties } from "../src/plugin/extraccion/properties.ts";
-import type { SetNorm, NodoLike } from "../src/plugin/modelo/tipos.ts";
+import { extractProperties } from "../src/plugin/extraccion/properties.ts";
+import type { NormSet, NodeLike } from "../src/plugin/modelo/tipos.ts";
 
-// Construye un componente-variante con un Label de cierto color.
-function variante(props: Record<string, string>, color: { r: number; g: number; b: number }): {
+// Construye un componente-variant con un Label de cierto color.
+function variant(props: Record<string, string>, color: { r: number; g: number; b: number }): {
   variantProperties: Record<string, string>;
-  raiz: NodoLike;
+  root: NodeLike;
 } {
   return {
     variantProperties: props,
-    raiz: {
+    root: {
       id: "root", name: "Root", type: "COMPONENT",
       children: [{ id: "l", name: "Label", type: "RECTANGLE", fills: [{ type: "SOLID", color }] }],
     },
   };
 }
 
-test("una propiedad con dos opciones: saltea el default y compara la otra", () => {
-  const set: SetNorm = {
-    propiedades: { Tone: ["Gris", "Negro"] },
+test("una property con dos options: saltea el default y compara la otra", () => {
+  const set: NormSet = {
+    properties: { Tone: ["Gris", "Negro"] },
     defaultProps: { Tone: "Gris" },
-    variantes: [
-      variante({ Tone: "Gris" }, { r: 0.5, g: 0.5, b: 0.5 }),
-      variante({ Tone: "Negro" }, { r: 0, g: 0, b: 0 }),
+    variants: [
+      variant({ Tone: "Gris" }, { r: 0.5, g: 0.5, b: 0.5 }),
+      variant({ Tone: "Negro" }, { r: 0, g: 0, b: 0 }),
     ],
   };
-  const specs = extraerProperties(set);
+  const specs = extractProperties(set);
   assert.equal(specs.length, 1);
-  assert.equal(specs[0].nombre, "Tone");
+  assert.equal(specs[0].name, "Tone");
   assert.equal(specs[0].default, "Gris");
-  assert.equal(specs[0].opciones.length, 1);
-  assert.equal(specs[0].opciones[0].nombre, "Negro");
-  assert.equal(specs[0].opciones[0].cambios[0].elementoNombre, "Label");
-  assert.deepEqual(specs[0].opciones[0].cambios[0].atributos, [
-    { clave: "background-color", valorDefault: "#808080", valorOpcion: "#000000", swatchHex: "#000000" },
+  assert.equal(specs[0].options.length, 1);
+  assert.equal(specs[0].options[0].name, "Negro");
+  assert.equal(specs[0].options[0].changes[0].elementName, "Label");
+  assert.deepEqual(specs[0].options[0].changes[0].attributes, [
+    { key: "background-color", defaultValue: "#808080", optionValue: "#000000", swatchHex: "#000000" },
   ]);
 });
 
-test("opción cuyo componente-variante no existe → se saltea", () => {
-  const set: SetNorm = {
-    propiedades: { Tone: ["Gris", "Negro", "Rojo"] },
+test("opción cuyo componente-variant no existe → se saltea", () => {
+  const set: NormSet = {
+    properties: { Tone: ["Gris", "Negro", "Rojo"] },
     defaultProps: { Tone: "Gris" },
-    variantes: [
-      variante({ Tone: "Gris" }, { r: 0.5, g: 0.5, b: 0.5 }),
-      variante({ Tone: "Negro" }, { r: 0, g: 0, b: 0 }),
-      // no existe variante "Rojo"
+    variants: [
+      variant({ Tone: "Gris" }, { r: 0.5, g: 0.5, b: 0.5 }),
+      variant({ Tone: "Negro" }, { r: 0, g: 0, b: 0 }),
+      // no existe variant "Rojo"
     ],
   };
-  const specs = extraerProperties(set);
-  assert.equal(specs[0].opciones.length, 1);
-  assert.equal(specs[0].opciones[0].nombre, "Negro");
+  const specs = extractProperties(set);
+  assert.equal(specs[0].options.length, 1);
+  assert.equal(specs[0].options[0].name, "Negro");
 });

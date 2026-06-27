@@ -1,32 +1,32 @@
-# Opciones y formatos
+# Options and formats
 
-Qué hace cada ajuste del panel y a qué secciones aplica. (Detalle de la UI en [panel](panel.md).)
+What each panel setting does and which sections it applies to. (UI details in [panel](panel.md).)
 
-## Específicas de una sección
-| Opción | Aplica a |
+## Section-specific
+| Option | Applies to |
 |---|---|
 | **Tabular anatomy** | Anatomy |
 | **Anatomy depth** (children/self/all) | Anatomy |
 | **Hide outer layout** | Layout & Spacing |
 | **Element measures** | Layout & Spacing |
-| **Include legend** | Layout & Spacing (la tabla de leyenda, una vez arriba) |
+| **Include legend** | Layout & Spacing (the legend table, once at the top) |
 | **Spec nested subcomponents** | Anatomy + Properties |
 | **Itemize instances** | Anatomy + Layout & Spacing |
 | **All document styles** | Styling Inventory |
 | **Columns** | Properties, Layout, Modes, Two-Way, Complete |
 
-## Globales (afectan a toda sección donde aplique)
-Son ajustes de **formato**; se setean una vez (estado de módulo) antes de generar.
-| Opción | Efecto |
+## Global (affect every section where they apply)
+These are **formatting** settings; they're set once (module state) before generating.
+| Option | Effect |
 |---|---|
-| **Mode** (Light/Dark → `dark`) | Tema oscuro de todo el output |
-| **Color** (HEX/RGB/HSL) | Formato de colores hardcoded |
-| **Units** (px/rem) | Unidad de todas las medidas |
-| **Type** (Plain/CSS) | Formato de tipografía |
-| **Raw value** (HEX/RGB/HSL) | Formato del valor resuelto de un token |
-| **Show raw value** | Mostrar/ocultar ese valor resuelto |
-| **Preferred** (Variable/Style) | Cuál mostrar cuando hay variable **y** style |
+| **Mode** (Light/Dark → `dark`) | Dark theme for the whole output |
+| **Color** (HEX/RGB/HSL) | Format of hardcoded colors |
+| **Units** (px/rem) | Unit of all measures |
+| **Type** (Plain/CSS) | Typography format |
+| **Raw value** (HEX/RGB/HSL) | Format of a token's resolved value |
+| **Show raw value** | Show/hide that resolved value |
+| **Preferred** (Variable/Style) | Which to show when there's both a variable **and** a style |
 
-## Archivos clave
-- `main.ts` (lee el mensaje, arma `opts`, aplica los formatos globales)
-- `utils/color.ts`, `utils/espaciado.ts`, `utils/tipografia.ts`, `utils/valores.ts` (estado de los formatos)
+## Key files
+- `main.ts` (reads the message, builds `opts`, applies the global formats)
+- `utils/color.ts`, `utils/espaciado.ts`, `utils/tipografia.ts`, `utils/valores.ts` (formatting state)

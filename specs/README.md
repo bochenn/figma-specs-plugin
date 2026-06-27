@@ -1,10 +1,10 @@
 # Specs
 
-Una página por cada feature del plugin: **qué hace, qué muestra, su estructura de output, las opciones que la afectan y los archivos clave** del código.
+One page per plugin feature: **what it does, what it shows, its output structure, the options that affect it, and the key files** in the code.
 
-Estos specs son la documentación viva del plugin. **Cuando una feature cambia, se actualiza su spec en el mismo cambio**; cuando se suma una feature, se agrega su página acá.
+These specs are the plugin's living documentation. **When a feature changes, its spec is updated in the same change**; when a feature is added, its page is added here.
 
-## Secciones del spec generado
+## Sections of the generated spec
 
 - [Anatomy](anatomy.md)
 - [Properties](properties.md)
@@ -15,11 +15,13 @@ Estos specs son la documentación viva del plugin. **Cuando una feature cambia, 
 - [Data (JSON)](data.md)
 - [Complete](complete.md)
 
-## Transversal
+## Cross-cutting
 
-- [Panel del plugin](panel.md) — la UI: tabs Specs / Options / Format / About.
-- [Opciones y formatos](options-and-formats.md) — ajustes que aplican a varias secciones.
+- [Plugin panel](panel.md) — the UI: Specs / Options / Format / About tabs.
+- [Options and formats](options-and-formats.md) — settings that apply across sections.
 
-## Arquitectura (resumen)
+## Architecture (summary)
 
-El plugin separa **extracción** (nodos de Figma → datos planos, lógica pura testeable contra `NodoLike`) de **generación** (datos → frames con Auto Layout, toca `figma.*`). `main.ts` orquesta: valida la selección, arma una página por sección y posiciona el output. El panel (`src/ui/`) corre en un iframe y se comunica por `postMessage`.
+The plugin separates **extraction** (Figma nodes → plain data, pure logic testable against `NodoLike`) from **generation** (data → Auto Layout frames, touches `figma.*`). `main.ts` orchestrates: it validates the selection, builds one page per section and positions the output. The panel (`src/ui/`) runs in an iframe and communicates over `postMessage`.
+
+> Source code identifiers and comments are written in Spanish; these docs are in English.

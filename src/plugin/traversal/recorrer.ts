@@ -1,36 +1,36 @@
-import type { NodoLike } from "../modelo/tipos.ts";
+import type { NodeLike } from "../modelo/tipos.ts";
 
-export interface Recorrido { nodo: NodoLike; profundidad: number; camino?: { nombre: string; tipo: string }[]; }
+export interface Traversal { node: NodeLike; depth: number; path?: { name: string; type: string }[]; }
 
 const TIPOS_INSTANCIA = "INSTANCE";
-const TIPOS_CONTENEDOR = ["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET"];
+const CONTAINER_TYPES = ["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET"];
 
-// Junta solo las capas TEXT descendientes (a cualquier profundidad, entrando
-// también a instancias). Sirve para documentar estilos de texto que quedarían
-// fuera por el límite de nivel o por estar dentro de una instancia.
-function textosAnidados(nodo: NodoLike, prof: number): Recorrido[] {
-  const res: Recorrido[] = [];
-  for (const hijo of nodo.children ?? []) {
-    if (hijo.type === "TEXT") res.push({ nodo: hijo, profundidad: prof });
-    else res.push(...textosAnidados(hijo, prof));
+// Collects only the descendant TEXT layers (at any depth, descending
+// instances too). Useful to document text styles that would be
+// out by the level limit or by being inside an instance.
+function nestedTexts(node: NodeLike, prof: number): Traversal[] {
+  const res: Traversal[] = [];
+  for (const child of node.children ?? []) {
+    if (child.type === "TEXT") res.push({ node: child, depth: prof });
+    else res.push(...nestedTexts(child, prof));
   }
   return res;
 }
 
-// textosProfundos: además de la lista normal, rescata las capas TEXT que están
-// más profundas que nivelMax o dentro de instancias (para no perder su estilo).
-export function recorrer(nodo: NodoLike, itemizar = false, prof = 0, nivel = 0, nivelMax = Infinity, textosProfundos = false): Recorrido[] {
-  const elementos: Recorrido[] = [];
-  if (nivel >= nivelMax) return elementos;
-  for (const hijo of nodo.children ?? []) {
-    elementos.push({ nodo: hijo, profundidad: prof });
-    if (hijo.type === TIPOS_INSTANCIA) {
-      if (itemizar) elementos.push(...recorrer(hijo, itemizar, prof + 1, nivel + 1, nivelMax, textosProfundos));
-      else if (textosProfundos) elementos.push(...textosAnidados(hijo, prof + 1));
-    } else if (TIPOS_CONTENEDOR.includes(hijo.type)) {
-      if (textosProfundos && nivel + 1 >= nivelMax) elementos.push(...textosAnidados(hijo, prof));
-      else elementos.push(...recorrer(hijo, itemizar, prof, nivel + 1, nivelMax, textosProfundos));
+// deepTexts: besides the normal list, rescues the TEXT layers that are
+// deeper than maxLevel or inside instances (so their style isn't lost).
+export function traverse(node: NodeLike, itemize = false, prof = 0, nivel = 0, maxLevel = Infinity, deepTexts = false): Traversal[] {
+  const elements: Traversal[] = [];
+  if (nivel >= maxLevel) return elements;
+  for (const child of node.children ?? []) {
+    elements.push({ node: child, depth: prof });
+    if (child.type === TIPOS_INSTANCIA) {
+      if (itemize) elements.push(...traverse(child, itemize, prof + 1, nivel + 1, maxLevel, deepTexts));
+      else if (deepTexts) elements.push(...nestedTexts(child, prof + 1));
+    } else if (CONTAINER_TYPES.includes(child.type)) {
+      if (deepTexts && nivel + 1 >= maxLevel) elements.push(...nestedTexts(child, prof));
+      else elements.push(...traverse(child, itemize, prof, nivel + 1, maxLevel, deepTexts));
     }
   }
-  return elementos;
+  return elements;
 }

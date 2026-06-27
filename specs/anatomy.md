@@ -1,27 +1,27 @@
 # Anatomy
 
-## Qué hace
-Descompone el elemento seleccionado en sus capas: cada capa se numera sobre un clon del diseño y se detalla a la derecha con su tipo y atributos.
+## What it does
+Breaks the selected element down into its layers: each layer is numbered over a clone of the design and detailed on the right with its type and attributes.
 
-## Qué muestra
-- **Artwork** (izquierda): un clon del elemento con un **badge numerado por capa**. Los badges se colocan en los **4 lados** del elemento (izq/der/arriba/abajo), eligiendo el lado cuyo badge no caiga sobre otra capa y cuya línea cruce menos elementos; conectados con una línea perpendicular. El canvas tiene margen generoso para que respiren.
-- **Lista** (derecha): una card por elemento con header `nombre · TIPO` (+ ícono de tipo) y filas de atributos:
-  - Color (`background-color`, `border-color`) con swatch; si es token, **ChipVar** (chip rosa `#FFE0FC`/`#EA10AC`) con el nombre de la variable/style + el valor resuelto.
-  - `width`/`height` con el **ícono de resizing** (Hug/Fixed/Fill) cuando aplica.
-  - Para texto: `Text Style`, `Font Family`, `Font Weight`, `Font Size`, `Line Height`, `Letter Spacing`, `Alignment`, `Case`.
-  - `Depends on` / props de variante para instancias.
+## What it shows
+- **Artwork** (left): a clone of the element with a **numbered badge per layer**. Badges are placed on the **4 sides** of the element (left/right/top/bottom), choosing the side whose badge doesn't land on another layer and whose line crosses the fewest elements; connected with a perpendicular line. The canvas has generous margin so everything breathes.
+- **List** (right): one card per element with a `name · TYPE` header (+ type icon) and attribute rows:
+  - Color (`background-color`, `border-color`) with a swatch; if it's a token, a **ChipVar** (pink chip `#FFE0FC`/`#EA10AC`) with the variable/style name + resolved value.
+  - `width`/`height` with the **resizing icon** (Hug/Fixed/Fill) when it applies.
+  - For text: `Text Style`, `Font Family`, `Font Weight`, `Font Size`, `Line Height`, `Letter Spacing`, `Alignment`, `Case`.
+  - `Depends on` / variant props for instances.
 
-## Recorrido
-Por defecto desciende según `Anatomy depth` (self / direct children / all), pero **siempre rescata las capas TEXT** anidadas y las de adentro de instancias, para no perder sus text styles.
+## Traversal
+By default it descends per `Anatomy depth` (self / direct children / all), but it **always rescues nested TEXT layers** and those inside instances, so their text styles aren't lost.
 
-## Opciones que la afectan
-- **Anatomy depth** (`children`/`self`/`all`) — profundidad de capas.
-- **Tabular anatomy** — muestra la lista como tabla en vez de cards.
-- **Spec nested subcomponents** — agrega una sección Anatomy por cada instancia anidada.
-- **Itemize instances** — abre las instancias para listar sus capas internas.
-- Formatos globales: Color, Units, Type, Raw value, Preferred.
+## Options that affect it
+- **Anatomy depth** (`children`/`self`/`all`) — layer depth.
+- **Tabular anatomy** — shows the list as a table instead of cards.
+- **Spec nested subcomponents** — adds an Anatomy section per nested instance.
+- **Itemize instances** — opens instances to list their inner layers.
+- Global formats: Color, Units, Type, Raw value, Preferred.
 
-## Archivos clave
-- `extraccion/anatomy.ts`, `traversal/recorrer.ts` (recorrido + `textosProfundos`)
+## Key files
+- `extraccion/anatomy.ts`, `traversal/recorrer.ts` (traversal + `textosProfundos`)
 - `generadores/anatomy.ts` (artwork, badges, cards)
-- `utils/atributos.ts` (atributos por capa), `extraccion/adaptador.ts` (Figma → `NodoLike`)
+- `utils/atributos.ts` (per-layer attributes), `extraccion/adaptador.ts` (Figma → `NodoLike`)

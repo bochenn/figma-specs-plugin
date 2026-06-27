@@ -1,32 +1,32 @@
-import type { FormatoColor, Preferencia } from "../modelo/tipos.ts";
+import type { ColorFormat, Preference } from "../modelo/tipos.ts";
 
-// Opciones de Custom Value Formats: formato del valor resuelto de
-// variables/styles, si se muestra, y cuál gana si hay variable y style.
+// Custom Value Formats options: format of the resolved value of
+// variables/styles, whether it's shown, and which wins if there's both a variable and a style.
 
-let formatoRaw: FormatoColor = "HEX";
-let mostrarRaw = true;
-let preferencia: Preferencia = "VARIABLE";
+let rawFormat: ColorFormat = "HEX";
+let showRaw = true;
+let preference: Preference = "VARIABLE";
 
-export function aplicarFormatoRaw(f: FormatoColor): void {
-  formatoRaw = f;
+export function applyRawFormat(f: ColorFormat): void {
+  rawFormat = f;
 }
 
-export function formatoRawActual(): FormatoColor {
-  return formatoRaw;
+export function currentRawFormat(): ColorFormat {
+  return rawFormat;
 }
 
-export function aplicarMostrarRaw(b: boolean): void {
-  mostrarRaw = b;
+export function applyShowRaw(b: boolean): void {
+  showRaw = b;
 }
 
-export function mostrarRawActual(): boolean {
-  return mostrarRaw;
+export function currentShowRaw(): boolean {
+  return showRaw;
 }
 
-export function aplicarPreferencia(p: Preferencia): void {
-  preferencia = p;
+export function applyPreference(p: Preference): void {
+  preference = p;
 }
 
-export function preferenciaActual(): Preferencia {
-  return preferencia;
+export function currentPreference(): Preference {
+  return preference;
 }

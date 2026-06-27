@@ -1,76 +1,78 @@
-# Specs Plugin para Figma
+# Blueprint Specs & Handoff
 
-Plugin de Figma que genera **specs visuales para handoff** de diseño: documenta automáticamente la anatomía, las propiedades, el layout, las variables y los estilos de los componentes y frames seleccionados, directo en el canvas.
+A Figma plugin that generates **visual design specs for handoff**: it automatically documents the anatomy, properties, layout, variables and styles of the selected components and frames, right on the canvas.
 
-La idea es reducir el trabajo manual de documentar componentes y mejorar la claridad del handoff entre diseño, design systems y desarrollo.
+The goal is to cut the manual work of documenting components and improve the clarity of the handoff between design, design systems and development.
 
 ---
 
 ## ✨ Features
 
-El plugin tiene un botón por cada sección. Seleccionás un nodo y apretás el botón:
+In the panel you pick which specs to include, select a node, and create the spec:
 
-| Sección | Qué hace |
-|---------|----------|
-| **Anatomy** | Lista los elementos del componente (nombre, tipo, atributos) + artwork clonado con marcadores numerados. Los colores se muestran como **pills** con swatch y, si aplica, el nombre de la **variable** o **style** (prioridad variable > style > hardcoded). |
-| **Properties** | Compara el default contra cada opción de cada propiedad de **variante**, mostrando solo los atributos que cambian (con pills). Incluye las propiedades **Boolean** con resaltado azul de las capas afectadas. |
-| **Layout & Spacing** | Por cada capa con Auto Layout: dirección, alineación, resizing, padding e item spacing. Suma un artwork con **overlays de color** (azul = elemento, verde = padding, naranja = spacing). |
-| **Data (JSON)** | Exporta el JSON de Anatomy en un text frame. |
-| **Styling Inventory** | Tres tablas (Variables con chip de color, Color styles, Text styles) con columnas Name / Applied as / Applied to. |
-| **Modes** | Por cada variable collection con ≥2 modes (ej. Light/Dark): el artwork del ítem con cada mode aplicado + la comparación de valores por mode. |
-| **Two-Way** | Compara todas las combinaciones de las dos primeras propiedades de variante (producto cartesiano), para los *compound props*. |
-| **Complete Anatomy** | Lista los elementos que aparecen en otras variantes pero no en el default. |
+| Section | What it does |
+|---------|--------------|
+| **Anatomy** | Breaks the element into its layers: a cloned artwork with numbered badges (placed on the 4 sides) + a list of cards with each layer's type and attributes (color, dimensions with Hug/Fixed/Fill icon, typography). Tokens show as a **ChipVar** with the variable/style name + resolved value. |
+| **Properties** | One card per value of each variant property: the variant's preview + its full property table (`Label ◆ Value`). Includes **Boolean** properties with the affected layers highlighted. |
+| **Layout & Spacing** | Per Auto Layout layer: direction, alignment, resizing, padding, item spacing and sizes, with dimension lines and color overlays on the artwork. Optional **legend** table. |
+| **Styling Inventory** | A catalog of the colors, typography and variables used — each with a swatch (solid or gradient) or a live text preview, its properties, and where it's applied. Optionally inventories every local style/variable of the document. |
+| **Modes** | Per variable collection with ≥2 modes (e.g. Light/Dark): the value of each variable across its modes. |
+| **Two-Way** | Crosses the first two variant properties (cartesian product) and shows what changes vs the default — for *compound props*. |
+| **Data (JSON)** | The element's anatomy as syntax-highlighted JSON. |
+| **Complete** | The added elements and layouts of every variant vs the default, all in one place. |
 
 ---
 
-## 🚀 Desarrollo
+## 🚀 Development
 
-Requiere **Figma Desktop** (la versión web no permite cargar plugins en desarrollo) y **Node.js**.
+Requires **Figma Desktop** (the web version can't load plugins in development) and **Node.js**.
 
 ```bash
-npm install        # instala dependencias
-npm run build      # compila a dist/code.js + dist/ui.html
-npm run watch      # recompila en cada cambio
-npm test           # corre los tests de lógica pura (node --test)
+npm install        # install dependencies
+npm run build      # compiles to dist/code.js + dist/ui.html
+npm run watch      # recompiles on change
+npm test           # runs the pure-logic tests (node --test)
 ```
 
-**Cargar el plugin en Figma:**
-1. Figma Desktop → menú **Plugins → Development → Import plugin from manifest…**
-2. Elegir `manifest.json` de este repo.
-3. Correr el plugin: **Plugins → Development → Specs Plugin**.
+**Load the plugin in Figma:**
+1. Figma Desktop → **Plugins → Development → Import plugin from manifest…**
+2. Pick this repo's `manifest.json`.
+3. Run it: **Plugins → Development → Blueprint Specs & Handoff**.
 
-Tras cada `npm run build`, volvé a correr el plugin para tomar los cambios.
+After each `npm run build`, run the plugin again to pick up the changes.
 
 ---
 
-## 🧱 Arquitectura
+## 🧱 Architecture
 
-TypeScript + [esbuild](https://esbuild.github.io/), sin frameworks de UI. El plugin tiene dos mundos que se comunican por `postMessage` (lo impone Figma):
+TypeScript + [esbuild](https://esbuild.github.io/), no UI frameworks. The plugin has two worlds that talk over `postMessage` (required by Figma):
 
-- `src/plugin/` — corre en el sandbox de Figma (único con acceso a `figma.*`).
-- `src/ui/` — el panel (iframe HTML).
+- `src/plugin/` — runs in the Figma sandbox (the only side with access to `figma.*`).
+- `src/ui/` — the panel (HTML iframe).
 
-La lógica se separa en:
+The logic is split into:
 
-- **extracción** (`extraccion/`, `traversal/`, `comparacion/`, `inventario/`, `variables/`): nodos de Figma → datos planos. Lógica **pura**, testeable sin Figma contra una interfaz mínima `NodoLike`.
-- **generación** (`generadores/`): datos → frames con Auto Layout. Toca `figma.*`; se valida a mano.
-- **orquestación** (`main.ts`): valida la selección, ramifica por sección, posiciona el output.
+- **extraction** (`extraccion/`, `traversal/`, `comparacion/`, `inventario/`, `variables/`): Figma nodes → plain data. **Pure** logic, testable without Figma against a minimal `NodoLike` interface.
+- **generation** (`generadores/`): data → Auto Layout frames. Touches `figma.*`; validated by eye.
+- **orchestration** (`main.ts`): validates the selection, branches per section, places the output.
 
-Esta separación pura/impure es lo que permite tener ~90 tests unitarios sin mockear la API de Figma.
+This pure/impure split is what allows ~220 unit tests without mocking the Figma API.
 
 ```
 src/plugin/
-├── main.ts              # orquestador (un branch por sección)
-├── modelo/tipos.ts      # interfaces del dominio
-├── traversal/           # recorrido de capas
-├── extraccion/          # nodos → datos (Anatomy, Properties, Layout…)
-├── comparacion/         # diff de variantes
+├── main.ts              # orchestrator (one branch per section)
+├── modelo/tipos.ts      # domain interfaces
+├── traversal/           # layer traversal
+├── extraccion/          # nodes → data (Anatomy, Properties, Layout…)
+├── comparacion/         # variant diff
 ├── inventario/          # Styling Inventory
-├── variables/           # Modes, formato de color
+├── variables/           # Modes, color formatting
 ├── serializacion/       # Data (JSON)
-├── generadores/         # datos → frames
-└── utils/               # helpers puros (atributos, color, overlays…)
+├── generadores/         # data → frames
+└── utils/               # pure helpers (attributes, color, overlays…)
 ```
+
+> Source code (identifiers and comments) is written in Spanish.
 
 ---
 
@@ -80,18 +82,24 @@ src/plugin/
 npm test
 ```
 
-Los tests cubren toda la lógica de decisión (qué es un elemento, qué atributos, qué cambia entre variantes, dónde van los overlays, etc.) sobre datos de prueba. La generación visual se valida a ojo dentro de Figma contra las referencias del PRD.
+The tests cover the decision logic (what is an element, which attributes, what changes between variants, where the overlays go, etc.) over fixture data. The visual generation is validated by eye inside Figma.
 
 ---
 
-## 📐 Documentación de diseño
+## 📐 Design documentation
 
-Cada feature tiene su **spec** en `specs/`: qué hace, qué muestra, su estructura de output, las opciones que la afectan y los archivos clave. Se mantienen actualizados a medida que las features evolucionan (ver `specs/README.md`).
-
-El PRD original está en `PRD.md`.
+Each feature has its **spec** in `specs/`: what it does, what it shows, its output structure, the options that affect it and the key files. They are kept up to date as the features evolve (see `specs/README.md`).
 
 ---
 
-## 📦 Estado
+## 🤝 Open source
 
-En desarrollo activo. Ya están implementadas las features Standard y varias Pro; quedan pendientes Complete Layout, Spec Nested Components, parte del Pro Formatting y la integración con Token Studio.
+This plugin is open source. You're free to modify and improve it — if you do, please let me know and credit the original plugin in your version. Feature requests and ideas are welcome.
+
+Created and maintained by **bochenn**. If it saves you time, a donation helps keep the development going: [buymeacoffee.com/bochenn](https://buymeacoffee.com/bochenn).
+
+---
+
+## 📦 Status
+
+In active development.
