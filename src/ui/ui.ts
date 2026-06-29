@@ -7,6 +7,7 @@ import iconTwoway from "../../resources/figma-UI3/icon.24.create.variant.svg";
 import iconData from "../../resources/figma-UI3/icon.24.code-block.svg";
 import iconModes from "../../resources/figma-UI3/icon.24.sun.small.svg";
 import iconComplete from "../../resources/figma-UI3/icon.24.move.small.svg";
+import blueprintIcon from "../../resources/xBlueprint-icon-64.png";
 
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
 const inputOf = (id: string) => document.getElementById(id) as HTMLInputElement;
@@ -67,6 +68,8 @@ sync(inputOf("nested"), inputOf("nested2"));
 const statusEl = $("status");
 
 ($("cancel") as HTMLButtonElement).onclick = () => parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+
+($("about-logo") as HTMLImageElement).src = blueprintIcon;
 
 $("donate").onclick = () => parent.postMessage({ pluginMessage: { type: "open", url: "https://buymeacoffee.com/bochenn" } }, "*");
 $("link-web").onclick = () => parent.postMessage({ pluginMessage: { type: "open", url: "https://crafter.studio" } }, "*");

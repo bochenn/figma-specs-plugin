@@ -1,5 +1,7 @@
 # Blueprint Specs & Handoff
 
+<img src="resources/xBlueprint-icon.png" width="128" height="128" alt="Blueprint Specs & Handoff icon">
+
 A Figma plugin that generates **visual design specs for handoff**: it automatically documents the anatomy, properties, layout, variables and styles of the selected components and frames, right on the canvas.
 
 The goal is to cut the manual work of documenting components and improve the clarity of the handoff between design, design systems and development.
