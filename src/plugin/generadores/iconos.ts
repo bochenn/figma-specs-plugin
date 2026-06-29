@@ -1,3 +1,7 @@
+// The SVG icons under resources/figma-UI3/ are taken from "UI3 — Figma's UI Kit"
+// on the Figma Community (https://www.figma.com/community/file/1486123838948777078/).
+// The kit states no explicit license; the icons are used in good faith under Figma's
+// Community terms and are NOT covered by this project's MIT license. See README "Credits".
 import { horizontalFrame, valueText, BORDER_PILL } from "./frames.ts";
 import iconWidth from "../../../resources/figma-UI3/icon.24.prop-width.svg";
 import iconHeight from "../../../resources/figma-UI3/icon.24.prop-height.svg";

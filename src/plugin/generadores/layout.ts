@@ -4,9 +4,9 @@ import { verticalFrame, horizontalFrame, text, inColumns, themedFill, variableCh
 import { themeVars } from "../utils/variables-tema.ts";
 import { paddingRects, spacingRects, type Rect } from "../utils/overlays.ts";
 import { currentUnit, spacingLabel } from "../utils/espaciado.ts";
-import { traverseAutoLayout } from "../traversal/recorrer-autolayout.ts";
+import { traverseTree } from "../traversal/recorrer.ts";
 import { layoutBadges, dimStyle, directionIcon, alignmentIcon, dimValue, colorValue, spacingValue, separateCollisions, badgeRail, isSmall, shortName, type ValuePart, type Badge } from "../utils/marcadores-layout.ts";
-import { gridRects, gridText, gridSpecOf, autolayoutGridStripes } from "../utils/grilla.ts";
+import { gridRects, gridText, autolayoutGridStripes } from "../utils/grilla.ts";
 import { depthPrefix } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
 import { nodeIcon, nodeTypeIcon, resizingIconKey, dimensionIndicator } from "./iconos.ts";
@@ -53,14 +53,61 @@ async function propertyRow(iconKey: string, label: string, parts: ValuePart[], m
 }
 
 const BORDER_E1: RGB = { r: 0.882, g: 0.882, b: 0.882 }; // #E1E1E1
-const ANCESTOR_GRAY: RGB = { r: 0.6, g: 0.6, b: 0.6 };
+const GRAY_999: RGB = { r: 0.6, g: 0.6, b: 0.6 };        // #999999 (non-current layers)
+const TREE_LINE: RGB = hexToRgb("#CED4D8");               // hierarchy guide lines
 
-// Hierarchy column: one row per ancestor (root→element), with a type icon
-// and progressive indentation. Ancestors are gray; the last one in normal color.
-// Fixed width to align the artworks.
-// "Layers" card: header with the title + body with the layer tree (Hierarchy),
-// each layer indented 20px per depth level.
-async function breadcrumb(path: { name: string; type: string }[]): Promise<FrameNode> {
+// One layer of the tree shown in the "Layers" card.
+interface TreeRow { name: string; type: string; level: number; id: string; }
+
+const INDENT = 16; // width of each hierarchy column
+const ROW_H = 20;  // fixed row height (so guide lines line up)
+
+// Is there another layer at `level` after row `r` before the subtree closes
+// (i.e. before a shallower layer appears)? → the branch continues / has a sibling.
+function followingSibling(rows: TreeRow[], r: number, level: number): boolean {
+  for (let k = r + 1; k < rows.length; k++) {
+    if (rows[k].level < level) return false;
+    if (rows[k].level === level) return true;
+  }
+  return false;
+}
+
+// Thin guide segment (1px), in the tree-line color.
+function guideSeg(cell: FrameNode, x: number, y: number, w: number, h: number): void {
+  const r = figma.createRectangle();
+  r.x = x; r.y = y;
+  r.resize(Math.max(w, 0.01), Math.max(h, 0.01));
+  r.fills = [{ type: "SOLID", color: TREE_LINE }];
+  cell.appendChild(r);
+}
+
+// The hierarchy guides cell for a row: a vertical line per ancestor branch that
+// continues, plus the └/├ connector to the row's parent.
+function treeGuides(rows: TreeRow[], r: number): FrameNode {
+  const L = rows[r].level;
+  const cell = figma.createFrame();
+  cell.name = "Guides";
+  cell.layoutMode = "NONE";
+  cell.clipsContent = false;
+  cell.fills = [];
+  cell.resize(L * INDENT, ROW_H);
+  for (let j = 0; j < L; j++) {
+    const x = j * INDENT + INDENT / 2;
+    if (j < L - 1) {
+      if (followingSibling(rows, r, j + 1)) guideSeg(cell, x, 0, 1, ROW_H); // pass-through vertical
+    } else {
+      const last = !followingSibling(rows, r, L);
+      guideSeg(cell, x, 0, 1, last ? ROW_H / 2 : ROW_H);    // connector vertical (└ stops at middle, ├ goes on)
+      guideSeg(cell, x, ROW_H / 2, INDENT / 2, 1);            // connector horizontal toward the icon
+    }
+  }
+  return cell;
+}
+
+// "Layers" card: header with the title + body with the FULL layer tree of the
+// selection (hierarchy guides + type icon per layer). The current layer (the one
+// this row documents) is dark + Medium; the rest are #999999 + Regular.
+async function layersTree(rows: TreeRow[], currentId: string): Promise<FrameNode> {
   const card = verticalFrame("Card", 0);
   card.strokes = [{ type: "SOLID", color: BORDER_E1 }];
   card.strokeWeight = 1;
@@ -83,14 +130,15 @@ async function breadcrumb(path: { name: string; type: string }[]): Promise<Frame
   const body = verticalFrame("Body", 0);
   body.paddingTop = body.paddingBottom = body.paddingLeft = body.paddingRight = 24;
   const hierarchy = verticalFrame("Hierarchy", 8);
-  for (let i = 0; i < path.length; i++) {
+  for (let i = 0; i < rows.length; i++) {
     const row = horizontalFrame("Layer", 4);
     row.counterAxisAlignItems = "CENTER";
-    row.paddingLeft = i * 20;
-    const icon = nodeTypeIcon(path[i].type, 16);
+    if (rows[i].level > 0) row.appendChild(treeGuides(rows, i));
+    const icon = nodeTypeIcon(rows[i].type, 16);
     if (icon) row.appendChild(icon);
-    const t = await text(path[i].name, 14);
-    if (i < path.length - 1) t.fills = [{ type: "SOLID", color: ANCESTOR_GRAY }];
+    const isCurrent = rows[i].id === currentId;
+    const t = await text(rows[i].name, 14, isCurrent ? FONT_MEDIUM : undefined);
+    if (!isCurrent) t.fills = [{ type: "SOLID", color: GRAY_999 }];
     row.appendChild(t);
     hierarchy.appendChild(row);
   }
@@ -114,15 +162,24 @@ async function paddingRows(p: LayoutSpec["padding"], sv: LayoutSpec["spacingVars
   ];
 }
 
-// Builds the exhibit (text block) of an Auto Layout layer as a card.
-async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
+// Builds the exhibit (text block) of a layer as a card. `hasAuto` = the layer
+// has Auto Layout; leaf layers (no Auto Layout) only show size/fill/stroke/corner.
+async function exhibit(spec: LayoutSpec, hasAuto: boolean): Promise<FrameNode> {
   const u = currentUnit();
   const sv = spec.spacingVars;
+  const header = await cardHeaderText(`${depthPrefix(spec.depth ?? 0)}${spec.elementName} · ${spec.type}`);
   const rows: FrameNode[] = [];
   rows.push(await propertyRow("width", "Width", dimValue(spec.width, u, spec.widthVar), spec.resizingHorizontal));
   rows.push(await propertyRow("height", "Height", dimValue(spec.height, u, spec.heightVar), spec.resizingVertical));
   if (spec.fill) rows.push(await propertyRow("fill", "Fill", colorValue(spec.fill)));
   if (spec.stroke) rows.push(await propertyRow("stroke", "Stroke", colorValue(spec.stroke)));
+
+  // Leaf layer (no Auto Layout): direction/alignment/padding/gap don't apply.
+  if (!hasAuto) {
+    if (spec.cornerRadius) rows.push(await propertyRow("corner", "Corner radius", spacingValue(spec.cornerRadius, u, spec.cornerRadiusVar)));
+    for (const g of spec.grids) rows.push(await propertyRow("columns", "Grid", [{ text: gridText(g) }]));
+    return card([header], rows);
+  }
 
   if (spec.direction === "GRID") {
     rows.push(await propertyRow("dir-grid", "Direction", [{ text: "Grid" }]));
@@ -132,7 +189,7 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
     if (spec.gridRowGap !== undefined) rows.push(await propertyRow("spacing-v", "Row gap", spacingValue(spec.gridRowGap, u, spec.gridRowGapVar)));
     rows.push(...await paddingRows(spec.padding, sv, u));
     if (spec.cornerRadius) rows.push(await propertyRow("corner", "Corner radius", spacingValue(spec.cornerRadius, u, spec.cornerRadiusVar)));
-    return card([await cardHeaderText(`${depthPrefix(spec.depth ?? 0)}${spec.elementName} · ${spec.type}`)], rows);
+    return card([header], rows);
   }
 
   const dirKey = spec.direction === "HORIZONTAL" ? "dir-horizontal" : "dir-vertical";
@@ -144,7 +201,7 @@ async function exhibit(spec: LayoutSpec): Promise<FrameNode> {
   rows.push(await propertyRow(gapKey, "Item spacing", spacingValue(spec.itemSpacing, u, sv.itemSpacing)));
   if (spec.cornerRadius) rows.push(await propertyRow("corner", "Corner radius", spacingValue(spec.cornerRadius, u, spec.cornerRadiusVar)));
   for (const g of spec.grids) rows.push(await propertyRow("columns", "Grid", [{ text: gridText(g) }]));
-  return card([await cardHeaderText(`${depthPrefix(spec.depth ?? 0)}${spec.elementName} · ${spec.type}`)], rows);
+  return card([header], rows);
 }
 
 // Draws an overlay rect (semi-transparent) on the artwork.
@@ -452,20 +509,23 @@ function ajustarArtwork(artwork: FrameNode, pad = 16): void {
 // Draws a container's artwork in a mode: "completo" (everything), "dimensiones"
 // (only W/H + child measures) or "spacing" (only padding/gap). The clone is offset
 // (MARGIN_LEFT, MARGIN) to leave room for the annotations.
-async function artworkMode(container: FrameNode, spec: LayoutSpec, _medirHijos: boolean, mode: "completo" | "dimensiones" | "spacing"): Promise<FrameNode> {
+async function artworkMode(container: SceneNode, spec: LayoutSpec, _medirHijos: boolean, mode: "completo" | "dimensiones" | "spacing"): Promise<FrameNode> {
   const artwork = figma.createFrame();
   artwork.name = `Artwork ${spec.elementName}`;
   artwork.layoutMode = "NONE";
   artwork.clipsContent = false;
   artwork.fills = themedFill(themeVars().bgArtwork);
-  const clone = container.clone();
+  // The helpers only read the clone's geometry (x/y/width/height); a leaf clone
+  // (e.g. a TextNode) is treated as a FrameNode for those reads.
+  const clone = container.clone() as FrameNode;
   artwork.appendChild(clone);
   clone.x = MARGIN_LEFT;
   clone.y = MARGIN;
   artwork.resize(clone.width + MARGIN_LEFT + MARGIN, clone.height + 2 * MARGIN);
 
   const frameRect: Rect = { x: MARGIN_LEFT, y: MARGIN, width: clone.width, height: clone.height };
-  const childRects: Rect[] = container.children.map((c) => ({
+  const children = "children" in container ? container.children : [];
+  const childRects: Rect[] = children.map((c) => ({
     x: MARGIN_LEFT + c.x, y: MARGIN + c.y, width: c.width, height: c.height,
   }));
   for (const r of childRects) rectOverlay(r, BLUE, 0.25, artwork);
@@ -511,8 +571,13 @@ async function labeledArtwork(title: string, art: FrameNode): Promise<FrameNode>
 }
 
 // Container artwork: single if large; split into Dimensions | Spacing
-// (labeled) if small.
-async function artworkDe(container: FrameNode, spec: LayoutSpec, measureChildren: boolean): Promise<FrameNode> {
+// (labeled) if small. Leaf layers (no Auto Layout) only get dimension lines
+// (or the grid stripes if the frame carries layout grids).
+async function artworkDe(container: SceneNode, spec: LayoutSpec, measureChildren: boolean, hasAuto: boolean): Promise<FrameNode> {
+  if (!hasAuto) {
+    if (spec.grids.length > 0) return await artworkGrids(container as FrameNode, spec.grids);
+    return await artworkMode(container, spec, false, "dimensiones");
+  }
   if (!isSmall(container.width, container.height, spec.direction)) {
     return await artworkMode(container, spec, measureChildren, "completo");
   }
@@ -543,16 +608,8 @@ async function artworkGrids(frame: FrameNode, grids: GridSpec[]): Promise<FrameN
   return artwork;
 }
 
-// Reduced exhibit of a frame with grids (name · type + Grid lines).
-async function exhibitGrids(frame: SceneNode, grids: GridSpec[]): Promise<FrameNode> {
-  const row = verticalFrame(frame.name, 4);
-  row.appendChild(await text(`${frame.name} · ${frame.type}`, 16));
-  for (const g of grids) row.appendChild(await text(`Grid: ${gridText(g)}`, 12));
-  return row;
-}
-
-// Generates the Layout and Spacing output: one artwork+exhibit row per
-// Auto Layout container (root + nested; same order as extractLayout).
+// Generates the Layout and Spacing output: one artwork+exhibit row per layer
+// (root + every descendant; same order as extractLayout).
 export async function generateLayout(selected: SceneNode, specs: LayoutSpec[], columns: number, hideOuter: boolean, itemize: boolean, measureChildren: boolean): Promise<FrameNode> {
   const specifications = verticalFrame("Specifications", 128, 64);
   const spec = verticalFrame(`${selected.name} Spec`, 48);
@@ -573,49 +630,38 @@ export async function layoutSection(selected: SceneNode, specs: LayoutSpec[], co
   section.paddingLeft = section.paddingRight = 100;
   section.fills = themedFill(themeVars().bgSpec);
 
-  const traversals = traverseAutoLayout(selected as unknown as NodeLike, itemize);
-  const containers = traversals.map((r) => r.node) as unknown as FrameNode[];
+  const traversals = traverseTree(selected as unknown as NodeLike, itemize);
+  const nodes = traversals.map((r) => r.node) as unknown as SceneNode[];
+  // Full flat tree for the "Layers" card: every layer with its indent level + id.
+  const tree: TreeRow[] = traversals.map((t) => ({
+    name: t.node.name, type: t.node.type, level: (t.path?.length ?? 1) - 1, id: t.node.id,
+  }));
+  const isAuto = (node: SceneNode): boolean => {
+    const m = (node as FrameNode).layoutMode;
+    return m === "HORIZONTAL" || m === "VERTICAL" || m === "GRID";
+  };
 
-  // With hideOuter, the root row is skipped (only if the selection itself is the
-  // first container; traverseAutoLayout returns the real nodes).
-  const inicio = hideOuter && containers.length > 0 && (containers[0] as SceneNode) === selected ? 1 : 0;
+  // With hideOuter, the root row is skipped (the root is always first in the tree).
+  const inicio = hideOuter && nodes.length > 0 && nodes[0] === selected ? 1 : 0;
   const rows: FrameNode[] = [];
-  const n = Math.min(containers.length, specs.length);
+  const n = Math.min(nodes.length, specs.length);
   for (let i = inicio; i < n; i++) {
+    const node = nodes[i];
+    const hasAuto = isAuto(node);
     const row = horizontalFrame("layoutItem", 48);
     row.paddingTop = row.paddingBottom = 72; // mimics the anatomyItem's vertical breathing space
     row.clipsContent = false; // the artwork's chips/callouts may stick out of the margin
-    row.appendChild(await breadcrumb(traversals[i].path ?? [{ name: specs[i].elementName, type: specs[i].type }]));
-    row.appendChild(await artworkDe(containers[i], specs[i], measureChildren));
-    row.appendChild(await exhibit(specs[i]));
+    row.appendChild(await layersTree(tree, traversals[i].node.id));
+    row.appendChild(await artworkDe(node, specs[i], measureChildren, hasAuto));
+    row.appendChild(await exhibit(specs[i], hasAuto));
     rows.push(row);
   }
 
-  // Root with layout grids but no Auto Layout: its own row. Doesn't depend on
-  // hideOuter: the screen grid is its own information, not a layout annotation of
-  // the outer container (those are padding/spacing/resizing).
-  const rootInRows = containers.length > 0 && (containers[0] as SceneNode) === selected;
-  // Direct access to layoutGrids (not `"layoutGrids" in selected`): `in`
-  // on a real Figma node isn't reliable; accessing and checking Array is.
-  const gridsRaizRaw = (selected as { layoutGrids?: ReadonlyArray<Parameters<typeof gridSpecOf>[0]> }).layoutGrids;
-  if (!rootInRows && Array.isArray(gridsRaizRaw)) {
-    const gridsRaiz = gridsRaizRaw.map(gridSpecOf);
-    if (gridsRaiz.length > 0) {
-      const row = horizontalFrame("layoutItem", 48);
-      row.paddingTop = row.paddingBottom = 72; // mimics the anatomyItem's vertical breathing space
-      row.clipsContent = false;
-      row.appendChild(await breadcrumb([{ name: selected.name, type: selected.type }]));
-      row.appendChild(await artworkGrids(selected as FrameNode, gridsRaiz));
-      row.appendChild(await exhibitGrids(selected, gridsRaiz));
-      rows.unshift(row);
-    }
-  }
-
-  // Unique id per row, in final visual order (including the root grid row).
+  // Unique id per row, in final visual order.
   rows.forEach((f, i) => { f.name = `layoutItem${String(i + 1).padStart(2, "0")}`; });
 
   if (rows.length === 0) {
-    section.appendChild(await text("No Auto Layout layers found.", 16));
+    section.appendChild(await text("No layers found.", 16));
   } else if (columns > 1) {
     const container = inColumns(rows, columns);
     container.clipsContent = false;

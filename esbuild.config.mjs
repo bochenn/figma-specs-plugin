@@ -11,6 +11,7 @@ async function buildUI() {
     bundle: true,
     write: false,
     format: "iife",
+    loader: { ".svg": "text" },
   });
   const js = out.outputFiles[0].text;
   let html = readFileSync("src/ui/index.html", "utf8");

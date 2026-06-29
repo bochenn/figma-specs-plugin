@@ -1,7 +1,9 @@
 {
-  "name": "figma-specs-plugin",
+  "name": "blueprint-specs-handoff",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "author": "bochenn",
   "scripts": {
     "build": "node esbuild.config.mjs",
     "watch": "node esbuild.config.mjs --watch",

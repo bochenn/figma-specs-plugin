@@ -1,5 +1,5 @@
 import type { NodeLike, LayoutSpec } from "../modelo/tipos.ts";
-import { traverseAutoLayout } from "../traversal/recorrer-autolayout.ts";
+import { traverseTree } from "../traversal/recorrer.ts";
 import { attributeColor, solidHex } from "../utils/atributos.ts";
 
 // Translates Figma's alignment value to readable text.
@@ -83,7 +83,8 @@ export function layoutKey(spec: LayoutSpec): string {
   return `${spec.direction}|${spec.primaryAlignment}|${spec.counterAlignment}|${spec.resizingHorizontal}|${spec.resizingVertical}|L${p.left}T${p.top}R${p.right}B${p.bottom}|gap${spec.itemSpacing}`;
 }
 
-// Produces one LayoutSpec per Auto Layout layer of the selection.
+// Produces one LayoutSpec per layer of the selection (root + every descendant,
+// not only Auto Layout ones), so leaf layers (texts, icons) are documented too.
 export function extractLayout(root: NodeLike, itemize = false): LayoutSpec[] {
-  return traverseAutoLayout(root, itemize).map((r) => layoutSpecOf(r.node, r.depth));
+  return traverseTree(root, itemize).map((r) => layoutSpecOf(r.node, r.depth));
 }
