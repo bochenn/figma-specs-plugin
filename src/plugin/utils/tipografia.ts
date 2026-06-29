@@ -17,7 +17,7 @@ export function formatTypography(
   const ls = t.letterSpacing;
   if (format === "CSS") {
     let measure = pxValue(t.size, true);
-    if (lh && lh.unit === "px") measure += `/${pxValue(lh.value, true)}`;
+    if (lh && lh.unit === "px") measure += `/${pxValue(lh.value ?? 0, true)}`;
     else if (lh && lh.unit === "percent") measure += `/${lh.value}%`;
     let s = `${measure} ${t.style} ${t.family}`;
     if (ls && ls.value !== 0) s += ` · LS ${ls.unit === "percent" ? `${ls.value}%` : pxValue(ls.value, true)}`;
@@ -25,7 +25,7 @@ export function formatTypography(
   }
   let s = `${t.family} ${t.style} ${pxValue(t.size, false)}`;
   if (lh) {
-    const lhStr = lh.unit === "auto" ? "auto" : lh.unit === "percent" ? `${lh.value}%` : pxValue(lh.value, false);
+    const lhStr = lh.unit === "auto" ? "auto" : lh.unit === "percent" ? `${lh.value}%` : pxValue(lh.value ?? 0, false);
     s += ` / ${lhStr}`;
   }
   if (ls && ls.value !== 0) s += ` · LS ${ls.unit === "percent" ? `${ls.value}%` : pxValue(ls.value, false)}`;

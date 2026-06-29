@@ -17,8 +17,8 @@ test("layoutBadges: cada padding va a su side con su value", () => {
 test("layoutBadges: padding left centrado vertical, top centrado horizontal", () => {
   const frame = { x: 0, y: 0, width: 200, height: 100 };
   const badges = layoutBadges(frame, { left: 16, top: 8, right: 0, bottom: 0 }, [], "HORIZONTAL", false);
-  assert.equal(badges.find((m) => m.side === "left").center, 50);  // frame.y + height/2
-  assert.equal(badges.find((m) => m.side === "top").center, 100);  // frame.x + width/2
+  assert.equal(badges.find((m) => m.side === "left")!.center, 50);  // frame.y + height/2
+  assert.equal(badges.find((m) => m.side === "top")!.center, 100);  // frame.x + width/2
 });
 
 test("layoutBadges: gap HORIZONTAL → side top en el center del hueco", () => {
@@ -47,7 +47,7 @@ test("layoutBadges: spacingAuto → gap dice Auto", () => {
 test("layoutBadges: respeta rem", () => {
   applyUnit("rem");
   const badges = layoutBadges({ x: 0, y: 0, width: 100, height: 100 }, { left: 16, top: 0, right: 0, bottom: 0 }, [], "HORIZONTAL", false);
-  assert.equal(badges.find((m) => m.side === "left").value, "1rem");
+  assert.equal(badges.find((m) => m.side === "left")!.value, "1rem");
   applyUnit("px");
 });
 
@@ -85,7 +85,7 @@ test("dimensionText: respeta rem", () => {
 
 test("layoutBadges con spacingVars → name y value separados", () => {
   const badges = layoutBadges({ x: 0, y: 0, width: 200, height: 100 }, { left: 16, top: 0, right: 0, bottom: 0 }, [], "HORIZONTAL", false, { paddingLeft: "space/padding-1x" });
-  const m = badges.find((x) => x.side === "left");
+  const m = badges.find((x) => x.side === "left")!;
   assert.equal(m.name, "padding-1x");
   assert.equal(m.value, "16");
 });

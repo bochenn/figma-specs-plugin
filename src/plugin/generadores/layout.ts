@@ -1,19 +1,17 @@
 import type { LayoutSpec, NodeLike, Unit } from "../modelo/tipos.ts";
 import { hexToRgb } from "../utils/color.ts";
-import { verticalFrame, horizontalFrame, text, inColumns, themedFill, variableChip, card, pillRow, FONT_BOLD, keyText, valueText, FONT_MEDIUM, cardHeaderText, BORDER_PILL } from "./frames.ts";
+import { verticalFrame, horizontalFrame, text, inColumns, themedFill, variableChip, card, pillRow, keyText, valueText, FONT_MEDIUM, cardHeaderText, BORDER_PILL } from "./frames.ts";
 import { themeVars } from "../utils/variables-tema.ts";
 import { paddingRects, spacingRects, type Rect } from "../utils/overlays.ts";
 import { currentUnit, spacingLabel } from "../utils/espaciado.ts";
 import { traverseTree } from "../traversal/recorrer.ts";
-import { layoutBadges, dimStyle, directionIcon, alignmentIcon, dimValue, colorValue, spacingValue, separateCollisions, badgeRail, isSmall, shortName, type ValuePart, type Badge } from "../utils/marcadores-layout.ts";
+import { dimStyle, directionIcon, alignmentIcon, dimValue, colorValue, spacingValue, separateCollisions, badgeRail, isSmall, shortName, type ValuePart, type Badge } from "../utils/marcadores-layout.ts";
 import { gridRects, gridText, autolayoutGridStripes } from "../utils/grilla.ts";
 import { depthPrefix } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
 import { nodeIcon, nodeTypeIcon, resizingIconKey, dimensionIndicator } from "./iconos.ts";
 
 const BLUE: RGB = { r: 0.05, g: 0.4, b: 0.85 };
-const GREEN: RGB = { r: 0.1, g: 0.7, b: 0.3 };
-const ORANGE: RGB = { r: 1, g: 0.5, b: 0.1 };
 const RED: RGB = { r: 1, g: 0.1, b: 0.3 };
 
 // Callouts: pill/dark bg + variable-name capsule in light + text.
@@ -28,17 +26,6 @@ const CALLOUT_DIM: CalloutPair     = { dark: hexToRgb("#F24822"), light: hexToRg
 const MARGIN = 96;
 const MARGIN_LEFT = 160; // left margin width: holds the height callout + artwork breadcrumb
 const BREATHE = 16; // border rightSide e inferior
-
-// Right side of a row: texts and chips per the parts.
-async function valueWithChips(parts: ValuePart[]): Promise<FrameNode> {
-  const f = horizontalFrame("Value", 4);
-  f.counterAxisAlignItems = "CENTER";
-  for (const p of parts) {
-    if ("chip" in p) f.appendChild(await variableChip(p.chip));
-    else f.appendChild(await text(p.text, 12));
-  }
-  return f;
-}
 
 // Panel row: pill with icon + label + parts (texts and chips).
 async function propertyRow(iconKey: string, label: string, parts: ValuePart[], mode?: string): Promise<FrameNode> {
@@ -424,39 +411,6 @@ function svgCalloutV(style: "fixed" | "fill" | "hug", largo: number, color = CAL
 const LINE_PADDING = "#007BE5"; // blue, acorde a CALLOUT_PADDING
 const LINE_GAP = "#FF24BD";     // magenta, acorde a CALLOUT_GAP
 
-// Vertical callout line centered on `xCenter`, from `y`, of `largo` px.
-function lineV(artwork: FrameNode, xCentro: number, y: number, largo: number, color: string): void {
-  if (largo <= 0) return;
-  const n = figma.createNodeFromSvg(svgCalloutV("fixed", largo, color));
-  n.x = xCentro - 6;
-  n.y = y;
-  artwork.appendChild(n);
-}
-
-// Horizontal callout line centered on `yCenter`, from `x`, of `largo` px.
-function lineH(artwork: FrameNode, x: number, yCentro: number, largo: number, color: string): void {
-  if (largo <= 0) return;
-  const n = figma.createNodeFromSvg(svgCalloutH("fixed", largo, color));
-  n.x = x;
-  n.y = yCentro - 6;
-  artwork.appendChild(n);
-}
-
-// Draws a callout line over each padding band (blue) and each gap (pink).
-function drawMeasureLines(artwork: FrameNode, clone: FrameNode, spec: LayoutSpec, gaps: Rect[]): void {
-  const cx = clone.x + clone.width / 2;
-  const cy = clone.y + clone.height / 2;
-  const p = spec.padding;
-  lineV(artwork, cx, clone.y, p.top, LINE_PADDING);
-  lineV(artwork, cx, clone.y + clone.height - p.bottom, p.bottom, LINE_PADDING);
-  lineH(artwork, clone.x, cy, p.left, LINE_PADDING);
-  lineH(artwork, clone.x + clone.width - p.right, cy, p.right, LINE_PADDING);
-  for (const g of gaps) {
-    if (spec.direction === "VERTICAL") lineV(artwork, g.x + g.width / 2, g.y, g.height, LINE_GAP);
-    else lineH(artwork, g.x, g.y + g.height / 2, g.width, LINE_GAP);
-  }
-}
-
 // Direction icons (24x24): arrow → / ↓, grid variant if there's wrap.
 const ICONS: Record<string, string> = {
   "flecha-h": `<path d="M3 12 H21 M15 6 L21 12 L15 18" stroke="${GRAY_HEX}" fill="none" stroke-width="2"/>`,
@@ -489,8 +443,6 @@ async function drawDims(artwork: FrameNode, clone: FrameNode, spec: LayoutSpec, 
   tH.x = xLine - VALUE_SEP - tH.width;
   tH.y = clone.y + clone.height / 2 - tH.height / 2;
 }
-
-const SMALL_THRESHOLD = 48; // reference; the real threshold lives in isSmall
 
 // Grows the artwork (right/bottom) to contain every annotation that sticks out,
 // so they aren't clipped by the gray bg border nor covered by the exhibit.

@@ -145,13 +145,6 @@ async function cardVariante(header: string, comp: ComponentNode, propNames: stri
   return card([await text(header, 16, FONT_MEDIUM)], [display]);
 }
 
-// Readable text of a changed attribute: "optionValue (raw) (default: defaultValue (raw))".
-// The (raw) appears only when the value is a variable/style with a resolved value.
-function attributeLine(c: ChangedAttribute): string {
-  const op = `${c.optionValue ?? "—"}${c.rawValueOption ? ` (${c.rawValueOption})` : ""}`;
-  const def = `${c.defaultValue ?? "—"}${c.rawValueDefault ? ` (${c.rawValueDefault})` : ""}`;
-  return `${c.key}: ${op} (default: ${def})`;
-}
 
 // Draws an attribute change as TWO horizontal pills: itemValue-current
 // (key + option value, on the left) and itemValue-default (default +

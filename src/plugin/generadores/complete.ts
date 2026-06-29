@@ -1,5 +1,5 @@
 import type { ExtraElement, LayoutVariant } from "../modelo/tipos.ts";
-import { verticalFrame, text, inColumns, card, pillRow, FONT_BOLD, keyText, valueText, cardHeaderText } from "./frames.ts";
+import { verticalFrame, text, inColumns, card, pillRow, keyText, valueText, cardHeaderText } from "./frames.ts";
 import { groupByVariant } from "../utils/agrupar-variante.ts";
 import { spacingLabel, currentUnit, paddingText } from "../utils/espaciado.ts";
 

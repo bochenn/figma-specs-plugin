@@ -8,7 +8,7 @@ function textLineHeight(lh?: LineHeightVal): string | undefined {
   if (!lh) return undefined;
   if (lh.unit === "auto") return "Auto";
   if (lh.unit === "percent") return `${lh.value}%`;
-  return formatSpacing(lh.value, currentUnit(), true);
+  return formatSpacing(lh.value ?? 0, currentUnit(), true);
 }
 
 // Tracking (letter-spacing) for its own row: "0%" or "0.5px".
