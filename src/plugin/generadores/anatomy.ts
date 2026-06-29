@@ -6,6 +6,7 @@ import { HEADERS_ANATOMY, anatomyRow } from "../utils/tabla-anatomy.ts";
 import { hexToRgb } from "../utils/color.ts";
 import { nodeTypeIcon, resizingIconKey, dimensionIndicator } from "./iconos.ts";
 import { parseVariants } from "../utils/anatomy-variantes.ts";
+import { placeBadges, type BBox } from "../utils/badges-anatomy.ts";
 
 const GRAY = (n: number): RGB => ({ r: n, g: n, b: n });
 
@@ -200,56 +201,31 @@ export async function anatomySection(selected: SceneNode, elements: AnatomyEleme
   clone.x = offsetX;
   clone.y = offsetY;
 
-  // Badges on all 4 SIDES of the element. The chosen side is the one whose badge does NOT land on
-  // another sibling element (the container doesn't obstruct); preference order
-  // left → right → top → bottom. If the free side collides with an already-placed badge,
-  // the badge is moved away along its axis. The line is perpendicular: from the element's border
-  // to the badge. So, in horizontal rows the badges go top/bottom and in vertical
-  // stacks to the sides, without crowding.
+  // Each badge sits OUTSIDE the documented object's bounds, on the object side
+  // nearest to that sub-element; the line crosses the border from the element to
+  // the badge. Side selection (deepest-first, nearest side, collision handling)
+  // lives in placeBadges (pure + unit-tested); here we only draw it.
   const relBoxes = relativeBoxes(selected);
-  type Box = { x: number; y: number; w: number; h: number };
-  const boxes: (Box | null)[] = elements.map((e) => {
+  const boxes: (BBox | null)[] = elements.map((e) => {
     const c = relBoxes.get(e.id);
     return c ? { x: c.x + offsetX, y: c.y + offsetY, w: c.width, h: c.height } : null;
   });
-  const contains = (a: Box, b: Box): boolean =>
-    a.x <= b.x && a.y <= b.y && a.x + a.w >= b.x + b.w && a.y + a.h >= b.y + b.h;
-  // Does the point fall inside a sibling element of i (neither its container nor its content)?
-  const overOther = (x: number, y: number, i: number, bi: Box): boolean =>
-    boxes.some((bj, j) => bj != null && j !== i && !contains(bj, bi) && !contains(bi, bj)
-      && x >= bj.x && x <= bj.x + bj.w && y >= bj.y && y <= bj.y + bj.h);
-  const placed: { x: number; y: number }[] = [];
-  const collides = (x: number, y: number): boolean =>
-    placed.some((p) => Math.abs(p.x - x) < BADGE_SIZE + 4 && Math.abs(p.y - y) < BADGE_SIZE + 4);
+  const root: BBox = { x: clone.x, y: clone.y, w: clone.width, h: clone.height };
   const R = BADGE_SIZE / 2;
+  const placements = placeBadges(root, boxes, BADGE_SIZE, BADGE_GAP);
   for (let i = 0; i < elements.length; i++) {
     const bi = boxes[i];
-    if (!bi) continue;
+    const pl = placements[i];
+    if (!bi || !pl) continue;
     const color = BADGE_COLORS[i % BADGE_COLORS.length];
     badgeBorder({ x: bi.x, y: bi.y, width: bi.w, height: bi.h }, color, artwork);
     const cx = bi.x + bi.w / 2;
     const cy = bi.y + bi.h / 2;
-    const lados = [
-      { side: "left",   x: bi.x - BADGE_GAP - R,        y: cy },
-      { side: "right",  x: bi.x + bi.w + BADGE_GAP + R, y: cy },
-      { side: "top",    x: cx,                             y: bi.y - BADGE_GAP - R },
-      { side: "bottom", x: cx,                             y: bi.y + bi.h + BADGE_GAP + R },
-    ];
-    let validos = lados.filter((l) => !overOther(l.x, l.y, i, bi));
-    if (validos.length === 0) validos = lados;
-    const elegido = validos.find((l) => !collides(l.x, l.y)) ?? validos[0];
-    let mcx = elegido.x;
-    let mcy = elegido.y;
-    while (collides(mcx, mcy)) {
-      if (elegido.side === "left") mcx -= BADGE_SIZE + 4;
-      else if (elegido.side === "right") mcx += BADGE_SIZE + 4;
-      else if (elegido.side === "top") mcy -= BADGE_SIZE + 4;
-      else mcy += BADGE_SIZE + 4;
-    }
-    placed.push({ x: mcx, y: mcy });
-    if (elegido.side === "left") guideLineH(artwork, mcx + R, cy, bi.x, color);
-    else if (elegido.side === "right") guideLineH(artwork, bi.x + bi.w, cy, mcx - R, color);
-    else if (elegido.side === "top") guideLineV(artwork, cx, mcy + R, bi.y, color);
+    const mcx = pl.x;
+    const mcy = pl.y;
+    if (pl.side === "left") guideLineH(artwork, mcx + R, cy, bi.x, color);
+    else if (pl.side === "right") guideLineH(artwork, bi.x + bi.w, cy, mcx - R, color);
+    else if (pl.side === "top") guideLineV(artwork, cx, mcy + R, bi.y, color);
     else guideLineV(artwork, cx, bi.y + bi.h, mcy - R, color);
     artwork.appendChild(await marker(i + 1, mcx - R, mcy - R, color));
   }

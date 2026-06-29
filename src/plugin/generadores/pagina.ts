@@ -7,6 +7,7 @@ import { themeVars } from "../utils/variables-tema.ts";
 const PLUGIN_NAME = "BLUEPRINT SPECS & HANDOFF";
 const BORDER_SHELL: RGB = { r: 0.882, g: 0.882, b: 0.882 }; // #E1E1E1
 const GRAY_DESC: RGB = { r: 0.420, g: 0.447, b: 0.502 };   // #6B7280
+const GRAY_SHELL: RGB = { r: 0.5098, g: 0.5098, b: 0.5098 }; // #828282 (header/footer text)
 const ELEMENT_DESC =
   "This is a placeholder description of what this element does in the project.";
 export const PAGE_WIDTH = 1980; // minimum page width (can grow if the content is wider)
@@ -67,10 +68,13 @@ export async function header(sectionLabel: string): Promise<FrameNode> {
   bottomBorder(barra);
 
   const left = await text(PLUGIN_NAME, 16, FONT_MEDIUM);
+  left.fills = [{ type: "SOLID", color: GRAY_SHELL }];
   barra.appendChild(left);
   left.layoutSizingHorizontal = "FILL"; // pushes the label to the right
 
-  barra.appendChild(await text(sectionLabel.toUpperCase(), 16, FONT_MEDIUM));
+  const label = await text(sectionLabel.toUpperCase(), 16, FONT_MEDIUM);
+  label.fills = [{ type: "SOLID", color: GRAY_SHELL }];
+  barra.appendChild(label);
   barra.resize(PAGE_WIDTH, barra.height);
   return barra;
 }
@@ -80,7 +84,9 @@ export async function footer(): Promise<FrameNode> {
   const barra = barraShell("pageFooter", 32);
   topBorder(barra);
   barra.primaryAxisAlignItems = "CENTER";
-  barra.appendChild(await text(PLUGIN_NAME, 16, FONT_MEDIUM));
+  const name = await text(PLUGIN_NAME, 16, FONT_MEDIUM);
+  name.fills = [{ type: "SOLID", color: GRAY_SHELL }];
+  barra.appendChild(name);
   barra.resize(PAGE_WIDTH, barra.height);
   return barra;
 }

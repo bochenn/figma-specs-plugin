@@ -17,6 +17,28 @@ function nestedTexts(node: NodeLike, prof: number): Traversal[] {
   return res;
 }
 
+// Every layer of the tree (root + descendants), each with its full path
+// (root→layer) and instance depth. Same shape as traverseAutoLayout, but keeps
+// ALL layers (not only Auto Layout ones) so Layout & Spacing can document leaf
+// layers (texts, icons, vectors) too. Without itemize, instances are listed but
+// not opened.
+export function traverseTree(node: NodeLike, itemize = false, prof = 0, path: { name: string; type: string }[] = []): Traversal[] {
+  const own = [...path, { name: node.name, type: node.type }];
+  const elements: Traversal[] = [{ node, depth: prof, path: own }];
+  for (const child of node.children ?? []) {
+    const childPath = [...own, { name: child.name, type: child.type }];
+    if (child.type === TIPOS_INSTANCIA) {
+      if (itemize) elements.push(...traverseTree(child, itemize, prof + 1, own));
+      else elements.push({ node: child, depth: prof, path: childPath });
+    } else if (CONTAINER_TYPES.includes(child.type)) {
+      elements.push(...traverseTree(child, itemize, prof, own));
+    } else {
+      elements.push({ node: child, depth: prof, path: childPath });
+    }
+  }
+  return elements;
+}
+
 // deepTexts: besides the normal list, rescues the TEXT layers that are
 // deeper than maxLevel or inside instances (so their style isn't lost).
 export function traverse(node: NodeLike, itemize = false, prof = 0, nivel = 0, maxLevel = Infinity, deepTexts = false): Traversal[] {

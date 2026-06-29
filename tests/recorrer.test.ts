@@ -1,11 +1,32 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { traverse } from "../src/plugin/traversal/recorrer.ts";
+import { traverse, traverseTree } from "../src/plugin/traversal/recorrer.ts";
 import type { NodeLike } from "../src/plugin/modelo/tipos.ts";
 
 function node(parcial: Partial<NodeLike> & { id: string; type: string }): NodeLike {
   return { name: parcial.id, ...parcial };
 }
+
+test("traverseTree: raíz + todas las capas (hojas incluidas) en orden de árbol", () => {
+  const root = node({
+    id: "card", type: "FRAME",
+    children: [
+      node({ id: "title", type: "TEXT" }),
+      node({ id: "body", type: "FRAME", children: [node({ id: "icon", type: "VECTOR" })] }),
+    ],
+  });
+  const r = traverseTree(root);
+  assert.deepEqual(r.map((x) => x.node.id), ["card", "title", "body", "icon"]);
+  // el path va de la raíz a la capa, inclusive
+  assert.deepEqual(r.find((x) => x.node.id === "icon")?.path?.map((p) => p.name), ["card", "body", "icon"]);
+});
+
+test("traverseTree: sin itemize la instancia es hoja (no se abre)", () => {
+  const root = node({ id: "root", type: "FRAME", children: [
+    node({ id: "boton", type: "INSTANCE", children: [node({ id: "label", type: "TEXT" })] }),
+  ] });
+  assert.deepEqual(traverseTree(root).map((x) => x.node.id), ["root", "boton"]);
+});
 
 test("itemiza texts y shapes como hojas, en orden de árbol", () => {
   const root = node({

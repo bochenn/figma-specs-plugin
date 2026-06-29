@@ -37,6 +37,20 @@ test("arma un LayoutSpec completo from un node con Auto Layout", () => {
   });
 });
 
+test("extractLayout documenta también las capas hoja, no solo Auto Layout", () => {
+  const root: NodeLike = {
+    id: "r", name: "pluginBox", type: "FRAME", layoutMode: "VERTICAL",
+    children: [
+      { id: "t", name: "Elements and styling.", type: "TEXT", width: 165, height: 16, children: [] },
+    ],
+  };
+  const specs = extractLayout(root);
+  assert.deepEqual(specs.map((s) => [s.elementName, s.type]), [
+    ["pluginBox", "FRAME"],
+    ["Elements and styling.", "TEXT"],
+  ]);
+});
+
 test("layoutSpecOf con GRID setea direction y datos de grilla", () => {
   const root: NodeLike = {
     id: "r", name: "Screen", type: "FRAME", layoutMode: "GRID",
