@@ -1,6 +1,6 @@
 {
   "name": "Blueprint Specs & Handoff",
-  "id": "figma-specs-plugin-dev",
+  "id": "blueprint-specs-handoff-dev",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui.html",

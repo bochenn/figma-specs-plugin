@@ -10,6 +10,7 @@ function spec(padding: number): LayoutSpec {
     resizingHorizontal: "Fixed", resizingVertical: "Hug",
     padding: { left: padding, top: padding, right: padding, bottom: padding },
     itemSpacing: 8,
+    wrap: false, spacingAuto: false, grids: [], spacingVars: {}, width: 0, height: 0,
   };
 }
 

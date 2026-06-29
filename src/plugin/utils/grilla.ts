@@ -63,7 +63,7 @@ function stripes(largo: number, grid: GridSpec): Array<[number, number]> {
     return Array.from({ length: count }, (_, i) => [inicio + i * paso, section]);
   }
   if (grid.alignment === "MAX") {
-    return Array.from({ length: count }, (_, i) => [largo - offset - section - i * paso, section]).reverse();
+    return Array.from({ length: count }, (_, i): [number, number] => [largo - offset - section - i * paso, section]).reverse();
   }
   return Array.from({ length: count }, (_, i) => [offset + i * paso, section]); // MIN
 }

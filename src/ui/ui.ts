@@ -69,6 +69,9 @@ const statusEl = $("status");
 ($("cancel") as HTMLButtonElement).onclick = () => parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
 
 $("donate").onclick = () => parent.postMessage({ pluginMessage: { type: "open", url: "https://buymeacoffee.com/bochenn" } }, "*");
+$("link-web").onclick = () => parent.postMessage({ pluginMessage: { type: "open", url: "https://crafter.studio" } }, "*");
+$("link-x").onclick = () => parent.postMessage({ pluginMessage: { type: "open", url: "https://x.com/bochenn" } }, "*");
+$("link-linkedin").onclick = () => parent.postMessage({ pluginMessage: { type: "open", url: "https://linkedin.com/in/bochenn" } }, "*");
 
 create.onclick = () => {
   const sections = cards.filter((c) => c.classList.contains("selected")).map((c) => c.dataset.spec);

@@ -1,6 +1,6 @@
 import type { AnatomyElement, Attribute } from "../modelo/tipos.ts";
 import { BADGE_SIZE } from "../utils/marcadores.ts";
-import { verticalFrame, horizontalFrame, text, tableOf, themedFill, card, pillRow, variableChip, FONT_BOLD, keyText, valueText, FONT_MEDIUM, cardHeaderText } from "./frames.ts";
+import { verticalFrame, text, tableOf, themedFill, card, pillRow, variableChip, keyText, valueText, FONT_MEDIUM, cardHeaderText } from "./frames.ts";
 import { themeVars } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, anatomyRow } from "../utils/tabla-anatomy.ts";
 import { hexToRgb } from "../utils/color.ts";

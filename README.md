@@ -96,13 +96,13 @@ Each feature has its **spec** in `specs/`: what it does, what it shows, its outp
 
 This plugin is open source under the **MIT license** (see [`LICENSE`](LICENSE)). You're free to use, modify and improve it, including for commercial purposes — the only requirement is keeping the copyright notice. If you do build on it, a heads-up and a credit to the original plugin are appreciated (a courtesy, not a legal obligation). Feature requests and ideas are welcome.
 
-Created and maintained by **bochenn**. If it saves you time, a donation helps keep the development going: [buymeacoffee.com/bochenn](https://buymeacoffee.com/bochenn).
+Created and maintained by **Leandro Henflen** — [crafter.studio](https://crafter.studio) · [x.com/bochenn](https://x.com/bochenn) · [linkedin.com/in/bochenn](https://linkedin.com/in/bochenn). If it saves you time, a donation helps keep the development going: [buymeacoffee.com/bochenn](https://buymeacoffee.com/bochenn).
 
 ---
 
 ## 📜 License
 
-[MIT](LICENSE) © 2026 bochenn.
+[MIT](LICENSE) © 2026 Leandro Henflen.
 
 The MIT license covers the **original source code** of this project. It does **not** cover the bundled third-party icon assets — see Credits below.
 
