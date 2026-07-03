@@ -1,10 +1,33 @@
-# Blueprint Specs & Handoff
+<div align="center">
 
 <img src="resources/xBlueprint-icon.png" width="128" height="128" alt="Blueprint Specs & Handoff icon">
 
-A Figma plugin that generates **visual design specs for handoff**: it automatically documents the anatomy, properties, layout, variables and styles of the selected components and frames, right on the canvas.
+# Blueprint Specs & Handoff
 
-The goal is to cut the manual work of documenting components and improve the clarity of the handoff between design, design systems and development.
+**A Figma plugin that generates visual design specs for handoff — right on the canvas.**
+
+It automatically documents the anatomy, properties, layout, variables and styles of your selected components and frames, cutting the manual work of documenting components and improving the clarity of the handoff between design, design systems and development.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Figma Plugin](https://img.shields.io/badge/Figma-Plugin-F24E1E?logo=figma&logoColor=white)](https://www.figma.com/)
+[![Status: Active](https://img.shields.io/badge/Status-Active%20development-brightgreen.svg)](#-status)
+
+</div>
+
+---
+
+## 📑 Contents
+
+- [Features](#-features)
+- [Development](#-development)
+- [Architecture](#-architecture)
+- [Tests](#-tests)
+- [Design documentation](#-design-documentation)
+- [Open source](#-open-source)
+- [License](#-license)
+- [Credits](#-credits)
+- [Status](#-status)
 
 ---
 
@@ -27,7 +50,7 @@ In the panel you pick which specs to include, select a node, and create the spec
 
 ## 🚀 Development
 
-Requires **Figma Desktop** (the web version can't load plugins in development) and **Node.js**.
+> **Requirements:** [Figma Desktop](https://www.figma.com/downloads/) (the web version can't load plugins in development) and [Node.js](https://nodejs.org/).
 
 ```bash
 npm install        # install dependencies
@@ -37,11 +60,12 @@ npm test           # runs the pure-logic tests (node --test)
 ```
 
 **Load the plugin in Figma:**
+
 1. Figma Desktop → **Plugins → Development → Import plugin from manifest…**
 2. Pick this repo's `manifest.json`.
 3. Run it: **Plugins → Development → Blueprint Specs & Handoff**.
 
-After each `npm run build`, run the plugin again to pick up the changes.
+> 💡 After each `npm run build`, run the plugin again to pick up the changes.
 
 ---
 
@@ -49,14 +73,14 @@ After each `npm run build`, run the plugin again to pick up the changes.
 
 TypeScript + [esbuild](https://esbuild.github.io/), no UI frameworks. The plugin has two worlds that talk over `postMessage` (required by Figma):
 
-- `src/plugin/` — runs in the Figma sandbox (the only side with access to `figma.*`).
-- `src/ui/` — the panel (HTML iframe).
+- **`src/plugin/`** — runs in the Figma sandbox (the only side with access to `figma.*`).
+- **`src/ui/`** — the panel (HTML iframe).
 
 The logic is split into:
 
-- **extraction** (`extraccion/`, `traversal/`, `comparacion/`, `inventario/`, `variables/`): Figma nodes → plain data. **Pure** logic, testable without Figma against a minimal `NodoLike` interface.
-- **generation** (`generadores/`): data → Auto Layout frames. Touches `figma.*`; validated by eye.
-- **orchestration** (`main.ts`): validates the selection, branches per section, places the output.
+- **Extraction** (`extraccion/`, `traversal/`, `comparacion/`, `inventario/`, `variables/`) — Figma nodes → plain data. **Pure** logic, testable without Figma against a minimal `NodoLike` interface.
+- **Generation** (`generadores/`) — data → Auto Layout frames. Touches `figma.*`; validated by eye.
+- **Orchestration** (`main.ts`) — validates the selection, branches per section, places the output.
 
 This pure/impure split is what allows ~220 unit tests without mocking the Figma API.
 
@@ -74,7 +98,7 @@ src/plugin/
 └── utils/               # pure helpers (attributes, color, overlays…)
 ```
 
-> Source code (identifiers and comments) is written in Spanish.
+> 📝 Source code (identifiers and comments) is written in Spanish.
 
 ---
 
@@ -90,7 +114,7 @@ The tests cover the decision logic (what is an element, which attributes, what c
 
 ## 📐 Design documentation
 
-Each feature has its **spec** in `specs/`: what it does, what it shows, its output structure, the options that affect it and the key files. They are kept up to date as the features evolve (see `specs/README.md`).
+Each feature has its **spec** in `specs/`: what it does, what it shows, its output structure, the options that affect it and the key files. They are kept up to date as the features evolve (see [`specs/README.md`](specs/README.md)).
 
 ---
 
@@ -98,7 +122,14 @@ Each feature has its **spec** in `specs/`: what it does, what it shows, its outp
 
 This plugin is open source under the **MIT license** (see [`LICENSE`](LICENSE)). You're free to use, modify and improve it, including for commercial purposes — the only requirement is keeping the copyright notice. If you do build on it, a heads-up and a credit to the original plugin are appreciated (a courtesy, not a legal obligation). Feature requests and ideas are welcome.
 
-Created and maintained by **Leandro Henflen** — [crafter.studio](https://crafter.studio) · [x.com/bochenn](https://x.com/bochenn) · [linkedin.com/in/bochenn](https://linkedin.com/in/bochenn). If it saves you time, a donation helps keep the development going: [buymeacoffee.com/bochenn](https://buymeacoffee.com/bochenn).
+Created and maintained by **Leandro Henflen**
+
+[![Website](https://img.shields.io/badge/Website-crafter.studio-000000?logo=safari&logoColor=white)](https://crafter.studio)
+[![X](https://img.shields.io/badge/X-@bochenn-000000?logo=x&logoColor=white)](https://x.com/bochenn)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-bochenn-0A66C2?logo=linkedin&logoColor=white)](https://linkedin.com/in/bochenn)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-bochenn-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/bochenn)
+
+> ☕ If it saves you time, a donation helps keep the development going.
 
 ---
 
@@ -106,7 +137,7 @@ Created and maintained by **Leandro Henflen** — [crafter.studio](https://craft
 
 [MIT](LICENSE) © 2026 Leandro Henflen.
 
-The MIT license covers the **original source code** of this project. It does **not** cover the bundled third-party icon assets — see Credits below.
+The MIT license covers the **original source code** of this project. It does **not** cover the bundled third-party icon assets — see [Credits](#-credits) below.
 
 ---
 
@@ -120,4 +151,4 @@ The MIT license covers the **original source code** of this project. It does **n
 
 ## 📦 Status
 
-In active development.
+🟢 **In active development.**
