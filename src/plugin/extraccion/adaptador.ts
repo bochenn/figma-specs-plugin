@@ -20,15 +20,17 @@ function paintLike(f: Paint): PaintLike {
 }
 
 // Resolves a variable to "Collection/Variable" (or just its name if there's no collection).
-function variableNameVal(id: string): string | undefined {
-  const variable = figma.variables.getVariableById(id);
+async function variableNameVal(id: string): Promise<string | undefined> {
+  const variable = await figma.variables.getVariableByIdAsync(id);
   if (!variable) return undefined;
-  const col = figma.variables.getVariableCollectionById(variable.variableCollectionId);
+  const col = await figma.variables.getVariableCollectionByIdAsync(variable.variableCollectionId);
   return col ? `${stripCollectionPrefix(col.name)}/${variable.name}` : variable.name;
 }
 
 // Converts a real Figma node into NodeLike (only what the pure modules read).
-export function toNodeLike(node: SceneNode): NodeLike {
+// Async: with documentAccess "dynamic-page" the styles/variables/mainComponent
+// APIs only exist in their async variants.
+export async function toNodeLike(node: SceneNode): Promise<NodeLike> {
   const base: NodeLike = { id: node.id, name: node.name, type: node.type };
 
   if ("width" in node) base.width = node.width;
@@ -41,7 +43,7 @@ export function toNodeLike(node: SceneNode): NodeLike {
     base.strokes = node.strokes.map(paintLike);
   }
   if (node.type === "INSTANCE") {
-    const main = (node as InstanceNode).mainComponent;
+    const main = await (node as InstanceNode).getMainComponentAsync();
     if (main) base.mainComponentName = main.name;
   }
   if ("layoutMode" in node && (node.layoutMode === "HORIZONTAL" || node.layoutMode === "VERTICAL" || node.layoutMode === "GRID")) {
@@ -61,7 +63,7 @@ export function toNodeLike(node: SceneNode): NodeLike {
     for (const campo of ["paddingLeft", "paddingTop", "paddingRight", "paddingBottom", "itemSpacing"] as const) {
       const alias = bvLayout[campo];
       if (alias) {
-        const name = variableNameVal(alias.id);
+        const name = await variableNameVal(alias.id);
         if (name) sv[campo] = name;
       }
     }
@@ -73,9 +75,9 @@ export function toNodeLike(node: SceneNode): NodeLike {
       base.gridColumnGap = g.gridColumnGap;
       base.gridRowGap = g.gridRowGap;
       const colVar = bvLayout["gridColumnGap"];
-      if (colVar) { const n = variableNameVal(colVar.id); if (n) base.gridColumnGapVar = n; }
+      if (colVar) { const n = await variableNameVal(colVar.id); if (n) base.gridColumnGapVar = n; }
       const rowVar = bvLayout["gridRowGap"];
-      if (rowVar) { const n = variableNameVal(rowVar.id); if (n) base.gridRowGapVar = n; }
+      if (rowVar) { const n = await variableNameVal(rowVar.id); if (n) base.gridRowGapVar = n; }
     }
   }
   if ("layoutGrids" in node && Array.isArray(node.layoutGrids)) {
@@ -83,15 +85,15 @@ export function toNodeLike(node: SceneNode): NodeLike {
   }
   if ("cornerRadius" in node && typeof node.cornerRadius === "number") base.cornerRadius = node.cornerRadius;
   if ("fillStyleId" in node && typeof node.fillStyleId === "string" && node.fillStyleId !== "") {
-    const style = figma.getStyleById(node.fillStyleId);
+    const style = await figma.getStyleByIdAsync(node.fillStyleId);
     if (style) base.fillStyleName = style.name;
   }
   if ("strokeStyleId" in node && typeof node.strokeStyleId === "string" && node.strokeStyleId !== "") {
-    const style = figma.getStyleById(node.strokeStyleId);
+    const style = await figma.getStyleByIdAsync(node.strokeStyleId);
     if (style) base.strokeStyleName = style.name;
   }
   if ("textStyleId" in node && typeof node.textStyleId === "string" && node.textStyleId !== "") {
-    const style = figma.getStyleById(node.textStyleId);
+    const style = await figma.getStyleByIdAsync(node.textStyleId);
     if (style) base.textStyleName = style.name;
   }
   if (node.type === "TEXT") {
@@ -128,29 +130,29 @@ export function toNodeLike(node: SceneNode): NodeLike {
       topLeftRadius?: VariableAlias;
     };
     if (bv.fills && bv.fills.length > 0) {
-      const name = variableNameVal(bv.fills[0].id);
+      const name = await variableNameVal(bv.fills[0].id);
       if (name) base.fillVariableName = name;
     }
     if (bv.strokes && bv.strokes.length > 0) {
-      const name = variableNameVal(bv.strokes[0].id);
+      const name = await variableNameVal(bv.strokes[0].id);
       if (name) base.strokeVariableName = name;
     }
     if (bv.width) {
-      const name = variableNameVal(bv.width.id);
+      const name = await variableNameVal(bv.width.id);
       if (name) base.widthVariableName = name;
     }
     if (bv.height) {
-      const name = variableNameVal(bv.height.id);
+      const name = await variableNameVal(bv.height.id);
       if (name) base.heightVariableName = name;
     }
     // The uniform radius is bound per corner; topLeftRadius represents the whole.
     if (bv.topLeftRadius) {
-      const name = variableNameVal(bv.topLeftRadius.id);
+      const name = await variableNameVal(bv.topLeftRadius.id);
       if (name) base.cornerRadiusVar = name;
     }
   }
   if ("children" in node) {
-    base.children = node.children.map((c) => toNodeLike(c));
+    base.children = await Promise.all(node.children.map((c) => toNodeLike(c)));
   }
   return base;
 }

@@ -55,15 +55,16 @@ function finalizar(frame: FrameNode, node: SceneNode): void {
 }
 
 // Builds the NormSet for pure extraction from the real Component Set.
-function normalizarSet(componentSet: ComponentSetNode): NormSet {
+async function normalizarSet(componentSet: ComponentSetNode): Promise<NormSet> {
   const properties: Record<string, string[]> = {};
   const groups = componentSet.variantGroupProperties;
   for (const name of Object.keys(groups)) {
     properties[name] = groups[name].values;
   }
-  const variants = componentSet.children
-    .filter((c): c is ComponentNode => c.type === "COMPONENT")
-    .map((c) => ({ variantProperties: c.variantProperties ?? {}, root: toNodeLike(c) }));
+  const componentes = componentSet.children.filter((c): c is ComponentNode => c.type === "COMPONENT");
+  const variants = await Promise.all(
+    componentes.map(async (c) => ({ variantProperties: c.variantProperties ?? {}, root: await toNodeLike(c) })),
+  );
   const defaultProps = componentSet.defaultVariant?.variantProperties ?? {};
   return { properties, variants, defaultProps };
 }
@@ -86,12 +87,12 @@ function instanciasAnidadas(node: SceneNode): InstanceNode[] {
 // duplicates, without the main set, and without components that have no variants.
 // Traverses ALL variants (not just the default), so as not to miss subcomponents
 // that appear only in some versions (e.g. Badge).
-function setsAnidados(componentSet: ComponentSetNode): ComponentSetNode[] {
+async function setsAnidados(componentSet: ComponentSetNode): Promise<ComponentSetNode[]> {
   const res: ComponentSetNode[] = [];
   const vistos = new Set<string>([componentSet.id]);
   for (const variant of componentSet.children) {
     for (const inst of instanciasAnidadas(variant)) {
-      const set = resolveComponentSet(inst);
+      const set = await resolveComponentSet(inst);
       if (!set || vistos.has(set.id)) continue;
       vistos.add(set.id);
       res.push(set);
@@ -124,56 +125,56 @@ async function sectionFor(node: SceneNode, section: Section, opts: OpcionesGen):
   if (section === "anatomy") {
     if (!TIPOS_VALIDOS.includes(node.type)) return [await aviso("Anatomy needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
     const maxLevel = opts.anatomyDepth === "self" ? 0 : opts.anatomyDepth === "all" ? Infinity : 1;
-    const sections = [await anatomySection(node, extractAnatomy(toNodeLike(node), opts.itemize, { maxLevel, includeRoot: true, deepTexts: true }), opts.table)];
+    const sections = [await anatomySection(node, extractAnatomy(await toNodeLike(node), opts.itemize, { maxLevel, includeRoot: true, deepTexts: true }), opts.table)];
     if (opts.nested) {
       for (const inst of instanciasAnidadas(node)) {
-        sections.push(await anatomySection(inst, extractAnatomy(toNodeLike(inst), opts.itemize, { maxLevel, includeRoot: true, deepTexts: true }), opts.table));
+        sections.push(await anatomySection(inst, extractAnatomy(await toNodeLike(inst), opts.itemize, { maxLevel, includeRoot: true, deepTexts: true }), opts.table));
       }
     }
     return sections;
   }
   if (section === "properties") {
-    const componentSet = resolveComponentSet(node);
+    const componentSet = await resolveComponentSet(node);
     if (!componentSet) return [await aviso("Properties needs a component with variants.")];
-    const setNorm = normalizarSet(componentSet);
+    const setNorm = await normalizarSet(componentSet);
     // Properties no longer uses the diff (takes info from the component set); [] is passed.
     const sections = [await propertiesSection(componentSet, [], setNorm.defaultProps, opts.columns)];
     if (opts.nested) {
-      for (const set of setsAnidados(componentSet)) {
-        sections.push(await propertiesSection(set, [], normalizarSet(set).defaultProps, opts.columns));
+      for (const set of await setsAnidados(componentSet)) {
+        sections.push(await propertiesSection(set, [], (await normalizarSet(set)).defaultProps, opts.columns));
       }
     }
     return sections;
   }
   if (section === "layout") {
     if (!TIPOS_VALIDOS.includes(node.type)) return [await aviso("Layout and Spacing needs a FRAME, COMPONENT or INSTANCE.")];
-    return [await layoutSection(node, extractLayout(toNodeLike(node), opts.itemize), opts.columns, opts.hideOuter, opts.itemize, opts.measureChildren)];
+    return [await layoutSection(node, extractLayout(await toNodeLike(node), opts.itemize), opts.columns, opts.hideOuter, opts.itemize, opts.measureChildren)];
   }
   if (section === "data") {
     if (!TIPOS_VALIDOS.includes(node.type)) return [await aviso("Data needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
-    return [await dataSection(node.name, serializeAnatomy(extractAnatomy(toNodeLike(node))))];
+    return [await dataSection(node.name, serializeAnatomy(extractAnatomy(await toNodeLike(node))))];
   }
   if (section === "styling") {
     if (opts.stylingTotal) return [await stylingSection(node.name, await documentInventory(), true)];
     if (!TIPOS_VALIDOS.includes(node.type)) return [await aviso("Styling Inventory needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
-    return [await stylingSection(node.name, groupInventory(collectStyles(toNodeLike(node))), false)];
+    return [await stylingSection(node.name, groupInventory(collectStyles(await toNodeLike(node))), false)];
   }
   if (section === "modes") {
     if (!TIPOS_VALIDOS.includes(node.type)) return [await aviso("Modes needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
-    return [await modesSection(node, groupModes(collectModes(node)), opts.columns)];
+    return [await modesSection(node, groupModes(await collectModes(node)), opts.columns)];
   }
   if (section === "twoway") {
-    const componentSet = resolveComponentSet(node);
+    const componentSet = await resolveComponentSet(node);
     if (!componentSet) return [await aviso("Two-Way needs a component with variants.")];
-    const setNorm = normalizarSet(componentSet);
+    const setNorm = await normalizarSet(componentSet);
     const dosway = extractTwoWay(setNorm);
     if (!dosway) return [await aviso("Two-Way needs at least two variant properties.")];
     return [await twoWaySection(componentSet, dosway, setNorm.defaultProps, opts.columns)];
   }
   // complete
-  const componentSet = resolveComponentSet(node);
+  const componentSet = await resolveComponentSet(node);
   if (!componentSet) return [await aviso("Complete needs a component with variants.")];
-  const setNorm = normalizarSet(componentSet);
+  const setNorm = await normalizarSet(componentSet);
   return await completeSection(componentSet.name, extractCompleteAnatomy(setNorm), extractCompleteLayout(setNorm), opts.columns);
 }
 
