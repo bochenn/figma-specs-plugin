@@ -19,11 +19,11 @@ function variablesColorDe(node: SceneNode): { id: string; appliedAs: string }[] 
 }
 
 // Formats a color variable's value in a mode: hex, alias or "—".
-function colorValue(variable: Variable, modeId: string): string {
+async function colorValue(variable: Variable, modeId: string): Promise<string> {
   const raw = variable.valuesByMode[modeId];
   if (raw === undefined || raw === null) return "—";
   if (typeof raw === "object" && "type" in raw && raw.type === "VARIABLE_ALIAS") {
-    const alias = figma.variables.getVariableById(raw.id);
+    const alias = await figma.variables.getVariableByIdAsync(raw.id);
     return alias ? `→ ${alias.name}` : "→ (alias)";
   }
   if (typeof raw === "object" && "r" in raw) {
@@ -34,15 +34,18 @@ function colorValue(variable: Variable, modeId: string): string {
 
 // Visits a node: emits its color-variable entries and descends through its children,
 // also inside the instances (to reach the nested components).
-function visitar(node: SceneNode, entries: ModeEntry[]): void {
+async function visitar(node: SceneNode, entries: ModeEntry[]): Promise<void> {
   for (const { id, appliedAs } of variablesColorDe(node)) {
-    const variable = figma.variables.getVariableById(id);
+    const variable = await figma.variables.getVariableByIdAsync(id);
     if (!variable || variable.resolvedType !== "COLOR") continue;
-    const collection = figma.variables.getVariableCollectionById(variable.variableCollectionId);
+    const collection = await figma.variables.getVariableCollectionByIdAsync(variable.variableCollectionId);
     if (!collection || collection.modes.length < 2) continue;
 
     const modes = collection.modes.map((m) => ({ modeId: m.modeId, name: m.name }));
-    const values: ModeValue[] = modes.map((m) => ({ modeId: m.modeId, value: colorValue(variable, m.modeId) }));
+    const values: ModeValue[] = [];
+    for (const m of modes) {
+      values.push({ modeId: m.modeId, value: await colorValue(variable, m.modeId) });
+    }
     entries.push({
       collectionName: collection.name,
       collectionId: collection.id,
@@ -54,13 +57,13 @@ function visitar(node: SceneNode, entries: ModeEntry[]): void {
     });
   }
   if ("children" in node) {
-    for (const child of node.children) visitar(child, entries);
+    for (const child of node.children) await visitar(child, entries);
   }
 }
 
 // Collects the mode entries of the selection (root + descendants).
-export function collectModes(node: SceneNode): ModeEntry[] {
+export async function collectModes(node: SceneNode): Promise<ModeEntry[]> {
   const entries: ModeEntry[] = [];
-  visitar(node, entries);
+  await visitar(node, entries);
   return entries;
 }

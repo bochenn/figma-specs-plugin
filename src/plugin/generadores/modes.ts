@@ -50,7 +50,7 @@ async function collectionSubsection(selected: SceneNode, collection: ModesCollec
   const sub = verticalFrame(collection.collectionName, 40);
   sub.appendChild(await text(collection.collectionName, 36));
   const figmaCollection = collection.collectionId
-    ? figma.variables.getVariableCollectionById(collection.collectionId)
+    ? await figma.variables.getVariableCollectionByIdAsync(collection.collectionId)
     : null;
   const blocks: FrameNode[] = [];
   for (const mode of collection.modes) {
