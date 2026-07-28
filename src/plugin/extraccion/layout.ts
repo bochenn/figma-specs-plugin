@@ -1,6 +1,6 @@
 import type { NodeLike, LayoutSpec } from "../modelo/tipos.ts";
 import { traverseTree } from "../traversal/recorrer.ts";
-import { attributeColor, solidHex } from "../utils/atributos.ts";
+import { attributeColor, solidHex, paintsOff, borderIconKey, borderDetail } from "../utils/atributos.ts";
 
 // Translates Figma's alignment value to readable text.
 export function alignment(value: string | undefined): string {
@@ -34,7 +34,14 @@ export function textStyleOf(node: NodeLike): { name?: string; summary?: string }
 // Builds the LayoutSpec of a single Auto Layout node.
 export function layoutSpecOf(node: NodeLike, depth = 0): LayoutSpec {
   const fill = attributeColor("fill", { hex: solidHex(node.fills), variableName: node.fillVariableName, styleName: node.fillStyleName });
+  if (fill && paintsOff(node.fills)) fill.visibilityOff = true;
   const stroke = attributeColor("stroke", { hex: solidHex(node.strokes), variableName: node.strokeVariableName, styleName: node.strokeStyleName });
+  if (stroke && paintsOff(node.strokes)) stroke.visibilityOff = true;
+  if (stroke && node.strokeWeights) {
+    stroke.icon = borderIconKey(node.strokeWeights);
+    const detail = borderDetail(node.strokeWeights, node.strokeDashed);
+    if (detail) stroke.detail = detail;
+  }
   const spec: LayoutSpec = {
     elementName: node.name,
     type: node.type,

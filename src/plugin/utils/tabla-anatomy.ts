@@ -8,7 +8,11 @@ export const HEADERS_ANATOMY = ["#", "Name", "Type", "Attributes"];
 // than the normal list.
 export function anatomyRow(badgeNum: number, element: AnatomyElement): string[] {
   const attrs = element.attributes
-    .map((a) => (a.rawValue ? `${a.key}: ${a.value} (${a.rawValue})` : `${a.key}: ${a.value}`))
+    .map((a) => {
+      let base = a.rawValue ? `${a.key}: ${a.value} (${a.rawValue})` : `${a.key}: ${a.value}`;
+      if (a.detail) base += ` · ${a.detail}`;
+      return a.visibilityOff ? `${base} · Visibility Off` : base;
+    })
     .join(", ");
   const name = depthPrefix(element.depth ?? 0) + element.name;
   return [String(badgeNum), name, element.type, attrs];

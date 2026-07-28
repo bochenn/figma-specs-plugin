@@ -4,7 +4,7 @@ import { verticalFrame, text, tableOf, themedFill, card, pillRow, variableChip, 
 import { themeVars } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, anatomyRow } from "../utils/tabla-anatomy.ts";
 import { hexToRgb } from "../utils/color.ts";
-import { nodeTypeIcon, resizingIconKey, dimensionIndicator } from "./iconos.ts";
+import { nodeTypeIcon, resizingIconKey, dimensionIndicator, nodeIcon } from "./iconos.ts";
 import { parseVariants } from "../utils/anatomy-variantes.ts";
 import { placeBadges, type BBox } from "../utils/badges-anatomy.ts";
 
@@ -59,14 +59,23 @@ async function attributeRow(attr: Attribute): Promise<FrameNode> {
     nodes.push(swatch);
   }
   nodes.push(await keyText(`${attr.key}:`));
+  // border sides icon (which sides carry the stroke), before the value.
+  if (attr.icon) nodes.push(nodeIcon(attr.icon, 16));
   if (attr.format !== "HARDCODED") {
     nodes.push(await variableChip(attr.value));
     if (attr.rawValue) nodes.push(await valueText(`(${attr.rawValue})`));
   } else {
     nodes.push(await valueText(attr.value));
   }
+  // stroke weight/style summary ("1px · Dashed", "top 1px · left 2px").
+  if (attr.detail) nodes.push(await valueText(attr.detail));
   // width/height: the mode (Fixed/Hug/Fill) goes at the end as an icon box + text.
   if (resizingIconKey(attr.key, attr.prefix)) nodes.push(await dimensionIndicator(attr.key, attr.prefix!));
+  // paint toggled off: closed-eye icon + label, like Figma's hidden indicator.
+  if (attr.visibilityOff) {
+    nodes.push(nodeIcon("hidden", 16));
+    nodes.push(await valueText("Visibility Off"));
+  }
   return pillRow(nodes);
 }
 

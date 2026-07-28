@@ -32,6 +32,7 @@ async function propertyRow(iconKey: string, label: string, parts: ValuePart[], m
   const nodes: SceneNode[] = [nodeIcon(iconKey), await keyText(`${label}:`)];
   for (const p of parts) {
     if ("chip" in p) nodes.push(await variableChip(p.chip));
+    else if ("icon" in p) nodes.push(nodeIcon(p.icon, 16));
     else nodes.push(await valueText(p.text));
   }
   // width/height: the mode (Fixed/Hug/Fill) goes at the end as an icon box + text.

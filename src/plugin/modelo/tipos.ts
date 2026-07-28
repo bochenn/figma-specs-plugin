@@ -20,6 +20,7 @@ export interface PaintLike {
   type: string;
   color?: { r: number; g: number; b: number };
   gradient?: GradientData;
+  visible?: boolean;    // false when the paint's visibility toggle is off
 }
 
 // Minimal interface of a Figma node: only what the pure modules read.
@@ -35,6 +36,9 @@ export interface NodeLike {
   opacity?: number;
   fills?: ReadonlyArray<PaintLike>;
   strokes?: ReadonlyArray<PaintLike>;
+  // stroke detail (only when there are strokes): weight per side and dash style.
+  strokeWeights?: { top: number; right: number; bottom: number; left: number };
+  strokeDashed?: boolean;
   // instances only:
   mainComponentName?: string;
   // layout (only on Auto Layout nodes):
@@ -84,6 +88,9 @@ export interface Attribute {
   rawValue?: string;    // resolved hex (for variable/style)
   swatchHex?: string;   // swatch color (present on color attributes)
   prefix?: string;     // resizing mode for width/height ("Fixed" | "Hug" | "Fill")
+  visibilityOff?: boolean; // every paint of the property has its visibility toggle off
+  icon?: string;        // UI3 icon key drawn next to the key (border sides)
+  detail?: string;      // extra text after the value (stroke weight/style)
 }
 
 export interface AnatomyElement {

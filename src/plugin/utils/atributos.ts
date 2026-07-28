@@ -72,6 +72,43 @@ export function solidHex(
   return p && p.color ? aHex(p.color) : undefined;
 }
 
+// True if the property is toggled off: there are paints and ALL have visible false.
+// ponytail: mixed lists (some paint on, some off) count as visible.
+export function paintsOff(paints: ReadonlyArray<{ visible?: boolean }> | undefined): boolean {
+  return !!paints && paints.length > 0 && paints.every((p) => p.visible === false);
+}
+
+type StrokeWeights = { top: number; right: number; bottom: number; left: number };
+
+// Sides code (T/R/B/L order) → UI3 border icon name.
+const BORDER_ICONS: Record<string, string> = {
+  "": "border-none",
+  T: "border-top", R: "border-right", B: "border-bottom", L: "border-left",
+  TR: "border-top-right", TB: "border-top-bottom", TL: "border-top-left",
+  RB: "border-bottom-right", RL: "border-left-right", BL: "border-bottom-left",
+  TRB: "border-top-right-bottom", TRL: "border-top-left-right",
+  TBL: "border-top-left-bottom", RBL: "border-bottom-left-right",
+  TRBL: "border",
+};
+
+// UI3 icon key for the sides that have a stroke (weight > 0).
+export function borderIconKey(w: StrokeWeights): string {
+  const code = (w.top > 0 ? "T" : "") + (w.right > 0 ? "R" : "") + (w.bottom > 0 ? "B" : "") + (w.left > 0 ? "L" : "");
+  return BORDER_ICONS[code];
+}
+
+// Stroke weight/style summary: "1px", "top 1px · left 2px", with "· Dashed" if dashed.
+export function borderDetail(w: StrokeWeights, dashed?: boolean): string {
+  const sides: [string, number][] = [["top", w.top], ["right", w.right], ["bottom", w.bottom], ["left", w.left]];
+  const activos = sides.filter(([, peso]) => peso > 0);
+  let texto: string;
+  if (activos.length === 0) texto = "";
+  else if (activos.every(([, peso]) => peso === activos[0][1])) texto = formatSpacing(activos[0][1], currentUnit(), true);
+  else texto = activos.map(([lado, peso]) => `${lado} ${formatSpacing(peso, currentUnit(), true)}`).join(" · ");
+  if (dashed) texto = texto ? `${texto} · Dashed` : "Dashed";
+  return texto;
+}
+
 // Maps Figma's resizing mode to its label ("FIXED" → "Fixed", etc.).
 function modoDeSizing(s?: string): string | undefined {
   if (s === "HUG") return "Hug";
@@ -101,14 +138,25 @@ export function readAttributes(node: NodeLike): Attribute[] {
     variableName: node.fillVariableName,
     styleName: node.fillStyleName,
   });
-  if (bg) attributes.push(bg);
+  if (bg) {
+    if (paintsOff(node.fills)) bg.visibilityOff = true;
+    attributes.push(bg);
+  }
 
   const bd = attributeColor("border-color", {
     hex: solidHex(node.strokes),
     variableName: node.strokeVariableName,
     styleName: node.strokeStyleName,
   });
-  if (bd) attributes.push(bd);
+  if (bd) {
+    if (paintsOff(node.strokes)) bd.visibilityOff = true;
+    if (node.strokeWeights) {
+      bd.icon = borderIconKey(node.strokeWeights);
+      const detail = borderDetail(node.strokeWeights, node.strokeDashed);
+      if (detail) bd.detail = detail;
+    }
+    attributes.push(bd);
+  }
 
   if (typeof node.width === "number") {
     attributes.push(dimensionAtributo("width", node.width, node.widthVariableName, node.layoutSizingHorizontal));

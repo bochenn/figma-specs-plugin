@@ -8,8 +8,8 @@ export function dimensionText(resizing: string, px: number, unit: Unit, varName?
   return `${resizing} ${spacingLabel(px, unit, varName)}`;
 }
 
-// A part of a property's value in the panel: plain text or variable chip.
-export type ValuePart = { text: string } | { chip: string };
+// A part of a property's value in the panel: plain text, variable chip or icon.
+export type ValuePart = { text: string } | { chip: string } | { icon: string };
 
 // Width/Height: the mode (Fixed/Hug/Fill) no longer goes here (shown as an indicator
 // at the end of the row). With variable → chip(name) + (value); without → value.
@@ -19,13 +19,23 @@ export function dimValue(px: number, unit: Unit, varName?: string): ValuePart[] 
 }
 
 // Fill/Stroke: variable/style → chip(name) + (rawValue); hardcoded → text(value).
+// Stroke rows add the border-sides icon before and the weight/style after the value.
+// Paint toggled off → closed-eye icon + "Visibility Off" at the end.
 export function colorValue(attr: Attribute): ValuePart[] {
+  const parts: ValuePart[] = [];
+  if (attr.icon) parts.push({ icon: attr.icon });
   if (attr.format !== "HARDCODED") {
-    const parts: ValuePart[] = [{ chip: attr.value }];
+    parts.push({ chip: attr.value });
     if (attr.rawValue) parts.push({ text: `(${attr.rawValue})` });
-    return parts;
+  } else {
+    parts.push({ text: attr.value });
   }
-  return [{ text: attr.value }];
+  if (attr.detail) parts.push({ text: attr.detail });
+  if (attr.visibilityOff) {
+    parts.push({ icon: "hidden" });
+    parts.push({ text: "Visibility Off" });
+  }
+  return parts;
 }
 
 // Padding/Gap: with variable → chip(name) + (value); without → text(value).

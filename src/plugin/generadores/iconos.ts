@@ -36,6 +36,23 @@ import iconAlignHTop from "../../../resources/figma-UI3/icon.16.autolayoutgrid.h
 import iconAlignHCenter from "../../../resources/figma-UI3/icon.16.autolayoutgrid.horizontal.center.svg";
 import iconAlignHBottom from "../../../resources/figma-UI3/icon.16.autolayoutgrid.horizontal.bottom.svg";
 import iconAlignBaseline from "../../../resources/figma-UI3/icon.16.autolayout.alignment.baseline.svg";
+import iconHidden from "../../../resources/figma-UI3/icon.24.hidden.small.svg";
+import iconBorder from "../../../resources/figma-UI3/icon.24.border.small.svg";
+import iconBorderNone from "../../../resources/figma-UI3/icon.24.border-none.small.svg";
+import iconBorderTop from "../../../resources/figma-UI3/icon.24.border-top.small.svg";
+import iconBorderBottom from "../../../resources/figma-UI3/icon.24.border-bottom.small.svg";
+import iconBorderLeft from "../../../resources/figma-UI3/icon.24.border-left.small.svg";
+import iconBorderRight from "../../../resources/figma-UI3/icon.24.border-right.small.svg";
+import iconBorderTopRight from "../../../resources/figma-UI3/icon.24.border-top-right.small.svg";
+import iconBorderTopBottom from "../../../resources/figma-UI3/icon.24.border-top-bottom.small.svg";
+import iconBorderTopLeft from "../../../resources/figma-UI3/icon.24.border-top-left.small.svg";
+import iconBorderBottomRight from "../../../resources/figma-UI3/icon.24.border-bottom-right.small.svg";
+import iconBorderLeftRight from "../../../resources/figma-UI3/icon.24.border-left-right.small.svg";
+import iconBorderBottomLeft from "../../../resources/figma-UI3/icon.24.border-bottom-left.small.svg";
+import iconBorderTopLeftRight from "../../../resources/figma-UI3/icon.24.border-top-left-right.small.svg";
+import iconBorderTopLeftBottom from "../../../resources/figma-UI3/icon.24.border-top-left-bottom.small.svg";
+import iconBorderBottomLeftRight from "../../../resources/figma-UI3/icon.24.border-bottom-left-right.small.svg";
+import iconBorderTopRightBottom from "../../../resources/figma-UI3/icon.24.border-top-right-bottom.small.svg";
 
 // logical key → raw SVG from the UI3 library.
 const UI3_ICONS: Record<string, string> = {
@@ -66,6 +83,23 @@ const UI3_ICONS: Record<string, string> = {
   "height-fill": iconHeightFill,
   "width-hug": iconWidthHug,
   "height-hug": iconHeightHug,
+  hidden: iconHidden,
+  border: iconBorder,
+  "border-none": iconBorderNone,
+  "border-top": iconBorderTop,
+  "border-bottom": iconBorderBottom,
+  "border-left": iconBorderLeft,
+  "border-right": iconBorderRight,
+  "border-top-right": iconBorderTopRight,
+  "border-top-bottom": iconBorderTopBottom,
+  "border-top-left": iconBorderTopLeft,
+  "border-bottom-right": iconBorderBottomRight,
+  "border-left-right": iconBorderLeftRight,
+  "border-bottom-left": iconBorderBottomLeft,
+  "border-top-left-right": iconBorderTopLeftRight,
+  "border-top-left-bottom": iconBorderTopLeftBottom,
+  "border-bottom-left-right": iconBorderBottomLeftRight,
+  "border-top-right-bottom": iconBorderTopRightBottom,
 };
 
 // Resizing icon key (Fixed/Hug/Fill) for a width/height row,
