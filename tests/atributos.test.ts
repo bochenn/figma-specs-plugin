@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { readAttributes } from "../src/plugin/utils/atributos.ts";
+import { readAttributes, borderIconKey, borderDetail } from "../src/plugin/utils/atributos.ts";
 import type { NodeLike } from "../src/plugin/modelo/tipos.ts";
 
 test("fill SOLID hardcoded → background-color HARDCODED con swatchHex", () => {
@@ -156,4 +156,79 @@ test("text: agrega rows Alignment y Case", () => {
 test("text con letter-spacing 0 → muestra la row Letter Spacing", () => {
   const node: NodeLike = { id: "t", name: "t", type: "TEXT", fontFamily: "Inter", fontSize: 14, letterSpacing: { unit: "px", value: 0 } };
   assert.equal(readAttributes(node).find((a) => a.key === "Letter Spacing")?.value, "0px");
+});
+
+test("fill con visibility off → visibilityOff true", () => {
+  const node: NodeLike = {
+    id: "x", name: "x", type: "FRAME",
+    fills: [{ type: "SOLID", color: { r: 1, g: 0, b: 0 }, visible: false }],
+  };
+  const bg = readAttributes(node).find((a) => a.key === "background-color");
+  assert.equal(bg?.visibilityOff, true);
+  assert.equal(bg?.value, "#FF0000");
+});
+
+test("stroke con visibility off → visibilityOff true", () => {
+  const node: NodeLike = {
+    id: "x", name: "x", type: "FRAME",
+    strokes: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 }, visible: false }],
+  };
+  assert.equal(readAttributes(node).find((a) => a.key === "border-color")?.visibilityOff, true);
+});
+
+test("fill visible (o mixto) → sin visibilityOff", () => {
+  const visible: NodeLike = {
+    id: "x", name: "x", type: "FRAME",
+    fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
+  };
+  assert.equal(readAttributes(visible).find((a) => a.key === "background-color")?.visibilityOff, undefined);
+  const mixto: NodeLike = {
+    id: "x", name: "x", type: "FRAME",
+    fills: [
+      { type: "SOLID", color: { r: 1, g: 1, b: 1 }, visible: false },
+      { type: "SOLID", color: { r: 0, g: 0, b: 0 } },
+    ],
+  };
+  assert.equal(readAttributes(mixto).find((a) => a.key === "background-color")?.visibilityOff, undefined);
+});
+
+test("borderIconKey: mapea lados activos al icono UI3", () => {
+  const w = (top: number, right: number, bottom: number, left: number) => ({ top, right, bottom, left });
+  assert.equal(borderIconKey(w(1, 1, 1, 1)), "border");
+  assert.equal(borderIconKey(w(0, 0, 0, 0)), "border-none");
+  assert.equal(borderIconKey(w(1, 0, 0, 0)), "border-top");
+  assert.equal(borderIconKey(w(0, 1, 0, 0)), "border-right");
+  assert.equal(borderIconKey(w(0, 0, 1, 0)), "border-bottom");
+  assert.equal(borderIconKey(w(0, 0, 0, 1)), "border-left");
+  assert.equal(borderIconKey(w(1, 1, 0, 0)), "border-top-right");
+  assert.equal(borderIconKey(w(1, 0, 1, 0)), "border-top-bottom");
+  assert.equal(borderIconKey(w(1, 0, 0, 1)), "border-top-left");
+  assert.equal(borderIconKey(w(0, 1, 1, 0)), "border-bottom-right");
+  assert.equal(borderIconKey(w(0, 1, 0, 1)), "border-left-right");
+  assert.equal(borderIconKey(w(0, 0, 1, 1)), "border-bottom-left");
+  assert.equal(borderIconKey(w(1, 1, 1, 0)), "border-top-right-bottom");
+  assert.equal(borderIconKey(w(1, 1, 0, 1)), "border-top-left-right");
+  assert.equal(borderIconKey(w(1, 0, 1, 1)), "border-top-left-bottom");
+  assert.equal(borderIconKey(w(0, 1, 1, 1)), "border-bottom-left-right");
+});
+
+test("borderDetail: uniforme, por lado y dashed", () => {
+  assert.equal(borderDetail({ top: 1, right: 1, bottom: 1, left: 1 }), "1px");
+  assert.equal(borderDetail({ top: 1, right: 0, bottom: 0, left: 2 }), "top 1px · left 2px");
+  assert.equal(borderDetail({ top: 2, right: 2, bottom: 2, left: 2 }, true), "2px · Dashed");
+  assert.equal(borderDetail({ top: 0, right: 0, bottom: 0, left: 0 }, true), "Dashed");
+  assert.equal(borderDetail({ top: 0, right: 0, bottom: 0, left: 0 }), "");
+});
+
+test("readAttributes: stroke con weights por lado → icon y detail en border-color", () => {
+  const node: NodeLike = {
+    id: "x", name: "x", type: "FRAME",
+    strokes: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
+    strokeWeights: { top: 1, right: 0, bottom: 0, left: 0 },
+    strokeDashed: true,
+  };
+  const bd = readAttributes(node).find((a) => a.key === "border-color");
+  assert.equal(bd?.icon, "border-top");
+  // un solo lado activo: el icono ya dice cuál; el detail solo lleva el espesor.
+  assert.equal(bd?.detail, "1px · Dashed");
 });

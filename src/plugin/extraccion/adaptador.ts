@@ -4,19 +4,18 @@ import { stripCollectionPrefix } from "../utils/nombre-variable.ts";
 
 // Converts a Figma Paint to PaintLike: solid color or gradient stops.
 function paintLike(f: Paint): PaintLike {
-  if (f.type === "SOLID") return { type: f.type, color: f.color };
+  const p: PaintLike = { type: f.type };
+  if (f.visible === false) p.visible = false;
+  if (f.type === "SOLID") p.color = f.color;
   if (f.type.startsWith("GRADIENT_")) {
     const g = f as GradientPaint;
-    return {
+    p.gradient = {
       type: f.type,
-      gradient: {
-        type: f.type,
-        gradientStops: g.gradientStops.map((s) => ({ position: s.position, color: { r: s.color.r, g: s.color.g, b: s.color.b, a: s.color.a } })),
-        gradientTransform: g.gradientTransform.map((row) => [...row]),
-      },
+      gradientStops: g.gradientStops.map((s) => ({ position: s.position, color: { r: s.color.r, g: s.color.g, b: s.color.b, a: s.color.a } })),
+      gradientTransform: g.gradientTransform.map((row) => [...row]),
     };
   }
-  return { type: f.type };
+  return p;
 }
 
 // Resolves a variable to "Collection/Variable" (or just its name if there's no collection).
@@ -41,6 +40,26 @@ export async function toNodeLike(node: SceneNode): Promise<NodeLike> {
   }
   if ("strokes" in node && Array.isArray(node.strokes)) {
     base.strokes = node.strokes.map(paintLike);
+    if (node.strokes.length > 0) {
+      // Per-side weights (frames/rects/instances); uniform weight for the rest.
+      const sw = node as unknown as {
+        strokeWeight?: number | symbol;
+        strokeTopWeight?: number; strokeRightWeight?: number;
+        strokeBottomWeight?: number; strokeLeftWeight?: number;
+        dashPattern?: readonly number[];
+      };
+      if (typeof sw.strokeTopWeight === "number") {
+        base.strokeWeights = {
+          top: sw.strokeTopWeight,
+          right: sw.strokeRightWeight ?? 0,
+          bottom: sw.strokeBottomWeight ?? 0,
+          left: sw.strokeLeftWeight ?? 0,
+        };
+      } else if (typeof sw.strokeWeight === "number") {
+        base.strokeWeights = { top: sw.strokeWeight, right: sw.strokeWeight, bottom: sw.strokeWeight, left: sw.strokeWeight };
+      }
+      if (Array.isArray(sw.dashPattern) && sw.dashPattern.length > 0) base.strokeDashed = true;
+    }
   }
   if (node.type === "INSTANCE") {
     const main = await (node as InstanceNode).getMainComponentAsync();

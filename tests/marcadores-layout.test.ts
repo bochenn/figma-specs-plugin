@@ -180,3 +180,10 @@ test("groupPadding: por side, omite 0", () => {
 test("groupPadding: uniform con variable lleva shortName", () => {
   assert.deepEqual(groupPadding({ left: 16, top: 16, right: 16, bottom: 16 }, { paddingLeft: "space/padding-1x", paddingTop: "space/padding-1x", paddingRight: "space/padding-1x", paddingBottom: "space/padding-1x" }), [{ key: "padding", eje: "v", value: 16, name: "padding-1x" }]);
 });
+
+test("colorValue: visibilityOff → agrega icon hidden + Visibility Off", () => {
+  assert.deepEqual(
+    colorValue({ key: "fill", value: "#000000", format: "HARDCODED", visibilityOff: true }),
+    [{ text: "#000000" }, { icon: "hidden" }, { text: "Visibility Off" }],
+  );
+});
