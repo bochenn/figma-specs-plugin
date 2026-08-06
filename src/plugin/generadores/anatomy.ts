@@ -7,6 +7,9 @@ import { hexToRgb } from "../utils/color.ts";
 import { nodeTypeIcon, resizingIconKey, dimensionIndicator, nodeIcon } from "./iconos.ts";
 import { parseVariants } from "../utils/anatomy-variantes.ts";
 import { placeBadges, type BBox } from "../utils/badges-anatomy.ts";
+import { layersTree, type TreeRow } from "./layers-card.ts";
+import { traverseTree } from "../traversal/recorrer.ts";
+import type { NodeLike } from "../modelo/tipos.ts";
 
 const GRAY = (n: number): RGB => ({ r: n, g: n, b: n });
 
@@ -182,6 +185,13 @@ export async function anatomySection(selected: SceneNode, elements: AnatomyEleme
   display.counterAxisSizingMode = "AUTO";
   display.fills = [];
   section.appendChild(display);
+
+  // "Layers" card (same as in Layout & Spacing): full layer tree of the
+  // selection, with the documented node (the root) highlighted.
+  const tree: TreeRow[] = traverseTree(selected as unknown as NodeLike).map((t) => ({
+    name: t.node.name, type: t.node.type, level: (t.path?.length ?? 1) - 1, id: t.node.id,
+  }));
+  display.appendChild(await layersTree(tree, selected.id));
 
   // Artwork: clone of the selected + markers (goes on the LEFT).
   const artwork = figma.createFrame();
