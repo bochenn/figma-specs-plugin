@@ -28,7 +28,7 @@ import iconInstance from "../../../resources/figma-UI3/icon.24.instance.small.sv
 import iconComponent from "../../../resources/figma-UI3/icon.24.component.svg";
 import iconComponentSet from "../../../resources/figma-UI3/icon.24.component.set.svg";
 import iconGroup from "../../../resources/figma-UI3/icon.24.group.small.svg";
-import iconImage from "../../../resources/figma-UI3/icon.24.image.svg";
+import iconPen from "../../../resources/figma-UI3/icon.24.pen.svg";
 import iconAlignVLeft from "../../../resources/figma-UI3/icon.16.autolayoutgrid.vertical.left.svg";
 import iconAlignVCenter from "../../../resources/figma-UI3/icon.16.autolayoutgrid.vertical.center.svg";
 import iconAlignVRight from "../../../resources/figma-UI3/icon.16.autolayoutgrid.vertical.right.svg";
@@ -36,6 +36,18 @@ import iconAlignHTop from "../../../resources/figma-UI3/icon.16.autolayoutgrid.h
 import iconAlignHCenter from "../../../resources/figma-UI3/icon.16.autolayoutgrid.horizontal.center.svg";
 import iconAlignHBottom from "../../../resources/figma-UI3/icon.16.autolayoutgrid.horizontal.bottom.svg";
 import iconAlignBaseline from "../../../resources/figma-UI3/icon.16.autolayout.alignment.baseline.svg";
+// Layer icons for Auto Layout frames (solid bars), used as the layer-type icon.
+import iconAlHTop from "../../../resources/figma-UI3/icon.16.autolayout.horizontal.top.svg";
+import iconAlHCenter from "../../../resources/figma-UI3/icon.16.autolayout.horizontal.center.svg";
+import iconAlHBottom from "../../../resources/figma-UI3/icon.16.autolayout.horizontal.bottom.svg";
+import iconAlVLeft from "../../../resources/figma-UI3/icon.16.autolayout.vertical.left.svg";
+import iconAlVCenter from "../../../resources/figma-UI3/icon.16.autolayout.vertical.center.svg";
+import iconAlVRight from "../../../resources/figma-UI3/icon.16.autolayout.vertical.right.svg";
+import iconAlWrapLeft from "../../../resources/figma-UI3/icon.16.autolayout.wrap.left.svg";
+import iconAlWrapCenter from "../../../resources/figma-UI3/icon.16.autolayout.wrap.center.svg";
+import iconAlWrapRight from "../../../resources/figma-UI3/icon.16.autolayout.wrap.right.svg";
+import iconAlAbsolute from "../../../resources/figma-UI3/icon.16.autolayout.absolute.position.svg";
+import iconSwatch from "../../../resources/figma-UI3/icon.24.swatch.small.svg";
 import iconHidden from "../../../resources/figma-UI3/icon.24.hidden.small.svg";
 import iconBorder from "../../../resources/figma-UI3/icon.24.border.small.svg";
 import iconBorderNone from "../../../resources/figma-UI3/icon.24.border-none.small.svg";
@@ -77,6 +89,16 @@ const UI3_ICONS: Record<string, string> = {
   "align-h-center": iconAlignHCenter,
   "align-h-bottom": iconAlignHBottom,
   "align-baseline": iconAlignBaseline,
+  "al-h-top": iconAlHTop,
+  "al-h-center": iconAlHCenter,
+  "al-h-bottom": iconAlHBottom,
+  "al-v-left": iconAlVLeft,
+  "al-v-center": iconAlVCenter,
+  "al-v-right": iconAlVRight,
+  "al-wrap-left": iconAlWrapLeft,
+  "al-wrap-center": iconAlWrapCenter,
+  "al-wrap-right": iconAlWrapRight,
+  "al-absolute": iconAlAbsolute,
   "width-fixed": iconWidthFixed,
   "height-fixed": iconHeightFixed,
   "width-fill": iconWidthFill,
@@ -84,6 +106,7 @@ const UI3_ICONS: Record<string, string> = {
   "width-hug": iconWidthHug,
   "height-hug": iconHeightHug,
   hidden: iconHidden,
+  swatch: iconSwatch,
   border: iconBorder,
   "border-none": iconBorderNone,
   "border-top": iconBorderTop,
@@ -151,12 +174,14 @@ export function nodeIcon(key: string, tam = 24): SceneNode {
 
 const TYPE_ICONS: Record<string, string> = {
   FRAME: iconFrame, INSTANCE: iconInstance, COMPONENT: iconComponent,
-  COMPONENT_SET: iconComponentSet, GROUP: iconGroup, TEXT: iconText, VECTOR: iconImage,
+  COMPONENT_SET: iconComponentSet, GROUP: iconGroup, TEXT: iconText, VECTOR: iconPen,
 };
 
 // Layer-type icon node (or undefined if there's no icon for that type).
-export function nodeTypeIcon(type: string, tam = 24): SceneNode | undefined {
-  const raw = TYPE_ICONS[type];
+// `iconKey` (from frameIconKey) wins: a frame shows its Auto Layout direction +
+// alignment, or the absolute-position icon, instead of the plain frame one.
+export function nodeTypeIcon(type: string, tam = 24, iconKey?: string): SceneNode | undefined {
+  const raw = (iconKey ? UI3_ICONS[iconKey] : undefined) ?? TYPE_ICONS[type];
   if (!raw) return undefined;
   const svg = raw
     .replace(/width="\d+"/, `width="${tam}"`)

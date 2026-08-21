@@ -1,15 +1,17 @@
 // Page shell of each section: Header, Hero, Feature, Footer, the "specifications"
 // Badge and the anatomyItem wrapper. They touch figma.*. Replaces the old headerBox.ts.
 
-import { verticalFrame, horizontalFrame, text, themedFill, FONT_MEDIUM, FONT_REG } from "./frames.ts";
+import { verticalFrame, horizontalFrame, baselineRow, text, themedFill, FONT_MEDIUM, FONT_REG } from "./frames.ts";
 import { themeVars } from "../utils/variables-tema.ts";
+import { nodeTypeIcon } from "./iconos.ts";
+import { frameIconKey } from "../utils/iconos-frame.ts";
+import { originName } from "../extraccion/resolver.ts";
+import type { NodeLike } from "../modelo/tipos.ts";
 
 const PLUGIN_NAME = "BLUEPRINT SPECS & HANDOFF";
 const BORDER_SHELL: RGB = { r: 0.882, g: 0.882, b: 0.882 }; // #E1E1E1
 const GRAY_DESC: RGB = { r: 0.420, g: 0.447, b: 0.502 };   // #6B7280
 const GRAY_SHELL: RGB = { r: 0.5098, g: 0.5098, b: 0.5098 }; // #828282 (header/footer text)
-const ELEMENT_DESC =
-  "This is a placeholder description of what this element does in the project.";
 export const PAGE_WIDTH = 1980; // minimum page width (can grow if the content is wider)
 
 // Full border #E1E1E1, weight 1.
@@ -131,8 +133,9 @@ export async function hero(titleText: string, description: string): Promise<Fram
   return container;
 }
 
-// Feature: element name (Inter Medium 32) + placeholder description (Inter Regular 16).
-export async function feature(elementName: string): Promise<FrameNode> {
+// Feature: layer-type icon + element name (Inter Medium 48), plus the origin
+// component when the instance was renamed.
+export async function feature(node: SceneNode): Promise<FrameNode> {
   const container = verticalFrame("Feature", 56);
   container.paddingTop = 72;
   container.paddingBottom = 0;
@@ -146,11 +149,19 @@ export async function feature(elementName: string): Promise<FrameNode> {
   container.appendChild(title);
   title.layoutSizingHorizontal = "FILL";
   bottomBorder(title);
-  title.appendChild(await text(elementName, 32, FONT_MEDIUM));
-
-  const desc = await descText(ELEMENT_DESC, 16);
-  title.appendChild(desc);
-  desc.layoutSizingHorizontal = "FILL";
+  const heading = horizontalFrame("Heading", 16);
+  heading.counterAxisAlignItems = "CENTER";
+  const icon = nodeTypeIcon(node.type, 48, frameIconKey(node as unknown as NodeLike));
+  if (icon) heading.appendChild(icon);
+  const titulo = baselineRow("Title", 12);
+  titulo.appendChild(await text(node.name, 48, FONT_MEDIUM));
+  if (node.type === "INSTANCE") {
+    const main = await node.getMainComponentAsync();
+    const origen = main ? originName(node.name, main) : undefined;
+    if (origen) titulo.appendChild(await text(`(Instance of: ${origen})`, 24, FONT_REG, GRAY_DESC));
+  }
+  heading.appendChild(titulo);
+  title.appendChild(heading);
   return container;
 }
 

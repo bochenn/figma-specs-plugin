@@ -1,5 +1,5 @@
 import type { UIMessage, PluginMessage, NormSet, Section } from "./modelo/tipos.ts";
-import { toNodeLike } from "./extraccion/adaptador.ts";
+import { toNodeLike, visibleNode } from "./extraccion/adaptador.ts";
 import { ensureThemeVariables, themeVars } from "./utils/variables-tema.ts";
 import { verticalFrame, text } from "./generadores/frames.ts";
 import { clampColumns } from "./utils/columnas.ts";
@@ -27,6 +27,8 @@ import { twoWaySection } from "./generadores/properties.ts";
 import { extractCompleteAnatomy, extractCompleteLayout } from "./extraccion/properties.ts";
 import { completeSection } from "./generadores/complete.ts";
 import { header, hero, feature, footer, wrapItem, PAGE_WIDTH } from "./generadores/pagina.ts";
+import { applyRowLimit } from "./utils/carga.ts";
+import { runBenchmark } from "./generadores/benchmark.ts";
 
 const TIPOS_VALIDOS = ["FRAME", "COMPONENT", "INSTANCE", "COMPONENT_SET"];
 
@@ -35,6 +37,21 @@ figma.showUI(__html__, { width: 640, height: 500 });
 function respond(msg: PluginMessage): void {
   figma.ui.postMessage(msg);
 }
+
+// Visible layers under a node (instances included): the size of the job ahead.
+function countLayers(node: SceneNode): number {
+  let total = 1;
+  if ("children" in node) for (const c of node.children.filter(visibleNode)) total += countLayers(c);
+  return total;
+}
+
+// Reports the size of the selection so the UI can estimate how long it will take.
+function analyzeSelection(): void {
+  const selection = figma.currentPage.selection;
+  respond({ type: "analysis", layers: selection.length > 0 ? countLayers(selection[0]) : 0 });
+}
+
+figma.on("selectionchange", analyzeSelection);
 
 // Places the output to the right of the selected node, applies the theme bg,
 // Dark toggle of the last generation (sets the frame's explicit mode).
@@ -74,7 +91,7 @@ function instanciasAnidadas(node: SceneNode): InstanceNode[] {
   const res: InstanceNode[] = [];
   function walk(n: SceneNode): void {
     if (!("children" in n)) return;
-    for (const c of n.children) {
+    for (const c of n.children.filter(visibleNode)) {
       if (c.type === "INSTANCE") res.push(c);
       else walk(c);
     }
@@ -110,6 +127,7 @@ interface OpcionesGen {
   measureChildren: boolean;
   columns: number;
   anatomyDepth: "self" | "children" | "all";
+  layerBadges: boolean;
   stylingTotal: boolean;
 }
 
@@ -125,10 +143,10 @@ async function sectionFor(node: SceneNode, section: Section, opts: OpcionesGen):
   if (section === "anatomy") {
     if (!TIPOS_VALIDOS.includes(node.type)) return [await aviso("Anatomy needs a FRAME, COMPONENT, INSTANCE or COMPONENT_SET.")];
     const maxLevel = opts.anatomyDepth === "self" ? 0 : opts.anatomyDepth === "all" ? Infinity : 1;
-    const sections = [await anatomySection(node, extractAnatomy(await toNodeLike(node), opts.itemize, { maxLevel, includeRoot: true, deepTexts: true }), opts.table)];
+    const sections = [await anatomySection(node, extractAnatomy(await toNodeLike(node), opts.itemize, { maxLevel, includeRoot: true, deepTexts: true }), opts.table, opts.layerBadges)];
     if (opts.nested) {
       for (const inst of instanciasAnidadas(node)) {
-        sections.push(await anatomySection(inst, extractAnatomy(await toNodeLike(inst), opts.itemize, { maxLevel, includeRoot: true, deepTexts: true }), opts.table));
+        sections.push(await anatomySection(inst, extractAnatomy(await toNodeLike(inst), opts.itemize, { maxLevel, includeRoot: true, deepTexts: true }), opts.table, opts.layerBadges));
       }
     }
     return sections;
@@ -178,6 +196,66 @@ async function sectionFor(node: SceneNode, section: Section, opts: OpcionesGen):
   return await completeSection(componentSet.name, extractCompleteAnatomy(setNorm), extractCompleteLayout(setNorm), opts.columns);
 }
 
+// Yields to the event loop between sections, so Figma paints the one just added
+// and the UI gets its progress message before the next starts.
+function yieldNow(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+// Sequential mode: the Specs frame stays open between messages, one section each.
+let specsAbiertos: FrameNode | null = null;
+// The legend only goes on the first page, across runs too.
+let primeraSeccion = true;
+
+// One metrics line for the debug log: how long the section took and how heavy it is.
+function metrica(label: string, pagina: FrameNode, ms: number): string {
+  return `${label}: ${ms}ms · ${pagina.findAll().length + 1} nodes`;
+}
+
+// Builds a section's page: chrome (header/hero/feature/footer) + its content.
+async function paginaDe(node: SceneNode, section: Section, opts: OpcionesGen, conLeyenda: boolean): Promise<FrameNode> {
+  const pagina = verticalFrame("Specifications", 0, 0);
+  pagina.cornerRadius = 40;
+
+  const headerBar = await header(SECTION_LABEL[section]);
+  pagina.appendChild(headerBar);
+  headerBar.layoutSizingHorizontal = "FILL";
+  const barraHero = await hero(SECTION_TITLE[section], SECTION_DESC[section]);
+  pagina.appendChild(barraHero);
+  barraHero.layoutSizingHorizontal = "FILL";
+  const barraFeature = await feature(node);
+  pagina.appendChild(barraFeature);
+  barraFeature.layoutSizingHorizontal = "FILL";
+
+  if (conLeyenda) {
+    const it = wrapItem(await legendSection(), "leyendaItem");
+    pagina.appendChild(it);
+    it.layoutSizingHorizontal = "FILL";
+  }
+
+  const baseItem = ITEM_NAME[section];
+  let itemN = 0;
+  for (const content of await sectionFor(node, section, opts)) {
+    itemN++;
+    const itemName = baseItem ? `${baseItem}${String(itemN).padStart(2, "0")}` : undefined;
+    // Layout already returns its own frame-item with padding/bg: it isn't re-wrapped.
+    let it: FrameNode;
+    if (section === "layout") {
+      it = content;
+      it.name = "Layout&Spacing";
+    } else {
+      it = wrapItem(content, itemName);
+    }
+    pagina.appendChild(it);
+    it.layoutSizingHorizontal = "FILL";
+  }
+
+  const barraFooter = await footer();
+  pagina.appendChild(barraFooter);
+  barraFooter.layoutSizingHorizontal = "FILL";
+  return pagina;
+}
+
 // Fixed order in which the chosen sections are stacked.
 const ORDEN: Section[] = ["anatomy", "properties", "layout", "data", "styling", "modes", "twoway", "complete"];
 
@@ -224,6 +302,13 @@ const SECTION_DESC: Record<Section, string> = {
 };
 
 figma.ui.onmessage = async (msg: UIMessage) => {
+  if (msg.type === "ready") { analyzeSelection(); return; }
+  if (msg.type === "benchmark") {
+    await ensureThemeVariables();
+    await runBenchmark((line) => respond({ type: "log", line }));
+    respond({ type: "result", ok: true });
+    return;
+  }
   if (msg.type === "cancel") { figma.closePlugin(); return; }
   if (msg.type === "open") { figma.openExternal(msg.url); return; }
   if (msg.type !== "generate") return;
@@ -240,6 +325,11 @@ figma.ui.onmessage = async (msg: UIMessage) => {
 
   const node = selection[0];
   darkModeOn = msg.dark ?? false;
+  applyRowLimit(msg.limitRows ?? false);
+  // Hidden layers are out of the specs anyway, and skipping them speeds up the
+  // traversal of large instances.
+  figma.skipInvisibleInstanceChildren = true;
+  if (!specsAbiertos) primeraSeccion = true;
   await ensureThemeVariables();
   applyColorFormat(msg.colorFormat ?? "HEX");
   applyUnit(msg.unit ?? "px");
@@ -255,61 +345,44 @@ figma.ui.onmessage = async (msg: UIMessage) => {
     measureChildren: msg.measureChildren ?? false,
     columns: clampColumns(msg.columns),
     anatomyDepth: msg.anatomyDepth ?? "children",
+    layerBadges: msg.layerBadges ?? false,
     stylingTotal: msg.stylingTotal ?? false,
   };
   try {
-    const specs = verticalFrame("Specs", 80, 0);
+    const inicio = Date.now();
+    const specs = specsAbiertos ?? verticalFrame("Specs", 80, 0);
     specs.minWidth = PAGE_WIDTH; // width floor; grows if any section is wider
-    let firstSection = true;
-    for (const section of ORDEN) {
-      if (!msg.sections.includes(section)) continue;
+    // On the canvas from the start: each section shows up as soon as it's done,
+    // instead of the whole thing appearing (and being built) in one blocking pass.
+    if (!specs.parent) figma.currentPage.appendChild(specs);
 
-      const pagina = verticalFrame("Specifications", 0, 0);
-      pagina.cornerRadius = 40;
-
-      const headerBar = await header(SECTION_LABEL[section]);
-      pagina.appendChild(headerBar);
-      headerBar.layoutSizingHorizontal = "FILL";
-      const barraHero = await hero(SECTION_TITLE[section], SECTION_DESC[section]);
-      pagina.appendChild(barraHero);
-      barraHero.layoutSizingHorizontal = "FILL";
-      const barraFeature = await feature(node.name);
-      pagina.appendChild(barraFeature);
-      barraFeature.layoutSizingHorizontal = "FILL";
-
-      if (firstSection && msg.legend) {
-        const it = wrapItem(await legendSection(), "leyendaItem");
-        pagina.appendChild(it);
-        it.layoutSizingHorizontal = "FILL";
-      }
-      const baseItem = ITEM_NAME[section];
-      let itemN = 0;
-      for (const content of await sectionFor(node, section, opts)) {
-        itemN++;
-        const itemName = baseItem ? `${baseItem}${String(itemN).padStart(2, "0")}` : undefined;
-        // Layout already returns its own frame-item with padding/bg: it isn't re-wrapped.
-        let it: FrameNode;
-        if (section === "layout") {
-          it = content;
-          it.name = "Layout&Spacing";
-        } else {
-          it = wrapItem(content, itemName);
-        }
-        pagina.appendChild(it);
-        it.layoutSizingHorizontal = "FILL";
-      }
-
-      const barraFooter = await footer();
-      pagina.appendChild(barraFooter);
-      barraFooter.layoutSizingHorizontal = "FILL";
-
+    const pendientes = ORDEN.filter((s) => msg.sections.includes(s));
+    // Sequential mode does one section and hands the rest back to the UI.
+    const tanda = msg.sequential ? pendientes.slice(0, 1) : pendientes;
+    let listas = 0;
+    for (const section of tanda) {
+      const t0 = Date.now();
+      const pagina = await paginaDe(node, section, opts, primeraSeccion && !!msg.legend);
       specs.appendChild(pagina);
       pagina.layoutSizingHorizontal = "FILL"; // the page fills the specs width (aligned chrome)
-      firstSection = false;
+      primeraSeccion = false;
+      listas++;
+      respond({ type: "log", line: metrica(SECTION_TITLE[section], pagina, Date.now() - t0) });
+      respond({ type: "progress", done: listas, total: pendientes.length, label: SECTION_TITLE[section] });
+      await yieldNow();
     }
-    figma.currentPage.appendChild(specs);
+
+    const resto = pendientes.slice(tanda.length);
+    if (resto.length > 0) {
+      specsAbiertos = specs;
+      respond({ type: "next", sections: resto });
+      return;
+    }
+    specsAbiertos = null;
+    respond({ type: "log", line: `total ${Date.now() - inicio}ms` });
     finalizar(specs, node);
   } catch (e) {
+    specsAbiertos = null;
     respond({ type: "result", ok: false, error: String(e) });
   }
 };

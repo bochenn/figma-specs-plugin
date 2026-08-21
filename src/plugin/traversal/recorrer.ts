@@ -5,12 +5,17 @@ export interface Traversal { node: NodeLike; depth: number; path?: { name: strin
 const TIPOS_INSTANCIA = "INSTANCE";
 const CONTAINER_TYPES = ["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET"];
 
+// Hidden layers (visibility off) are left out of the specs.
+export function visibleChildren(node: NodeLike): NodeLike[] {
+  return (node.children ?? []).filter((c) => c.visible !== false);
+}
+
 // Collects only the descendant TEXT layers (at any depth, descending
 // instances too). Useful to document text styles that would be
 // out by the level limit or by being inside an instance.
 function nestedTexts(node: NodeLike, prof: number): Traversal[] {
   const res: Traversal[] = [];
-  for (const child of node.children ?? []) {
+  for (const child of visibleChildren(node)) {
     if (child.type === "TEXT") res.push({ node: child, depth: prof });
     else res.push(...nestedTexts(child, prof));
   }
@@ -25,7 +30,7 @@ function nestedTexts(node: NodeLike, prof: number): Traversal[] {
 export function traverseTree(node: NodeLike, itemize = false, prof = 0, path: { name: string; type: string }[] = []): Traversal[] {
   const own = [...path, { name: node.name, type: node.type }];
   const elements: Traversal[] = [{ node, depth: prof, path: own }];
-  for (const child of node.children ?? []) {
+  for (const child of visibleChildren(node)) {
     const childPath = [...own, { name: child.name, type: child.type }];
     if (child.type === TIPOS_INSTANCIA) {
       if (itemize) elements.push(...traverseTree(child, itemize, prof + 1, own));
@@ -44,7 +49,7 @@ export function traverseTree(node: NodeLike, itemize = false, prof = 0, path: { 
 export function traverse(node: NodeLike, itemize = false, prof = 0, nivel = 0, maxLevel = Infinity, deepTexts = false): Traversal[] {
   const elements: Traversal[] = [];
   if (nivel >= maxLevel) return elements;
-  for (const child of node.children ?? []) {
+  for (const child of visibleChildren(node)) {
     elements.push({ node: child, depth: prof });
     if (child.type === TIPOS_INSTANCIA) {
       if (itemize) elements.push(...traverse(child, itemize, prof + 1, nivel + 1, maxLevel, deepTexts));

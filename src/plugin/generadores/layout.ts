@@ -1,16 +1,18 @@
 import type { LayoutSpec, NodeLike, Unit } from "../modelo/tipos.ts";
 import { hexToRgb } from "../utils/color.ts";
-import { verticalFrame, horizontalFrame, text, inColumns, themedFill, variableChip, card, pillRow, keyText, valueText, FONT_MEDIUM, cardHeaderText, BORDER_PILL } from "./frames.ts";
+import { verticalFrame, horizontalFrame, text, inColumns, themedFill, variableChip, card, pillRow, keyText, valueText, appendAll, FONT_MEDIUM, cardHeaderText, BORDER_PILL } from "./frames.ts";
 import { themeVars } from "../utils/variables-tema.ts";
 import { paddingRects, spacingRects, type Rect } from "../utils/overlays.ts";
 import { currentUnit, spacingLabel } from "../utils/espaciado.ts";
 import { traverseTree } from "../traversal/recorrer.ts";
+import { visibleNode } from "../extraccion/adaptador.ts";
+import { capRows } from "../utils/carga.ts";
 import { dimStyle, directionIcon, alignmentIcon, dimValue, colorValue, spacingValue, separateCollisions, badgeRail, isSmall, shortName, type ValuePart, type Badge } from "../utils/marcadores-layout.ts";
 import { gridRects, gridText, autolayoutGridStripes } from "../utils/grilla.ts";
 import { depthPrefix } from "../utils/jerarquia.ts";
 import type { GridSpec } from "../modelo/tipos.ts";
-import { nodeIcon, resizingIconKey, dimensionIndicator } from "./iconos.ts";
-import { layersTree, type TreeRow } from "./layers-card.ts";
+import { nodeIcon, nodeTypeIcon, resizingIconKey, dimensionIndicator } from "./iconos.ts";
+import { layersTree, treeRowsOf, type TreeRow } from "./layers-card.ts";
 
 const BLUE: RGB = { r: 0.05, g: 0.4, b: 0.85 };
 const RED: RGB = { r: 1, g: 0.1, b: 0.3 };
@@ -382,7 +384,7 @@ async function artworkMode(container: SceneNode, spec: LayoutSpec, _medirHijos: 
   artwork.resize(clone.width + MARGIN_LEFT + MARGIN, clone.height + 2 * MARGIN);
 
   const frameRect: Rect = { x: MARGIN_LEFT, y: MARGIN, width: clone.width, height: clone.height };
-  const children = "children" in container ? container.children : [];
+  const children = "children" in container ? container.children.filter(visibleNode) : [];
   const childRects: Rect[] = children.map((c) => ({
     x: MARGIN_LEFT + c.x, y: MARGIN + c.y, width: c.width, height: c.height,
   }));
@@ -491,9 +493,7 @@ export async function layoutSection(selected: SceneNode, specs: LayoutSpec[], co
   const traversals = traverseTree(selected as unknown as NodeLike, itemize);
   const nodes = traversals.map((r) => r.node) as unknown as SceneNode[];
   // Full flat tree for the "Layers" card: every layer with its indent level + id.
-  const tree: TreeRow[] = traversals.map((t) => ({
-    name: t.node.name, type: t.node.type, level: (t.path?.length ?? 1) - 1, id: t.node.id,
-  }));
+  const tree: TreeRow[] = await treeRowsOf(traversals);
   const isAuto = (node: SceneNode): boolean => {
     const m = (node as FrameNode).layoutMode;
     return m === "HORIZONTAL" || m === "VERTICAL" || m === "GRID";
@@ -503,17 +503,26 @@ export async function layoutSection(selected: SceneNode, specs: LayoutSpec[], co
   const inicio = hideOuter && nodes.length > 0 && nodes[0] === selected ? 1 : 0;
   const rows: FrameNode[] = [];
   const n = Math.min(nodes.length, specs.length);
-  for (let i = inicio; i < n; i++) {
+  // The row limit is applied before building anything.
+  const indices = [];
+  for (let i = inicio; i < n; i++) indices.push(i);
+  const { rows: visibles, dropped } = capRows(indices);
+
+  // One Layers card for the whole section. Rebuilding the full tree on every row
+  // made the cost quadratic: on a 34-layer selection it was 3x the whole section.
+  section.appendChild(await layersTree(tree, selected.id));
+
+  for (const i of visibles) {
     const node = nodes[i];
     const hasAuto = isAuto(node);
     const row = horizontalFrame("layoutItem", 48);
     row.paddingTop = row.paddingBottom = 72; // mimics the anatomyItem's vertical breathing space
     row.clipsContent = false; // the artwork's chips/callouts may stick out of the margin
-    row.appendChild(await layersTree(tree, traversals[i].node.id));
     row.appendChild(await artworkDe(node, specs[i], measureChildren, hasAuto));
     row.appendChild(await exhibit(specs[i], hasAuto));
     rows.push(row);
   }
+  if (dropped > 0) section.appendChild(await text(`${dropped} more layers not shown (row limit).`, 16));
 
   // Unique id per row, in final visual order.
   rows.forEach((f, i) => { f.name = `layoutItem${String(i + 1).padStart(2, "0")}`; });
@@ -525,7 +534,7 @@ export async function layoutSection(selected: SceneNode, specs: LayoutSpec[], co
     container.clipsContent = false;
     section.appendChild(container);
   } else {
-    for (const f of rows) section.appendChild(f);
+    appendAll(section, rows);
   }
 
   return section;
@@ -615,13 +624,21 @@ async function legendFooter(nota: string): Promise<FrameNode> {
   return f;
 }
 
-// "How to read these specs" block: explains the Layout artwork conventions
-// with real visual samples.
-export async function legendSection(): Promise<FrameNode> {
-  const sec = verticalFrame("How to read these specs", 16);
-  sec.appendChild(await text("How to read these specs", 36));
+// Sample cell with one or more Figma icons in a row (24px, flush left).
+function simbolos(keys: string[], tipos: string[] = []): FrameNode {
+  const box = muestraBox();
+  const fila = horizontalFrame("Simbolos", 8);
+  fila.counterAxisAlignItems = "CENTER";
+  const iconos: SceneNode[] = [];
+  for (const k of keys) iconos.push(nodeIcon(k, 24));
+  for (const t of tipos) { const i = nodeTypeIcon(t, 24); if (i) iconos.push(i); }
+  appendAll(fila, iconos);
+  ponerMuestra(box, fila);
+  return box;
+}
 
-  // Table: card with border + radius (clip), fixed width, gray header, rows and footer.
+// Empty table shell, ready to receive header + rows.
+function legendCard(): FrameNode {
   const card = verticalFrame("legendTable", 0);
   card.counterAxisSizingMode = "FIXED";
   card.resize(TABLE_WIDTH, card.height);
@@ -630,6 +647,47 @@ export async function legendSection(): Promise<FrameNode> {
   card.strokes = [{ type: "SOLID", color: BORDER_PILL }];
   card.strokeWeight = 1;
   card.fills = themedFill(themeVars().bgSpec);
+  return card;
+}
+
+// "Figma symbols" table: what each icon used across the specs means.
+async function symbolsCard(): Promise<FrameNode> {
+  const card = legendCard();
+  card.appendChild(await legendHeader());
+
+  card.appendChild(await legendRow(simbolos([], ["FRAME", "GROUP"]),
+    "Frame and group: plain containers, no Auto Layout."));
+  card.appendChild(await legendRow(simbolos([], ["COMPONENT", "COMPONENT_SET", "INSTANCE"]),
+    "Component, component set and instance. A renamed instance says \u201c(Instance of: name)\u201d next to its layer."));
+  card.appendChild(await legendRow(simbolos([], ["TEXT", "VECTOR"]),
+    "Text layer and vector layer."));
+  card.appendChild(await legendRow(simbolos(["al-h-top", "al-h-center", "al-h-bottom"]),
+    "Horizontal Auto Layout. The icon also shows how the items are aligned: top, center or bottom."));
+  card.appendChild(await legendRow(simbolos(["al-v-left", "al-v-center", "al-v-right"]),
+    "Vertical Auto Layout, aligned left, center or right."));
+  card.appendChild(await legendRow(simbolos(["al-wrap-left", "al-wrap-center", "al-wrap-right"]),
+    "Wrapping Auto Layout: the rows are aligned left, center or right."));
+  card.appendChild(await legendRow(simbolos(["al-absolute", "dir-grid"]),
+    "Absolute position (out of the Auto Layout flow) and grid layout."));
+  card.appendChild(await legendRow(simbolos(["width-fixed", "width-hug", "width-fill"]),
+    "Resizing of a width/height row: Fixed, Hug contents or Fill container."));
+  card.appendChild(await legendRow(simbolos(["border", "border-top", "border-left-right"]),
+    "Which sides carry the stroke, followed by its weight."));
+  card.appendChild(await legendRow(simbolos(["swatch", "hidden"]),
+    "Variable mode applied to the layer, and a fill or stroke with its visibility off."));
+
+  for (const child of card.children) (child as FrameNode).layoutSizingHorizontal = "FILL";
+  return card;
+}
+
+// "How to read these specs" block: explains the Layout artwork conventions
+// with real visual samples.
+export async function legendSection(): Promise<FrameNode> {
+  const sec = verticalFrame("How to read these specs", 16);
+  sec.appendChild(await text("How to read these specs", 36));
+
+  // Table: card with border + radius (clip), fixed width, gray header, rows and footer.
+  const card = legendCard();
 
   card.appendChild(await legendHeader());
 
@@ -663,5 +721,8 @@ export async function legendSection(): Promise<FrameNode> {
   for (const child of card.children) (child as FrameNode).layoutSizingHorizontal = "FILL";
 
   sec.appendChild(card);
+
+  sec.appendChild(await text("Figma symbols", 36));
+  sec.appendChild(await symbolsCard());
   return sec;
 }

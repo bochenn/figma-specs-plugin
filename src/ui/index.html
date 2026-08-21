@@ -39,6 +39,11 @@
       .content { flex: 1 1 auto; overflow-y: auto; padding: 16px; }
       .panel.hidden { display: none; }
       .subtitle { margin: 0 0 14px; color: var(--text-2); font-size: 12px; }
+      .log { margin: 0 0 8px; padding: 10px 12px; max-height: 220px; overflow: auto;
+             border: 1px solid var(--border, #e1e1e1); border-radius: 8px;
+             font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+             white-space: pre-wrap; word-break: break-word; }
+
       /* Specs: grid of selectable cards */
       .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
       .spec-card {
@@ -126,6 +131,13 @@
             </div>
           </div>
           <div class="row">
+            <div class="row-label">Layer badges</div>
+            <div class="row-control">
+              <label class="cb"><input type="checkbox" id="layerBadges" checked /> Show badges</label>
+              <div class="row-desc">Repeat the artwork badge next to each layer of the Layers card.</div>
+            </div>
+          </div>
+          <div class="row">
             <div class="row-label">Mode</div>
             <div class="row-control">
               <select id="dark"><option value="false">Light Mode</option><option value="true">Dark Mode</option></select>
@@ -209,6 +221,32 @@
             <div class="row-control">
               <label class="cb"><input type="checkbox" id="stylingTotal" /> Whole document</label>
               <div class="row-desc">Catalog every local style and variable, not just the selection's.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="group-title">Large files</div>
+          <div class="row">
+            <div class="row-label">One section at a time</div>
+            <div class="row-control">
+              <label class="cb"><input type="checkbox" id="sequential" /> Generate sequentially</label>
+              <div class="row-desc">Renders one section per run. Slower overall, but Figma settles between sections and finished sections survive a failure.</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="row-label">Row limit</div>
+            <div class="row-control">
+              <label class="cb"><input type="checkbox" id="limitRows" /> Limit to 150 rows per section</label>
+              <div class="row-desc">Stops a huge selection from producing a spec Figma can't handle. The spec says how many layers were left out.</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="row-label">Activity log</div>
+            <div class="row-control">
+              <pre id="log" class="log"></pre>
+              <button id="benchmark" class="btn">Run benchmark</button>
+              <button id="log-clear" class="btn">Clear log</button>
             </div>
           </div>
         </div>

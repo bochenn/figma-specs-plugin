@@ -1,5 +1,6 @@
 import type { ModeEntry, ModeValue } from "../modelo/tipos.ts";
 import { hexOfColor } from "./modes.ts";
+import { visibleNode } from "../extraccion/adaptador.ts";
 
 // Color variables bound to a node's fill/stroke, with their appliedAs.
 function variablesColorDe(node: SceneNode): { id: string; appliedAs: string }[] {
@@ -57,7 +58,7 @@ async function visitar(node: SceneNode, entries: ModeEntry[]): Promise<void> {
     });
   }
   if ("children" in node) {
-    for (const child of node.children) await visitar(child, entries);
+    for (const child of node.children.filter(visibleNode)) await visitar(child, entries);
   }
 }
 
