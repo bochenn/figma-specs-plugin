@@ -10,7 +10,10 @@
   Instances of a variant report the component set's name, not "Size=M".
 - The legend has a second table, "Figma symbols", explaining every icon the specs use:
   layer types, Auto Layout direction and alignment, absolute position, resizing modes,
-  border sides, variable modes and hidden fills.
+  border sides, variable modes and hidden fills. It's on by default now, sits right
+  under the section title, and shows both tables side by side.
+- Create Spec shows a spinner while the spec renders and stays disabled until it's
+  done, so a long generation can't be started twice.
 - Two options for heavy files (Options → Large files). "Generate sequentially" renders
   one section per run, so Figma settles in between and finished sections survive a
   failure. "Limit to 150 rows per section" stops a huge selection from producing a spec
@@ -22,6 +25,12 @@
   34-layer selection with Anatomy + Layout & Spacing: 58.6s → 20.2s, and 16,834 → 5,677
   nodes. Layout & Spacing was repeating the whole Layers card on every row; it now draws
   it once per section.
+
+### Fixed
+
+- The component icon was the same outline diamond as the instance one, so the two were
+  indistinguishable. Components now use Figma's four-diamond symbol. The absolute
+  position and grid icons were swapped for the right ones too.
 
 ## August 20, 2026
 

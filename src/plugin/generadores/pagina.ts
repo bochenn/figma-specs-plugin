@@ -136,7 +136,7 @@ export async function hero(titleText: string, description: string): Promise<Fram
 // Feature: layer-type icon + element name (Inter Medium 48), plus the origin
 // component when the instance was renamed.
 export async function feature(node: SceneNode): Promise<FrameNode> {
-  const container = verticalFrame("Feature", 56);
+  const container = verticalFrame("featureItem", 56);
   container.paddingTop = 72;
   container.paddingBottom = 0;
   container.paddingLeft = container.paddingRight = 100;

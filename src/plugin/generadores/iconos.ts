@@ -13,7 +13,7 @@ import iconWidthHug from "../../../resources/figma-UI3/icon.24.al.width-hug.svg"
 import iconHeightHug from "../../../resources/figma-UI3/icon.24.al.height-hug.svg";
 import iconDirH from "../../../resources/figma-UI3/icon.24.al.layout-horizontal.svg";
 import iconDirV from "../../../resources/figma-UI3/icon.24.al.layout-vertical.svg";
-import iconDirGrid from "../../../resources/figma-UI3/icon.24.grid.svg";
+import iconDirGrid from "../../../resources/figma-UI3/icon.24.grid-view.svg";
 import iconFill from "../../../resources/figma-UI3/icon.24.fill.solid.small.svg";
 import iconStroke from "../../../resources/figma-UI3/icon.24.outline.stroke.small.svg";
 import iconPadding from "../../../resources/figma-UI3/icon.24.al.padding-all.svg";
@@ -25,7 +25,7 @@ import iconRows from "../../../resources/figma-UI3/icon.24.grid-row.svg";
 import iconText from "../../../resources/figma-UI3/icon.24.shape.text.small.svg";
 import iconFrame from "../../../resources/figma-UI3/icon.24.frame.svg";
 import iconInstance from "../../../resources/figma-UI3/icon.24.instance.small.svg";
-import iconComponent from "../../../resources/figma-UI3/icon.24.component.svg";
+import iconComponent from "../../../resources/figma-UI3/icon.24.component.small.svg";
 import iconComponentSet from "../../../resources/figma-UI3/icon.24.component.set.svg";
 import iconGroup from "../../../resources/figma-UI3/icon.24.group.small.svg";
 import iconPen from "../../../resources/figma-UI3/icon.24.pen.svg";
@@ -46,7 +46,7 @@ import iconAlVRight from "../../../resources/figma-UI3/icon.16.autolayout.vertic
 import iconAlWrapLeft from "../../../resources/figma-UI3/icon.16.autolayout.wrap.left.svg";
 import iconAlWrapCenter from "../../../resources/figma-UI3/icon.16.autolayout.wrap.center.svg";
 import iconAlWrapRight from "../../../resources/figma-UI3/icon.16.autolayout.wrap.right.svg";
-import iconAlAbsolute from "../../../resources/figma-UI3/icon.16.autolayout.absolute.position.svg";
+import iconAlAbsolute from "../../../resources/figma-UI3/icon.24.al.absolute-position.svg";
 import iconSwatch from "../../../resources/figma-UI3/icon.24.swatch.small.svg";
 import iconHidden from "../../../resources/figma-UI3/icon.24.hidden.small.svg";
 import iconBorder from "../../../resources/figma-UI3/icon.24.border.small.svg";

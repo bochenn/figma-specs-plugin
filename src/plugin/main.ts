@@ -223,15 +223,15 @@ async function paginaDe(node: SceneNode, section: Section, opts: OpcionesGen, co
   const barraHero = await hero(SECTION_TITLE[section], SECTION_DESC[section]);
   pagina.appendChild(barraHero);
   barraHero.layoutSizingHorizontal = "FILL";
-  const barraFeature = await feature(node);
-  pagina.appendChild(barraFeature);
-  barraFeature.layoutSizingHorizontal = "FILL";
-
   if (conLeyenda) {
-    const it = wrapItem(await legendSection(), "leyendaItem");
+    const it = wrapItem(await legendSection(), "legendItem");
     pagina.appendChild(it);
     it.layoutSizingHorizontal = "FILL";
   }
+
+  const barraFeature = await feature(node);
+  pagina.appendChild(barraFeature);
+  barraFeature.layoutSizingHorizontal = "FILL";
 
   const baseItem = ITEM_NAME[section];
   let itemN = 0;

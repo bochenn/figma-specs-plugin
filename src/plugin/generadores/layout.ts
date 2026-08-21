@@ -680,12 +680,9 @@ async function symbolsCard(): Promise<FrameNode> {
   return card;
 }
 
-// "How to read these specs" block: explains the Layout artwork conventions
-// with real visual samples.
-export async function legendSection(): Promise<FrameNode> {
-  const sec = verticalFrame("How to read these specs", 16);
-  sec.appendChild(await text("How to read these specs", 36));
-
+// "How to read these specs" table: the Layout artwork conventions, with real
+// visual samples.
+async function readingCard(): Promise<FrameNode> {
   // Table: card with border + radius (clip), fixed width, gray header, rows and footer.
   const card = legendCard();
 
@@ -719,10 +716,24 @@ export async function legendSection(): Promise<FrameNode> {
 
   // All rows to the card width (so the dividers and bg reach the border).
   for (const child of card.children) (child as FrameNode).layoutSizingHorizontal = "FILL";
+  return card;
+}
 
-  sec.appendChild(card);
+// One column of the legend: heading + its table.
+async function legendColumn(titulo: string, tabla: FrameNode): Promise<FrameNode> {
+  const col = verticalFrame(titulo, 16);
+  col.appendChild(await text(titulo, 36));
+  col.appendChild(tabla);
+  return col;
+}
 
-  sec.appendChild(await text("Figma symbols", 36));
-  sec.appendChild(await symbolsCard());
+// Legend block: the two tables side by side.
+export async function legendSection(): Promise<FrameNode> {
+  const sec = horizontalFrame("Legend", 48);
+  sec.counterAxisAlignItems = "MIN"; // the columns line up at the top
+  appendAll(sec, [
+    await legendColumn("How to read these specs", await readingCard()),
+    await legendColumn("Figma symbols", await symbolsCard()),
+  ]);
   return sec;
 }

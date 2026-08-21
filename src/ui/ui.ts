@@ -42,8 +42,11 @@ for (const tab of tabs) {
 // Spec cards: toggle selection; enables "Create Spec" if at least one is selected.
 const cards = Array.from(document.querySelectorAll(".spec-card")) as HTMLButtonElement[];
 const create = $("create") as HTMLButtonElement;
+// True while a spec is being generated: the button stays disabled until it ends.
+let generando = false;
+
 function refreshCreate(): void {
-  create.disabled = !cards.some((c) => c.classList.contains("selected"));
+  create.disabled = generando || !cards.some((c) => c.classList.contains("selected"));
 }
 for (const card of cards) {
   const svg = card.dataset.spec ? SPEC_ICONS[card.dataset.spec] : undefined;
@@ -67,6 +70,17 @@ sync(inputOf("nested"), inputOf("nested2"));
 
 const statusEl = $("status");
 const logEl = $("log");
+
+// Writes the status line, optionally with a spinner in front of it.
+function setStatus(texto: string, ocupado = false): void {
+  statusEl.textContent = "";
+  if (ocupado) {
+    const rueda = document.createElement("span");
+    rueda.className = "spinner";
+    statusEl.appendChild(rueda);
+  }
+  statusEl.appendChild(document.createTextNode(texto));
+}
 
 // Appends one line to the debug log (newest at the bottom, auto-scrolled).
 function logLine(line: string): void {
@@ -98,12 +112,13 @@ let selectionLayers = 0;
 
 // Warns in the status line when the chosen sections over this selection look slow.
 function refreshEstimate(): void {
+  if (generando) return; // don't step on the spinner
   const chosen = cards.filter((c) => c.classList.contains("selected")).length;
-  if (selectionLayers === 0 || chosen === 0) { statusEl.textContent = ""; return; }
+  if (selectionLayers === 0 || chosen === 0) { setStatus(""); return; }
   const ms = selectionLayers * chosen * MS_PER_LAYER + chosen * MS_PER_SECTION;
-  if (ms < HEAVY_MS) { statusEl.textContent = ""; return; }
+  if (ms < HEAVY_MS) { setStatus(""); return; }
   const consejo = inputOf("table").checked ? "" : " — try Tabular anatomy";
-  statusEl.textContent = `Large selection: ${selectionLayers} layers · about ${Math.round(ms / 1000)}s${consejo}`;
+  setStatus(`Large selection: ${selectionLayers} layers · about ${Math.round(ms / 1000)}s${consejo}`);
 }
 
 ($("cancel") as HTMLButtonElement).onclick = () => parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
@@ -122,6 +137,9 @@ let ultimoPayload: Record<string, unknown> | null = null;
 create.onclick = () => {
   const sections = cards.filter((c) => c.classList.contains("selected")).map((c) => c.dataset.spec);
   logLine(`— run [${runLabel()}] · ${selectionLayers} layers · ${sections.length} sections`);
+  generando = true;
+  refreshCreate();
+  setStatus("Creating spec…", true);
   ultimoPayload = {
     type: "generate",
     sections,
@@ -160,9 +178,11 @@ window.onmessage = (event: MessageEvent) => {
     // Sequential mode: same options, only the sections still pending.
     if (ultimoPayload) parent.postMessage({ pluginMessage: { ...ultimoPayload, sections: msg.sections } }, "*");
   } else if (msg.type === "progress") {
-    statusEl.textContent = `Rendering ${msg.done}/${msg.total} — ${msg.label}…`;
+    setStatus(`Rendering ${msg.done}/${msg.total} — ${msg.label}…`, true);
   } else if (msg.type === "result") {
-    statusEl.textContent = msg.ok ? "✓ Created" : "Error: " + msg.error;
+    generando = false;
+    refreshCreate();
+    setStatus(msg.ok ? "✓ Created" : "Error: " + msg.error);
   }
 };
 
