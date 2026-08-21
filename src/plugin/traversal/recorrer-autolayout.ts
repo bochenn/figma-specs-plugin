@@ -1,5 +1,5 @@
 import type { NodeLike } from "../modelo/tipos.ts";
-import type { Traversal } from "./recorrer.ts";
+import { visibleChildren, type Traversal } from "./recorrer.ts";
 
 const CONTAINER = ["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET"];
 
@@ -14,7 +14,7 @@ export function traverseAutoLayout(node: NodeLike, itemize = false, prof = 0, pa
   const resultado: Traversal[] = [];
   const propio = [...path, { name: node.name, type: node.type }];
   if (tieneAutoLayout(node)) resultado.push({ node, depth: prof, path: propio });
-  for (const child of node.children ?? []) {
+  for (const child of visibleChildren(node)) {
     if (child.type === "INSTANCE") {
       if (itemize) resultado.push(...traverseAutoLayout(child, itemize, prof + 1, propio));
     } else if (CONTAINER.includes(child.type)) {

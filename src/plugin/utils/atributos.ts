@@ -133,6 +133,11 @@ function dimensionAtributo(key: string, px: number, varName?: string, mode?: str
 export function readAttributes(node: NodeLike): Attribute[] {
   const attributes: Attribute[] = [];
 
+  // Variable modes explicitly applied to the layer ("Variable modes" panel).
+  for (const m of node.variableModes ?? []) {
+    attributes.push({ key: m.collection, value: m.mode, format: "HARDCODED", icon: "swatch" });
+  }
+
   const bg = attributeColor("background-color", {
     hex: solidHex(node.fills),
     variableName: node.fillVariableName,

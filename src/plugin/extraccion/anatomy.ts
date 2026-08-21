@@ -1,6 +1,7 @@
 import type { NodeLike, AnatomyElement } from "../modelo/tipos.ts";
 import { traverse } from "../traversal/recorrer.ts";
 import { readAttributes } from "../utils/atributos.ts";
+import { frameIconKey } from "../utils/iconos-frame.ts";
 
 function elementOf(node: NodeLike, depth: number): AnatomyElement {
   const isInstance = node.type === "INSTANCE";
@@ -11,7 +12,10 @@ function elementOf(node: NodeLike, depth: number): AnatomyElement {
     isInstance,
     attributes: readAttributes(node),
   };
+  const typeIcon = frameIconKey(node);
+  if (typeIcon) element.typeIcon = typeIcon;
   if (isInstance && node.mainComponentName) element.dependsOn = node.mainComponentName;
+  if (node.instanceOf) element.instanceOf = node.instanceOf;
   if (depth > 0) element.depth = depth;
   return element;
 }

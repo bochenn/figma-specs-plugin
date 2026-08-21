@@ -30,6 +30,9 @@ export interface NodeLike {
   name: string;
   type: string;
   children?: NodeLike[];
+  visible?: boolean;    // false when the layer's visibility toggle is off
+  // variable modes explicitly applied to the layer ("Variable modes" panel):
+  variableModes?: { collection: string; mode: string }[];
   // visual attributes (optional per node type):
   width?: number;
   height?: number;
@@ -41,6 +44,7 @@ export interface NodeLike {
   strokeDashed?: boolean;
   // instances only:
   mainComponentName?: string;
+  instanceOf?: string;   // origin component, when the layer was renamed
   // layout (only on Auto Layout nodes):
   layoutMode?: "NONE" | "HORIZONTAL" | "VERTICAL" | "GRID";
   gridColumnCount?: number;
@@ -61,6 +65,7 @@ export interface NodeLike {
   spacingVars?: { paddingLeft?: string; paddingTop?: string; paddingRight?: string; paddingBottom?: string; itemSpacing?: string };
   layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
+  layoutPositioning?: string;         // "AUTO" | "ABSOLUTE" (child of an Auto Layout)
   // resolved styles (Styling Inventory):
   fillStyleName?: string;
   strokeStyleName?: string;
@@ -99,8 +104,10 @@ export interface AnatomyElement {
   type: string; // Figma NodeType: "FRAME" | "TEXT" | "INSTANCE" | ...
   isInstance: boolean;
   dependsOn?: string; // "Depends on"
+  instanceOf?: string; // origin component, when the layer was renamed
   attributes: Attribute[];
   depth?: number; // instances traversed (absent = 0, own layer)
+  typeIcon?: string; // icon key describing the frame (Auto Layout direction/alignment)
 }
 
 // UI ↔ plugin messages.
@@ -114,11 +121,15 @@ export type Preference = "VARIABLE" | "STYLE";
 
 export type TypeFormat = "Plain" | "CSS";
 
-export type UIMessage = { type: "generate"; sections: Section[]; nested?: boolean; dark?: boolean; columns?: number; table?: boolean; hideOuter?: boolean; itemize?: boolean; measureChildren?: boolean; legend?: boolean; stylingTotal?: boolean; colorFormat?: ColorFormat; unit?: Unit; typeFormat?: TypeFormat; rawFormat?: ColorFormat; showRaw?: boolean; preference?: Preference; anatomyDepth?: "self" | "children" | "all" } | { type: "cancel" } | { type: "open"; url: string };
+export type UIMessage = { type: "generate"; sections: Section[]; nested?: boolean; dark?: boolean; columns?: number; table?: boolean; hideOuter?: boolean; itemize?: boolean; measureChildren?: boolean; legend?: boolean; layerBadges?: boolean; stylingTotal?: boolean; colorFormat?: ColorFormat; unit?: Unit; typeFormat?: TypeFormat; rawFormat?: ColorFormat; showRaw?: boolean; preference?: Preference; anatomyDepth?: "self" | "children" | "all"; sequential?: boolean; limitRows?: boolean } | { type: "cancel" } | { type: "open"; url: string } | { type: "ready" } | { type: "benchmark" };
 
 export type PluginMessage =
   | { type: "result"; ok: true }
-  | { type: "result"; ok: false; error: string };
+  | { type: "log"; line: string }                    // metrics line for the debug log
+  | { type: "next"; sections: Section[] }            // sequential mode: ask for the rest
+  | { type: "result"; ok: false; error: string }
+  | { type: "analysis"; layers: number }              // size of the selection, to estimate the work
+  | { type: "progress"; done: number; total: number; label: string };
 
 // --- Properties (Variant) ---
 

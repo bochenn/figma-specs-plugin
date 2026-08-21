@@ -1,6 +1,7 @@
 import type { NodeLike, PaintLike } from "../modelo/tipos.ts";
 import { gridSpecOf } from "../utils/grilla.ts";
 import { stripCollectionPrefix } from "../utils/nombre-variable.ts";
+import { originName } from "./resolver.ts";
 
 // Converts a Figma Paint to PaintLike: solid color or gradient stops.
 function paintLike(f: Paint): PaintLike {
@@ -26,11 +27,36 @@ async function variableNameVal(id: string): Promise<string | undefined> {
   return col ? `${stripCollectionPrefix(col.name)}/${variable.name}` : variable.name;
 }
 
+// False when the layer's visibility toggle is off.
+export function visibleNode(node: SceneNode): boolean {
+  return !("visible" in node) || node.visible !== false;
+}
+
+// Variable modes explicitly applied to the node ("Variable modes" in the panel),
+// as { collection, mode } names.
+async function variableModesOf(node: SceneNode): Promise<{ collection: string; mode: string }[]> {
+  const explicit = (node as { explicitVariableModes?: Record<string, string> }).explicitVariableModes;
+  if (!explicit) return [];
+  const res: { collection: string; mode: string }[] = [];
+  for (const collectionId of Object.keys(explicit)) {
+    const collection = await figma.variables.getVariableCollectionByIdAsync(collectionId);
+    if (!collection) continue;
+    const mode = collection.modes.find((m) => m.modeId === explicit[collectionId]);
+    if (mode) res.push({ collection: stripCollectionPrefix(collection.name), mode: mode.name });
+  }
+  return res;
+}
+
 // Converts a real Figma node into NodeLike (only what the pure modules read).
 // Async: with documentAccess "dynamic-page" the styles/variables/mainComponent
 // APIs only exist in their async variants.
 export async function toNodeLike(node: SceneNode): Promise<NodeLike> {
   const base: NodeLike = { id: node.id, name: node.name, type: node.type };
+
+  if ("visible" in node) base.visible = node.visible;
+  if ("layoutPositioning" in node) base.layoutPositioning = node.layoutPositioning;
+  const modes = await variableModesOf(node);
+  if (modes.length > 0) base.variableModes = modes;
 
   if ("width" in node) base.width = node.width;
   if ("height" in node) base.height = node.height;
@@ -63,7 +89,10 @@ export async function toNodeLike(node: SceneNode): Promise<NodeLike> {
   }
   if (node.type === "INSTANCE") {
     const main = await (node as InstanceNode).getMainComponentAsync();
-    if (main) base.mainComponentName = main.name;
+    if (main) {
+      base.mainComponentName = main.name;
+      base.instanceOf = originName(node.name, main);
+    }
   }
   if ("layoutMode" in node && (node.layoutMode === "HORIZONTAL" || node.layoutMode === "VERTICAL" || node.layoutMode === "GRID")) {
     base.layoutMode = node.layoutMode;
@@ -171,7 +200,8 @@ export async function toNodeLike(node: SceneNode): Promise<NodeLike> {
     }
   }
   if ("children" in node) {
-    base.children = await Promise.all(node.children.map((c) => toNodeLike(c)));
+    // Hidden layers (visibility off) are left out of the specs, at any depth.
+    base.children = await Promise.all(node.children.filter(visibleNode).map((c) => toNodeLike(c)));
   }
   return base;
 }

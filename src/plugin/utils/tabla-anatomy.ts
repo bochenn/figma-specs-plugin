@@ -14,6 +14,7 @@ export function anatomyRow(badgeNum: number, element: AnatomyElement): string[] 
       return a.visibilityOff ? `${base} · Visibility Off` : base;
     })
     .join(", ");
-  const name = depthPrefix(element.depth ?? 0) + element.name;
+  const renombrada = element.instanceOf ? ` (Instance of: ${element.instanceOf})` : "";
+  const name = depthPrefix(element.depth ?? 0) + element.name + renombrada;
   return [String(badgeNum), name, element.type, attrs];
 }

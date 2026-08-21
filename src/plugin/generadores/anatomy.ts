@@ -1,12 +1,16 @@
 import type { AnatomyElement, Attribute } from "../modelo/tipos.ts";
 import { BADGE_SIZE } from "../utils/marcadores.ts";
-import { verticalFrame, text, tableOf, themedFill, card, pillRow, variableChip, keyText, valueText, FONT_MEDIUM, cardHeaderText } from "./frames.ts";
+import { verticalFrame, text, tableOf, themedFill, card, pillRow, variableChip, keyText, valueText, appendAll, baselineRow, FONT_MEDIUM, cardHeaderText } from "./frames.ts";
 import { themeVars } from "../utils/variables-tema.ts";
 import { HEADERS_ANATOMY, anatomyRow } from "../utils/tabla-anatomy.ts";
 import { hexToRgb } from "../utils/color.ts";
 import { nodeTypeIcon, resizingIconKey, dimensionIndicator, nodeIcon } from "./iconos.ts";
 import { parseVariants } from "../utils/anatomy-variantes.ts";
 import { placeBadges, type BBox } from "../utils/badges-anatomy.ts";
+import { capRows } from "../utils/carga.ts";
+import { layersTree, treeRowsOf, type TreeRow, type RowBadges } from "./layers-card.ts";
+import { traverseTree, type Traversal } from "../traversal/recorrer.ts";
+import type { NodeLike } from "../modelo/tipos.ts";
 
 const GRAY = (n: number): RGB => ({ r: n, g: n, b: n });
 
@@ -82,9 +86,13 @@ async function attributeRow(attr: Attribute): Promise<FrameNode> {
 // Builds an element's entry as a card (header + pill-rows).
 async function listEntry(indice: number, el: AnatomyElement, color: RGB): Promise<FrameNode> {
   const headerNodes: SceneNode[] = [await badgePanel(indice, color)];
-  const icon = nodeTypeIcon(el.type);
+  const icon = nodeTypeIcon(el.type, 24, el.typeIcon);
   if (icon) headerNodes.push(icon);
-  headerNodes.push(await cardHeaderText(`${el.name} · ${el.type}`));
+  const titulo = baselineRow("Title", 8);
+  titulo.appendChild(await cardHeaderText(`${el.name} · ${el.type}`));
+  // The layer was renamed: say which component it actually comes from.
+  if (el.instanceOf) titulo.appendChild(await valueText(`(Instance of: ${el.instanceOf})`));
+  headerNodes.push(titulo);
 
   const rows: FrameNode[] = [];
   const variants = parseVariants(el.dependsOn);
@@ -169,8 +177,34 @@ async function specDeAnatomy(selected: SceneNode, elements: AnatomyElement[], ta
   return spec;
 }
 
+// Rows of the "Layers" card. It shows the outer tree (instances closed), plus the
+// branches that lead to a documented layer inside an instance — deepTexts documents
+// texts nested in instances, and without this they'd have no row to carry a badge.
+function treeTraversals(selected: SceneNode, documented: Set<string>): Traversal[] {
+  const root = selected as unknown as NodeLike;
+  const full = traverseTree(root, true);
+  const closed = new Set(traverseTree(root).map((t) => t.node.id));
+  const level = (t: Traversal) => (t.path?.length ?? 1) - 1;
+  return full.filter((t, i) => {
+    if (closed.has(t.node.id) || documented.has(t.node.id)) return true;
+    // In a DFS list the descendants come right after, with a greater level.
+    for (let j = i + 1; j < full.length && level(full[j]) > level(t); j++) {
+      if (documented.has(full[j].node.id)) return true;
+    }
+    return false;
+  });
+}
+
+// Badge (number + color) of each documented element, keyed by node id, to repeat
+// the artwork markers inside the "Layers" card.
+function badgesOfElements(elements: AnatomyElement[]): RowBadges {
+  const map: RowBadges = new Map();
+  elements.forEach((e, i) => map.set(e.id, { num: i + 1, color: BADGE_COLORS[i % BADGE_COLORS.length] }));
+  return map;
+}
+
 // Builds only the Anatomy section (without Specifications or node title).
-export async function anatomySection(selected: SceneNode, elements: AnatomyElement[], table: boolean): Promise<FrameNode> {
+export async function anatomySection(selected: SceneNode, elements: AnatomyElement[], table: boolean, layerBadges = false): Promise<FrameNode> {
   const section = verticalFrame("Anatomy", 24);
 
   // Horizontal display: list on the left, artwork on the right.
@@ -182,6 +216,12 @@ export async function anatomySection(selected: SceneNode, elements: AnatomyEleme
   display.counterAxisSizingMode = "AUTO";
   display.fills = [];
   section.appendChild(display);
+
+  // "Layers" card (same as in Layout & Spacing): full layer tree of the
+  // selection, with the documented node (the root) highlighted.
+  const documented = layerBadges ? new Set(elements.map((e) => e.id)) : new Set<string>();
+  const tree: TreeRow[] = await treeRowsOf(treeTraversals(selected, documented));
+  display.appendChild(await layersTree(tree, selected.id, layerBadges ? badgesOfElements(elements) : undefined));
 
   // Artwork: clone of the selected + markers (goes on the LEFT).
   const artwork = figma.createFrame();
@@ -246,9 +286,13 @@ export async function anatomySection(selected: SceneNode, elements: AnatomyEleme
     display.appendChild(await tableOf(HEADERS_ANATOMY, elements.map((e, i) => anatomyRow(i + 1, e))));
   } else {
     const lista = verticalFrame("Content", 16);
-    for (let i = 0; i < elements.length; i++) {
-      lista.appendChild(await listEntry(i + 1, elements[i], BADGE_COLORS[i % BADGE_COLORS.length]));
+    const { rows: visibles, dropped } = capRows(elements);
+    const cards: SceneNode[] = [];
+    for (let i = 0; i < visibles.length; i++) {
+      cards.push(await listEntry(i + 1, visibles[i], BADGE_COLORS[i % BADGE_COLORS.length]));
     }
+    if (dropped > 0) cards.push(await text(`${dropped} more elements not shown (row limit).`, 16));
+    appendAll(lista, cards);
     display.appendChild(lista);
   }
 

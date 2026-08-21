@@ -42,8 +42,11 @@ for (const tab of tabs) {
 // Spec cards: toggle selection; enables "Create Spec" if at least one is selected.
 const cards = Array.from(document.querySelectorAll(".spec-card")) as HTMLButtonElement[];
 const create = $("create") as HTMLButtonElement;
+// True while a spec is being generated: the button stays disabled until it ends.
+let generando = false;
+
 function refreshCreate(): void {
-  create.disabled = !cards.some((c) => c.classList.contains("selected"));
+  create.disabled = generando || !cards.some((c) => c.classList.contains("selected"));
 }
 for (const card of cards) {
   const svg = card.dataset.spec ? SPEC_ICONS[card.dataset.spec] : undefined;
@@ -53,7 +56,7 @@ for (const card of cards) {
     ico.innerHTML = specIcon(svg);
     card.insertBefore(ico, card.querySelector(".t"));
   }
-  card.onclick = () => { card.classList.toggle("selected"); refreshCreate(); };
+  card.onclick = () => { card.classList.toggle("selected"); refreshCreate(); refreshEstimate(); };
 }
 refreshCreate();
 
@@ -66,6 +69,57 @@ sync(inputOf("itemize"), inputOf("itemize2"));
 sync(inputOf("nested"), inputOf("nested2"));
 
 const statusEl = $("status");
+const logEl = $("log");
+
+// Writes the status line, optionally with a spinner in front of it.
+function setStatus(texto: string, ocupado = false): void {
+  statusEl.textContent = "";
+  if (ocupado) {
+    const rueda = document.createElement("span");
+    rueda.className = "spinner";
+    statusEl.appendChild(rueda);
+  }
+  statusEl.appendChild(document.createTextNode(texto));
+}
+
+// Appends one line to the debug log (newest at the bottom, auto-scrolled).
+function logLine(line: string): void {
+  logEl.textContent += (logEl.textContent ? "\n" : "") + line;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+$("log-clear").onclick = () => { logEl.textContent = ""; };
+$("benchmark").onclick = () => parent.postMessage({ pluginMessage: { type: "benchmark" } }, "*");
+
+// Load options in effect, to head each run in the log.
+function runLabel(): string {
+  const on: string[] = [];
+  if (inputOf("sequential").checked) on.push("sequential");
+  if (inputOf("limitRows").checked) on.push("row limit");
+  if (inputOf("table").checked) on.push("table");
+  return on.length > 0 ? on.join(" + ") : "default";
+}
+
+// Rough cost of generating a section, to warn before a long run.
+// ponytail: eyeballed, not measured — tune these two if the estimate reads off.
+const MS_PER_LAYER = 4;
+const MS_PER_SECTION = 300;
+const HEAVY_MS = 5000; // below this the generation is quick enough to say nothing
+
+// Visible layers of the selection, reported by the plugin on open and on every
+// selection change.
+let selectionLayers = 0;
+
+// Warns in the status line when the chosen sections over this selection look slow.
+function refreshEstimate(): void {
+  if (generando) return; // don't step on the spinner
+  const chosen = cards.filter((c) => c.classList.contains("selected")).length;
+  if (selectionLayers === 0 || chosen === 0) { setStatus(""); return; }
+  const ms = selectionLayers * chosen * MS_PER_LAYER + chosen * MS_PER_SECTION;
+  if (ms < HEAVY_MS) { setStatus(""); return; }
+  const consejo = inputOf("table").checked ? "" : " — try Tabular anatomy";
+  setStatus(`Large selection: ${selectionLayers} layers · about ${Math.round(ms / 1000)}s${consejo}`);
+}
 
 ($("cancel") as HTMLButtonElement).onclick = () => parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
 
@@ -76,9 +130,17 @@ $("link-web").onclick = () => parent.postMessage({ pluginMessage: { type: "open"
 $("link-x").onclick = () => parent.postMessage({ pluginMessage: { type: "open", url: "https://x.com/bochenn" } }, "*");
 $("link-linkedin").onclick = () => parent.postMessage({ pluginMessage: { type: "open", url: "https://linkedin.com/in/bochenn" } }, "*");
 
+// Last payload sent, so sequential mode can ask for the remaining sections
+// with exactly the same options.
+let ultimoPayload: Record<string, unknown> | null = null;
+
 create.onclick = () => {
   const sections = cards.filter((c) => c.classList.contains("selected")).map((c) => c.dataset.spec);
-  parent.postMessage({ pluginMessage: {
+  logLine(`— run [${runLabel()}] · ${selectionLayers} layers · ${sections.length} sections`);
+  generando = true;
+  refreshCreate();
+  setStatus("Creating spec…", true);
+  ultimoPayload = {
     type: "generate",
     sections,
     nested: inputOf("nested").checked,
@@ -88,6 +150,7 @@ create.onclick = () => {
     itemize: inputOf("itemize").checked,
     measureChildren: inputOf("measureChildren").checked,
     legend: inputOf("legend").checked,
+    layerBadges: inputOf("layerBadges").checked,
     stylingTotal: inputOf("stylingTotal").checked,
     columns: parseInt(selectOf("columns").value, 10),
     colorFormat: selectOf("colorFormat").value,
@@ -97,12 +160,31 @@ create.onclick = () => {
     showRaw: inputOf("showRaw").checked,
     preference: selectOf("preference").value,
     anatomyDepth: selectOf("anatomyDepth").value,
-  } }, "*");
+    sequential: inputOf("sequential").checked,
+    limitRows: inputOf("limitRows").checked,
+  };
+  parent.postMessage({ pluginMessage: ultimoPayload }, "*");
 };
 
 window.onmessage = (event: MessageEvent) => {
   const msg = event.data.pluginMessage;
-  if (msg && msg.type === "result") {
-    statusEl.textContent = msg.ok ? "✓ Created" : "Error: " + msg.error;
+  if (!msg) return;
+  if (msg.type === "analysis") {
+    selectionLayers = msg.layers;
+    refreshEstimate();
+  } else if (msg.type === "log") {
+    logLine(msg.line);
+  } else if (msg.type === "next") {
+    // Sequential mode: same options, only the sections still pending.
+    if (ultimoPayload) parent.postMessage({ pluginMessage: { ...ultimoPayload, sections: msg.sections } }, "*");
+  } else if (msg.type === "progress") {
+    setStatus(`Rendering ${msg.done}/${msg.total} — ${msg.label}…`, true);
+  } else if (msg.type === "result") {
+    generando = false;
+    refreshCreate();
+    setStatus(msg.ok ? "✓ Created" : "Error: " + msg.error);
   }
 };
+
+// Asks the plugin to analyze the current selection now that the UI can receive it.
+parent.postMessage({ pluginMessage: { type: "ready" } }, "*");
